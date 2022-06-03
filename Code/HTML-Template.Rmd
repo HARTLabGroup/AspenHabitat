@@ -1,0 +1,82 @@
+---
+title: " "
+author: " "
+email: " "
+date: " "
+output: 
+  bookdown::html_document2:
+    code_folding: hide
+    toc: TRUE
+    toc_depth: 4
+    toc_float: TRUE
+    collapsed: FALSE
+    theme: spacelab
+    fig_caption: TRUE
+    number_sections: FALSE
+---
+```{r setup, results=F, message=F, echo=F}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, results=F, echo=F) 
+
+ipak <- function(pkg){
+    new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+    if (length(new.pkg)>0) {
+             install.packages(new.pkg, dependencies = TRUE)
+    }
+    easypackages::libraries(pkg)
+}
+
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+
+### Import libraries
+ipak(c('easypackages','ggplot2', 'patchwork', 'knitr', 'here', 'tidyverse', 'ggsci', 'sf', 'raster'))
+
+# Set seed
+set.seed(2022)
+
+# Set plotting options
+options(scipen=999)
+theme_new <- function(base_size = 6,base_family = "Helvetica"){
+  theme_classic(base_size = base_size, base_family = base_family) %+replace%
+    theme(
+      axis.line.x = element_line(color="black", size = 0.25),
+      axis.line.y = element_line(color="black", size = 0.25),
+      axis.title = element_text(size = 6),
+      axis.text = element_text(colour="black", size=),
+      legend.key=element_rect(colour=NA, fill =NA),
+      panel.grid = element_blank(),   
+      plot.background = element_rect(fill = NA, colour = NA),
+      panel.border = element_rect(fill = NA, colour = NA),
+      panel.background = element_rect(fill = "white", colour = "black"), 
+      strip.background = element_rect(fill = "white"),
+      strip.text = element_text(size = 8)
+      
+    )
+}
+theme_set(theme_new())
+
+options(timeout=60*60)
+```
+
+# Abstract
+
+# Keywords
+
+# Introduction
+
+# Methods
+
+## Study Area
+
+## Data
+
+## Statistical analyses
+
+# Results
+
+# Discussion
+
+# References
+
+<div id="refs"></div>
+
+# Supplement
