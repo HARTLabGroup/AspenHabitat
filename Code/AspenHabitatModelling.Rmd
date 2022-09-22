@@ -1,0 +1,194 @@
+---
+title: " "
+author: " "
+email: " "
+date: " "
+output: 
+  bookdown::html_document2:
+    code_folding: hide
+    toc: TRUE
+    toc_depth: 4
+    toc_float: TRUE
+    collapsed: FALSE
+    theme: spacelab
+    fig_caption: TRUE
+    number_sections: FALSE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = F,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 300,
+	progress = FALSE,
+	cache = FALSE,
+	fig.align="center",
+	fig.width=7
+)
+
+
+set.seed(513)
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+options(timeout=60*30) #timeout downloads that last longer than 30 minutes
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  here, # easy file structure
+  tidyverse, # data manipulation
+  tidymodels, 
+  reshape, # old data manipulation pkg
+  ggplot2, # figures
+  patchwork, # multiple figures
+  grid, # multiple figures
+  ggsci, # color palettes
+  colorspace, # color palettes
+  RColorBrewer, # color palettes
+  knitr, # markdown documents
+  kableExtra, # tables in markdown
+  flextable, # other table options
+  bookdown, # figure numbering in markdown
+  sf, # spatial data (new pkg)
+  terra, # raster data
+  raster, # (old pkg)
+  tmap, # easy plotting of maps
+  XPolaris, # access Polaris Soils data
+  terrainr, # elevation data
+  spatialEco, # hli, tpi
+  dismo # species distribution modeling
+) 
+
+cores <- parallel::detectCores() # Set number of cores for parallel processing
+
+# Set custom plotting theme
+theme_new <- function(base_size = 9,base_family = "Helvetica"){
+  theme_classic(base_size = base_size, base_family = base_family) %+replace%
+    theme(
+      axis.line.x = element_line(color="black", size = 0.25),
+      axis.line.y = element_line(color="black", size = 0.25),
+      axis.title = element_text(size = 9),
+      axis.text = element_text(colour="black", size=8),
+      legend.key=element_rect(colour=NA, fill =NA),
+      panel.grid = element_blank(),   
+      plot.background = element_rect(fill = NA, colour = NA),
+      panel.border = element_rect(fill = NA, colour = NA),
+      panel.background = element_rect(fill = "white", colour = "black"), 
+      strip.background = element_rect(fill = "white"),
+      strip.text = element_text(size = 9)
+      
+    )
+}
+theme_set(theme_new())
+
+
+# Set directory structure for project
+dir.create(here("Data/"), showWarnings = FALSE)
+dir.create(here("Data/Spatial"), showWarnings = FALSE)
+dir.create(here("Results/"), showWarnings = FALSE)
+dir.create(here("Results/Figures/"), showWarnings = FALSE)
+```
+
+# Objectives:
+
+JFSP Aim 4: Produce maps of current and future aspen habitat suitability
+
+### Proposed methods
+
+To quantify aspen habitat suitability, we will construct statistical models of aspen presence that incorporate historical climate, soil, and topography variables as predictors. We will randomly sample the Sentinel-2 based maps of aspen produced here (Aim 1) to generate 1000 aspen presences and absences within the SRM. To limit the influence of spatial autocorrelation (Veloz 2009), we will filter all the records by a minimum distance of 1 km. For each presence and absence record, we will then characterize the historical climate, topography and soils conditions. We will characterize fine scale variability in incident radiation using the heat load index, which we will calculate from 10 m DEM. To characterize soil characteristics that may influence habitat suitability for aspen, we will use 30 m grids of soil pH and percent clay cover (Chaney et al. 2019). To characterize historical (1981-2015) climate, we will use climate data from gridMet (Abatzoglou 2013). Specifically, we will obtain mean total winter, summer, and annual precipitation and average summer and winter temperatures, which are related to aspen presence (Rehfeldt et al. 2009, Ellenwood et al. 2015). Additionally, we will calculate mean annual actual evapotranspiration (AET) and climatic water deficit (CWD), two integrative measures of the amount of energy and water available for plant growth that are linked to plant species distributions (Stephenson 1990, Lutz et al. 2010). gridMET products are available at a ca. 4 km resolution, a scale that is too coarse to describe topographically controlled climate variation characteristic of mountainous environments (Franklin et al. 2013). To this end, we will downscale climate data to a 250 m resolution using gradient and inverse distance squared (GIDS) interpolation (Nalder and Wein 1998, Flint and Flint 2012), following methods outlined in Rodman et al. (2020)
+
+We will then use an ensemble modeling approach to generate predictions of aspen habit suitability. We will model presence/absence using several machine learning approaches widely used in habitat suitability modeling (e.g. Bayesian Additive Regression Trees Chipman et al. 2010). Individual models will first be tuned using the R package caret (Kuhn 2020) and then we will use cross-validation to estimate the performance of all models and generate ensemble predictions using the R package SuperLearner (Polley et al. 2019). To generate future predictions of aspen habitat suitability, we will incorporate future (2021-2099) climate data generated using the Multivariate Adaptive Constructed Analogs (MACA) method (Abatzoglou and Brown 2012). We will obtain future climate projections under an intermediate pathway (RCP4.5) and a high emissions pathway (RCP8.5) (IPCC 2014). To encompass the variability in global circulation model (GCM) projections, we will select three GCMs that span the range of project change. We will then downscale future climate data to 250 m following the methods described above. Finally, we will use fitted models to make projections of the future of aspen habitat suitability.
+
+
+
+# Data
+
+### Ecoregions
+```{r download ecoregions, eval=F}
+temp <- here("Data/Spatial/Ecoregions/us_eco_l3.zip")
+download.file("https://gaftp.epa.gov/EPADataCommons/ORD/Ecoregions/us/us_eco_l3.zip", temp)
+unzip(temp, exdir=here("Data/Spatial/Ecoregions"))
+```
+
+## High resolution aspen cover
+Cook and Balch (unpublished)
+- This code will download a 10 m resolution map of aspen cover for the Southern Rocky Mountain Ecoregion, which extends from southern Wyoming to northern New Mexico. The map represents aspen cover in ca. 2019 and was produced from Sentinel imagery (JFSP AIM 1)
+
+```{r, eval=F}
+dir.create(here("Data/Spatial/Aspen"), showWarnings = FALSE)
+temp <- here("Data/Spatial/Aspen/SRM_ASPEN_CLASSIFIED_RF_10M_V1.tif")
+download.file("https://drive.google.com/file/d/1dJZDMMCEss1to9j61LQ_lxmxzWetie10/view?usp=sharing", temp )
+```
+
+### Soils
+
+```{r, eval=F}
+dir.create(here("Data/Spatial/Soils"), showWarnings = FALSE)
+
+soilz <- ximages(locations = SRM, statistics = c('mean'),  variables = c('ph', 'om', 'clay'), layersdepths = c('0_5','5_15'))
+```
+
+
+### DEM
+
+```{r, eval=F}
+SRM <- st_read(here("Data/Spatial/Ecoregions/us_eco_l3/us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=5071)
+dir.create(here("Data/Spatial/DEM"), showWarnings = FALSE)
+dem <- get_tiles(data=SRM, output_prefix = here("Data/Spatial/DEM/DEM30"), services="elevation", resolution=30)
+dem.rast <- lapply(dem[[1]],FUN=rast)
+dem.mosaic <- do.call(mosaic, dem.rast[1:11])
+writeRaster(dem.mosaic, here("Data/Spatial/DEM/DEM30-mosaic.tif"), overwrite=T)
+```
+
+### Climate data
+#### Climate NA
+```{r}
+dir.create(here("Data/Spatial/Climate/CLimateNA"), showWarnings = FALSE)
+temp <- here("Data/Spatial/Climate/CLimateNA/Normal_1981_2010_bioclim.zip")
+download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp )
+unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+
+## 2011-2040 Emission Scenario SSP3-7.0
+temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip")
+download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip", temp )
+unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+
+## 2040-2070 Emission Scenario SSP3-7.0
+temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2041_2070_bioclim.zip")
+download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2041_2070_bioclim.zip", temp )
+unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+
+## 2071-2100 Emission Scenario SSP3-7.0
+temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2071_2100_bioclim.zip")
+download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2071_2100_bioclim.zip", temp )
+unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+
+```
+
+## Data processing
+### Calculate heat load index
+```{r, eval=F}
+dem.mosaic <- raster(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
+hli.rast <- hli(dem.mosaic, force.hemisphere = "northern")
+writeRaster(hli.rast, here("Data/Spatial/DEM/DEM30-mosaic-HLI.tif"))
+```
+
+### Caculate topographic position index (TPI)
+#### 3 cell neighborhood
+```{r, eval=F}
+dem.mosaic <- raster(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
+tpi.rast <- tpi(dem.mosaic, scale=3)
+writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI3.tif"))
+```
+
+#### 15 cell neighborhood
+```{r, eval=F}
+dem.mosaic <- raster(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
+tpi.rast <- tpi(dem.mosaic, scale=15)
+writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
+```
+
+
+# Statistical modeling
+
+# References
+
