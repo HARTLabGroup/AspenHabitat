@@ -82,10 +82,10 @@ theme_set(theme_new())
 
 
 # Set directory structure for project
-dir.create(("~Data"), showWarnings = FALSE)
-dir.create(here("Data/Spatial"), showWarnings = FALSE)
-dir.create(here("Results/"), showWarnings = FALSE)
-dir.create(here("Results/Figures/"), showWarnings = FALSE)
+dir.create(("../Data"), showWarnings = FALSE)
+dir.create(("../Data/Spatial"), showWarnings = FALSE)
+dir.create(("../Results/"), showWarnings = FALSE)
+dir.create(("../Results/Figures/"), showWarnings = FALSE)
 ```
 
 # Objectives:
