@@ -82,7 +82,7 @@ theme_set(theme_new())
 
 
 # Set directory structure for project
-dir.create(here("Data/"), showWarnings = FALSE)
+dir.create(("~Data"), showWarnings = FALSE)
 dir.create(here("Data/Spatial"), showWarnings = FALSE)
 dir.create(here("Results/"), showWarnings = FALSE)
 dir.create(here("Results/Figures/"), showWarnings = FALSE)
