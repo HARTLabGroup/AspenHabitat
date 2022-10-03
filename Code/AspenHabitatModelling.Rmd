@@ -152,6 +152,7 @@ temp <- here("Data/Spatial/Climate/CLimateNA/Normal_1981_2010_bioclim.zip")
 download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp )
 unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
 
+
 ## 2011-2040 Emission Scenario SSP3-7.0
 temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip")
 download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip", temp )
@@ -171,6 +172,7 @@ unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
 
 ## Data processing
 ### Calculate heat load index
+
 ```{r, eval=F}
 dem.mosaic <- raster(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
 hli.rast <- hli(dem.mosaic, force.hemisphere = "northern")
@@ -192,8 +194,21 @@ tpi.rast <- tpi(dem.mosaic, scale=15)
 writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
 ```
 #scaling all to same resolution
+ 
+
+```{r}
+ 
+# Data clippling using SRM for all climatic variables
+# Downscaling climate data to uniform resolution of 30 m 
+
+```
+
 
 # Statistical modeling
 
 # References
+
+```{r}
+
+```
 
