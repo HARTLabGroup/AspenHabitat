@@ -124,7 +124,12 @@ download.file("https://drive.google.com/file/d/1dJZDMMCEss1to9j61LQ_lxmxzWetie10
 ```{r, eval=F}
 dir.create(here("Data/Spatial/Soils"), showWarnings = FALSE)
 
-soilz <- ximages(locations = SRM, statistics = c('mean'),  variables = c('ph', 'om', 'clay'), layersdepths = c('0_5','5_15'))
+soilz <- ximages(locations = SRM, statistics = c('mean'),  variables = c('ph', 'om', 'clay','silt','sand','theta_s'), layersdepths = c('0_5','5_15','15-30'))
+```
+
+```{r}
+library(raster)
+library(ggplot2)
 ```
 
 
@@ -186,7 +191,7 @@ dem.mosaic <- raster(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
 tpi.rast <- tpi(dem.mosaic, scale=15)
 writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
 ```
-
+#scaling all to same resolution
 
 # Statistical modeling
 
