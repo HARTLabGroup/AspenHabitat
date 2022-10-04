@@ -202,6 +202,7 @@ writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
 # Making one average raster file out of 12 months data for temp_max, precipitation, wind speed, potential evapotranspiration
 # Downscaling climate data to uniform resolution of 30 m 
 
+
 ```
 
 
