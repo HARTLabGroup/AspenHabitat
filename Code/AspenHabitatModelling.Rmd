@@ -122,9 +122,33 @@ download.file("https://drive.google.com/file/d/1dJZDMMCEss1to9j61LQ_lxmxzWetie10
 ### Soils
 
 ```{r, eval=F}
-dir.create(here("Data/Spatial/Soils"), showWarnings = FALSE)
 
-soilz <- ximages(locations = SRM, statistics = c('mean'),  variables = c('ph', 'om', 'clay','silt','sand','theta_s'), layersdepths = c('0_5','5_15','15-30'))
+download.file("https://cran.r-project.org/src/contrib/Archive/XPolaris/")
+install.packages(in R studio packages, change from cran to .gz file and upload the downloaded "XPolaris_1.0.2.tar" and then import XPolaris library)
+library(curl)
+library(sp)
+library(sf)
+library(tidyverse)
+library(terra)
+library(spDataLarge)
+library(spData)
+library(httr)
+library(XPolaris)
+remove.packages("rlang")
+install.packages("rlang")
+
+setwd("C:/Users/aspaudel/OneDrive - Colostate/soildata1")
+srm_csv<-read.csv("C:/Users/aspaudel/OneDrive - Colostate/soildata/soillatlong.csv")
+View(srm_csv)
+xplot(locations = srm_csv[1:2,], localPath = getwd())#try XY coordinate locates in map
+xplot(locations = srm_csv, localPath = getwd()) #XY of study area
+df.loc<-srm_csv
+df.loc
+xplot(locations = df.loc,localPath = getwd())
+#downloading as Polaris output, soil data in various depth in unit of cm
+df.out <- ximages(locations = srm_csv,
+                  variables = c('ph','om','clay','theta_s'), 
+                  statistics = c('mean'), # Only the mean will be 
 ```
 
 ```{r}
@@ -202,14 +226,107 @@ writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
 # Making one average raster file out of 12 months data for temp_max, precipitation, wind speed, potential evapotranspiration
 # Downscaling climate data to uniform resolution of 30 m 
 
+
 ```
 
 
 # Statistical modeling
 
+```{r}
+library(biomod2)
+library(raster)
+```
+
 # References
 
 ```{r}
+pre_current<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_current.tif")
 
 ```
 
+## getting the presece points for the aspen from raser layer
+```{r}
+
+
+aspen_presence <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
+
+
+```
+
+## setting the models to be run
+```{r}
+myBiomodData <- BIOMOD_FormatingData(resp.var = myResp,
+expl.var = myExpl,
+resp.xy = myRespXY,
+resp.name = myRespName)
+
+```
+
+#biomod tutorial exercise
+library(biomod2)
+#Load species data
+DataAspen <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
+
+head(DataAspen)
+
+#the name of studied species
+myRespName<-'Aspen'
+#the presence/absences data for our species
+myResp<-as.numeric(DataAspen[,myRespName])
+#the XY coordinates of species data
+myRespXY<-DataAspen[,c('X_NAD_83','Y_NAD_83')]#got error
+# load the environmental raster layers (could be .img, ArcGIS
+# rasters or any supported format by the raster package)
+# Environmental variables extracted from Worldclim (bio_3, bio_4,
+# bio_7, bio_11 & bio_12)
+myExpl = stack( system.file( "external/bioclim/current/bio3.grd",
+package="biomod2"),
+system.file( "external/bioclim/current/bio4.grd",
+package="biomod2"),
+system.file( "external/bioclim/current/bio7.grd",
+package="biomod2"),
+system.file( "external/bioclim/current/bio11.grd",
+package="biomod2"),
+system.file( "external/bioclim/current/bio12.grd",
+package="biomod2"))
+
+#
+
+myBiomodData <- BIOMOD_FormatingData(resp.var = myResp,
+                expl.var = myExpl,
+                resp.xy = myRespXY,
+                resp.name = myRespName)
+ myBiomodOption <- BIOMOD_ModelingOptions()               
+
+BIOMOD_FormatingData(resp.var,
+                     expl.var,
+                     resp.xy = NULL,
+                     resp.name = NULL,
+                     eval.resp.var = NULL,
+                     eval.expl.var = NULL,
+                     eval.resp.xy = NULL,
+                     PA.nb.rep = 0,
+                     PA.nb.absences = 1000,
+                     PA.strategy = 'random',
+                     PA.dist.min = 0,
+                     PA.dist.max = NULL,
+                     PA.sre.quant = 0.025,
+                     PA.table = NULL,
+                     na.rm = TRUE)
+#
+myBiomodModelOut <- BIOMOD_Modeling(
+myBiomodData,
+models = c('SRE','CTA','RF','MARS','FDA'),
+models.options = myBiomodOption,
+NbRunEval=3,
+DataSplit=80,
+Prevalence=0.5,
+VarImport=3,
+models.eval.meth = c('TSS','ROC'),
+SaveObj = TRUE,
+rescal.all.models = TRUE,
+do.full.models = FALSE,
+modeling.id = paste(myRespName,"FirstModeling",sep=""))
+
+###
+DataAspen <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t_Project.csv")
