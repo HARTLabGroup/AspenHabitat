@@ -127,12 +127,6 @@ dir.create(here("Data/Spatial/Soils"), showWarnings = FALSE)
 soilz <- ximages(locations = SRM, statistics = c('mean'),  variables = c('ph', 'om', 'clay','silt','sand','theta_s'), layersdepths = c('0_5','5_15','15-30'))
 ```
 
-```{r}
-library(raster)
-library(ggplot2)
-```
-
-
 ### DEM
 
 ```{r, eval=F}
@@ -146,7 +140,7 @@ writeRaster(dem.mosaic, here("Data/Spatial/DEM/DEM30-mosaic.tif"), overwrite=T)
 
 ### Climate data
 #### Climate NA
-```{r}
+```{r, eval=F}
 dir.create(here("Data/Spatial/Climate/CLimateNA"), showWarnings = FALSE)
 temp <- here("Data/Spatial/Climate/CLimateNA/Normal_1981_2010_bioclim.zip")
 download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp )
@@ -193,8 +187,9 @@ dem.mosaic <- raster(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
 tpi.rast <- tpi(dem.mosaic, scale=15)
 writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
 ```
-#scaling all to same resolution
- 
+
+
+# Import data frame
 
 ```{r}
  
