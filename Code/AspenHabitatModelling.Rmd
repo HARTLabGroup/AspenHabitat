@@ -55,7 +55,7 @@ pacman::p_load(
   XPolaris, # access Polaris Soils data
   terrainr, # elevation data
   spatialEco, # hli, tpi
-  dismo # species distribution modeling
+  sdm # species distribution modeling
 ) 
 
 cores <- parallel::detectCores() # Set number of cores for parallel processing
@@ -99,7 +99,6 @@ To quantify aspen habitat suitability, we will construct statistical models of a
 We will then use an ensemble modeling approach to generate predictions of aspen habit suitability. We will model presence/absence using several machine learning approaches widely used in habitat suitability modeling (e.g. Bayesian Additive Regression Trees Chipman et al. 2010). Individual models will first be tuned using the R package caret (Kuhn 2020) and then we will use cross-validation to estimate the performance of all models and generate ensemble predictions using the R package SuperLearner (Polley et al. 2019). To generate future predictions of aspen habitat suitability, we will incorporate future (2021-2099) climate data generated using the Multivariate Adaptive Constructed Analogs (MACA) method (Abatzoglou and Brown 2012). We will obtain future climate projections under an intermediate pathway (RCP4.5) and a high emissions pathway (RCP8.5) (IPCC 2014). To encompass the variability in global circulation model (GCM) projections, we will select three GCMs that span the range of project change. We will then downscale future climate data to 250 m following the methods described above. Finally, we will use fitted models to make projections of the future of aspen habitat suitability.
 
 
-
 # Data
 
 ### Ecoregions
@@ -139,7 +138,8 @@ writeRaster(dem.mosaic, here("Data/Spatial/DEM/DEM30-mosaic.tif"), overwrite=T)
 ```
 
 ### Climate data
-#### Climate NA
+#### ClimateNA
+
 ```{r, eval=F}
 dir.create(here("Data/Spatial/Climate/CLimateNA"), showWarnings = FALSE)
 temp <- here("Data/Spatial/Climate/CLimateNA/Normal_1981_2010_bioclim.zip")
@@ -163,6 +163,8 @@ download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembl
 unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
 
 ```
+
+#### WorldClim
 
 ## Data processing
 ### Calculate heat load index
@@ -188,20 +190,42 @@ tpi.rast <- tpi(dem.mosaic, scale=15)
 writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
 ```
 
-
-# Import data frame
+### Analyses
+#### Import data
 
 ```{r}
- 
-# Data clippling using SRM for all climatic variables
-# Making one average raster file out of 12 months data for temp_max, precipitation, wind speed, potential evapotranspiration
-# Downscaling climate data to uniform resolution of 30 m 
+aspen <- rast(here("Data/Spatial/Aspen/SRM_ASPEN_CLASSIFIED_RF_10M_V1_0522.tif"))
+tpi3 <- rast(here("Data/Spatial/DEM/DEM30-mosaic-TPI3.tif"))
+tpi15 <- rast(here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
 
+climate <- list.files(here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040/ensemble_8GCMs_ssp370_2011_2040_bioclim"), pattern=".tif", full.names=T)
+climate <- rast(climate)
+names(climate) <- sapply(sapply(sapply(sapply(list.files(here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040/ensemble_8GCMs_ssp370_2011_2040_bioclim"), pattern=".tif", full.names=F), strsplit, split="2040_"), "[", 2), strsplit, split=".tif"), "[", 1)
 
 ```
 
+#### Prepare data
+```{r}
+aspen.points <-  spatSample(aspen, 1000, method="stratified", replace=FALSE, na.rm=TRUE, 
+    as.raster=FALSE, as.df=TRUE, as.points=TRUE, values=TRUE, cells=FALSE, 
+    xy=TRUE, ext=NULL, warn=TRUE, weights=NULL, exp=5)
+aspen.points <- project(aspen.points, climate)
 
-# Statistical modeling
+aspen.dat <- extract(climate, aspen.points,method="simple") %>% dplyr::select(-ID)
+aspen.dat$Occurrence <- aspen.points$SRM_ASPEN_CLASSIFIED_RF_10M_V1_0522
+
+```
+
+```{r}
+splitit <- initial_split(aspen.dat, prop=.7, strata=Occurrence) # partition data to create test and training datasets stratified by the response class
+datz.train <- training(splitit) # create object with training data
+datz.test <- testing(splitit) # create object with testing data
+
+d <- sdmData(formula= Occurrence~., train=datz.train)
+m1 <- sdm(Occurrence~., data=d, methods=c('glm','gam'))
+```
+
+
 
 # References
 
