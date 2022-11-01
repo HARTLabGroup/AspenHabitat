@@ -121,6 +121,9 @@ download.file("https://drive.google.com/file/d/1dJZDMMCEss1to9j61LQ_lxmxzWetie10
 ### Soils
 
 ```{r, eval=F}
+#create new shapefile with wgs_1984 coordinated. Start editing to empty shapefile>draw a polygon masking the SRM, larger than SRM to avoid edge effect>save edit 
+#Arctool>sampling>createfishnet>exent newshapefile>#row&#column 10>add field>name "latitude" for Y>add field again name"longitude" for X, note to set in degree decimal> copy paste te record in csv file here as "soildata1.csv"
+
 
 download.file("https://cran.r-project.org/src/contrib/Archive/XPolaris/")
 install.packages(in R studio packages, change from cran to .gz file and upload the downloaded "XPolaris_1.0.2.tar" and then import XPolaris library)
@@ -151,6 +154,8 @@ df.out <- ximages(locations = srm_csv,
 ```
 
 ### DEM
+# source for he climatic data for north america
+https://adaptwest.databasin.org/pages/adaptwest-climatena/
 
 ```{r, eval=F}
 SRM <- st_read(here("Data/Spatial/Ecoregions/us_eco_l3/us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=5071)
@@ -273,80 +278,158 @@ aspen_presence <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data
 
 ```
 
-## setting the models to be run
+## BioMod2 all code
 ```{r}
-myBiomodData <- BIOMOD_FormatingData(resp.var = myResp,
-expl.var = myExpl,
-resp.xy = myRespXY,
-resp.name = myRespName)
 
-```
 
-#biomod tutorial exercise
-library(biomod2)
-#Load species data
+library(sp)
+library(raster)
+library(ggplot2)
+library(sf)
+library(dplyr)
+library(rgdal)
+library(rgeos)
+install.packages("biomod2",dependencies = TRUE)
+devtools::install_github("biomodhub/biomod2",dependencies=TRUE)
+library(devtools)
+library(roxygen2)
+devtools::install_github("biomodhub/biomod2")
+library(stats)
+library(utils)
+library(methods)
+library(reshape)
+library(reshape2)
+library(abind)
+library(data.table)
+library(foreach)
+library(nnet)
+library(gbm)
+library(mda)
+library(randomForest)
+library(maxnet)
+library(rpart)
+library(MASS)
+library(pROC)
+library(PresenceAbsence)
+library(earth)
+library(Formula)
+library(plotmo)
+library(car)
+
+library(caret)
+library(dismo)  
+library(Hmisc)  
+  
+library(gam)
+library(splines)
+library(mgcv)
+library(rasterVis)
+library(iterators)
+library(parallel)
+##suggested Hmisc, gam, mgcv, car, caret, dismo, ENMeval, doParallel,rasterVis, ggpubr, testthat, knitr
+##Presence data
+DataAspen <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
+head(DataAspen)
+##Env data projection of wgs1984 (uniform to aspen presence data)#current predictor
+try1<-raster("C:/Users/paude/Downloads/ele/IND_msk_alt.gri")
+try2<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_current.tif")
+Env_1980 <- projectRaster(try2,crs=crs(try1))
+
+env<-stack(Env_1980)
+
+
+##Env data projection of wgs1984 #2040
+
+try3<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_370_2040.tif")
+Env_2040<-projectRaster(try3,crs=crs(try1))
+env_2040<-stack(Env_2040)
+##Env data projection of wgs1984 #2070
+try4<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_370_2070.tif")
+Env_2070<-projectRaster(try4,crs=crs(try1))
+env_2070<-stack(Env_2070)
+##Env data projection of wgs1984 #2100
+try5<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_370_2100.tif")
+Env_2100<-projectRaster(try5,crs=crs(try1))
+env_2100<-stack(Env_2100)
+##
+
 DataAspen <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
 
 head(DataAspen)
 
-#the name of studied species
-myRespName<-'Aspen'
-#the presence/absences data for our species
-myResp<-as.numeric(DataAspen[,myRespName])
-#the XY coordinates of species data
-myRespXY<-DataAspen[,c('X_NAD_83','Y_NAD_83')]#got error
-# load the environmental raster layers (could be .img, ArcGIS
-# rasters or any supported format by the raster package)
-# Environmental variables extracted from Worldclim (bio_3, bio_4,
-# bio_7, bio_11 & bio_12)
-myExpl = stack( system.file( "external/bioclim/current/bio3.grd",
-package="biomod2"),
-system.file( "external/bioclim/current/bio4.grd",
-package="biomod2"),
-system.file( "external/bioclim/current/bio7.grd",
-package="biomod2"),
-system.file( "external/bioclim/current/bio11.grd",
-package="biomod2"),
-system.file( "external/bioclim/current/bio12.grd",
-package="biomod2"))
+myRespName <- "Aspen"
+myResp <- as.numeric(DataAspen[,myRespName])
+myRespXY <- DataAspen[,c("longitude","lattitude")]
 
-#
+myExpl=env
+library(raster)
+library(biomod2)
+
 
 myBiomodData <- BIOMOD_FormatingData(resp.var = myResp,
-                expl.var = myExpl,
-                resp.xy = myRespXY,
-                resp.name = myRespName)
- myBiomodOption <- BIOMOD_ModelingOptions()               
+                                     expl.var = myExpl,
+                                     resp.xy = myRespXY,
+                                     resp.name = myRespName,
+                                     PA.nb.rep = 1,
+                                     PA.nb.absences = 1000,
+                                     PA.strategy = 'random')
 
-BIOMOD_FormatingData(resp.var,
-                     expl.var,
-                     resp.xy = NULL,
-                     resp.name = NULL,
-                     eval.resp.var = NULL,
-                     eval.expl.var = NULL,
-                     eval.resp.xy = NULL,
-                     PA.nb.rep = 0,
-                     PA.nb.absences = 1000,
-                     PA.strategy = 'random',
-                     PA.dist.min = 0,
-                     PA.dist.max = NULL,
-                     PA.sre.quant = 0.025,
-                     PA.table = NULL,
-                     na.rm = TRUE)
-#
-myBiomodModelOut <- BIOMOD_Modeling(
-myBiomodData,
-models = c('SRE','CTA','RF','MARS','FDA'),
-models.options = myBiomodOption,
-NbRunEval=3,
-DataSplit=80,
-Prevalence=0.5,
-VarImport=3,
-models.eval.meth = c('TSS','ROC'),
-SaveObj = TRUE,
-rescal.all.models = TRUE,
-do.full.models = FALSE,
-modeling.id = paste(myRespName,"FirstModeling",sep=""))
+myBiomodOption <- BIOMOD_ModelingOptions()
 
-###
-DataAspen <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t_Project.csv")
+Aspen_models <-
+  BIOMOD_Modeling(
+    bm.format = myBiomodData,
+    models = c("GLM", "GBM", "RF"),
+    bm.options = myBiomodOption,
+    nb.rep = 2,
+    data.split.perc = 80,
+    var.import = 3,
+    modeling.id = 'demo1'
+  )
+Aspen_models
+get_variables_importance(Aspen_models,as.data.frame=TRUE)
+
+myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,
+                                    modeling.id = 'AllModels',
+                                    models = c('RF', 'GLM'),
+                                    bm.options = myBiomodOption,
+                                    nb.rep = 2,
+                                    data.split.perc = 80,
+                                    metric.eval = c('TSS','ROC'),
+                                    var.import = 3,
+                                    do.full.models = FALSE,
+                                    seed.val = 42)
+myBiomodModelOut
+get_variables_importance(myBiomodModelOut,as.data.frame=TRUE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+
+
+#### Multicollinearity check
+```{r}
+library (raster)
+library(usdm)
+
+myExpl
+v1 = vifstep(myExpl, th=10 ) 
+v2 = vifcor(myExpl, th=0.9)
+v1
+v2
+
+```
+
+
