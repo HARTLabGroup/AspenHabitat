@@ -120,45 +120,10 @@ download.file("https://drive.google.com/file/d/1dJZDMMCEss1to9j61LQ_lxmxzWetie10
 
 ### Soils
 
-```{r, eval=F}
-#create new shapefile with wgs_1984 coordinated. Start editing to empty shapefile>draw a polygon masking the SRM, larger than SRM to avoid edge effect>save edit 
-#Arctool>sampling>createfishnet>exent newshapefile>#row&#column 10>add field>name "latitude" for Y>add field again name"longitude" for X, note to set in degree decimal> copy paste te record in csv file here as "soildata1.csv"
-
-
-download.file("https://cran.r-project.org/src/contrib/Archive/XPolaris/")
-install.packages(in R studio packages, change from cran to .gz file and upload the downloaded "XPolaris_1.0.2.tar" and then import XPolaris library)
-library(curl)
-library(sp)
-library(sf)
-library(tidyverse)
-library(terra)
-library(spDataLarge)
-library(spData)
-library(httr)
-library(XPolaris)
-remove.packages("rlang")
-install.packages("rlang")
-
-setwd("C:/Users/aspaudel/OneDrive - Colostate/soildata1")
-srm_csv<-read.csv("C:/Users/aspaudel/OneDrive - Colostate/soildata/soillatlong.csv")
-View(srm_csv)
-xplot(locations = srm_csv[1:2,], localPath = getwd())#try XY coordinate locates in map
-xplot(locations = srm_csv, localPath = getwd()) #XY of study area
-df.loc<-srm_csv
-df.loc
-xplot(locations = df.loc,localPath = getwd())
-#downloading as Polaris output, soil data in various depth in unit of cm
-df.out <- ximages(locations = srm_csv,
-                  variables = c('ph','om','clay','theta_s'), 
-                  statistics = c('mean'), # Only the mean will be 
-```
-
 ### DEM
-# source for he climatic data for north america
-https://adaptwest.databasin.org/pages/adaptwest-climatena/
 
 ```{r, eval=F}
-SRM <- st_read(here("Data/Spatial/Ecoregions/us_eco_l3/us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=5071)
+SRM <- st_read(here("Data/Spatial/Ecoregions/us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=5071)
 dir.create(here("Data/Spatial/DEM"), showWarnings = FALSE)
 dem <- get_tiles(data=SRM, output_prefix = here("Data/Spatial/DEM/DEM30"), services="elevation", resolution=30)
 dem.rast <- lapply(dem[[1]],FUN=rast)
@@ -174,7 +139,6 @@ dir.create(here("Data/Spatial/Climate/CLimateNA"), showWarnings = FALSE)
 temp <- here("Data/Spatial/Climate/CLimateNA/Normal_1981_2010_bioclim.zip")
 download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp )
 unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
-
 
 ## 2011-2040 Emission Scenario SSP3-7.0
 temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip")
@@ -192,8 +156,6 @@ download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembl
 unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
 
 ```
-
-#### WorldClim
 
 ## Data processing
 ### Calculate heat load index
