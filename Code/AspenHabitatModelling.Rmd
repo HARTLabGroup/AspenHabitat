@@ -169,14 +169,14 @@ writeRaster(hli.rast, here("Data/Spatial/DEM/DEM30-mosaic-HLI.tif"))
 ### Caculate topographic position index (TPI)
 #### 3 cell neighborhood
 ```{r, eval=F}
-dem.mosaic <- raster(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
+dem.mosaic <- rast(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
 tpi.rast <- tpi(dem.mosaic, scale=3)
 writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI3.tif"))
 ```
 
 #### 15 cell neighborhood
 ```{r, eval=F}
-dem.mosaic <- raster(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
+dem.mosaic <- rast(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
 tpi.rast <- tpi(dem.mosaic, scale=15)
 writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
 ```
