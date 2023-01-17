@@ -125,10 +125,19 @@ download.file("https://drive.google.com/file/d/1dJZDMMCEss1to9j61LQ_lxmxzWetie10
 ```{r, eval=F}
 SRM <- st_read(here("Data/Spatial/Ecoregions/us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=5071)
 dir.create(here("Data/Spatial/DEM"), showWarnings = FALSE)
+
+# 30 m 
 dem <- get_tiles(data=SRM, output_prefix = here("Data/Spatial/DEM/DEM30"), services="elevation", resolution=30)
-dem.rast <- lapply(dem[[1]],FUN=rast)
-dem.mosaic <- do.call(mosaic, dem.rast[1:11])
-writeRaster(dem.mosaic, here("Data/Spatial/DEM/DEM30-mosaic.tif"), overwrite=T)
+dem.rast <- lapply(dem$elevation,FUN=rast)[1:11]
+dem.rast <- sprc(dem.rast)
+dem.merge <- merge(dem.rast, first=T)
+writeRaster(dem.merge, here("Data/Spatial/DEM/DEM30-mosaic.tif"), overwrite=T)
+
+
+dem <- get_tiles(data=SRM, output_prefix = here("Data/Spatial/DEM/DEM250"), services="elevation", resolution=250)
+dem.rast <- lapply(dem$elevation,FUN=rast)
+writeRaster(dem.rast[[1]], here("Data/Spatial/DEM/DEM250.tif"), overwrite=T)
+
 ```
 
 ### Climate data
