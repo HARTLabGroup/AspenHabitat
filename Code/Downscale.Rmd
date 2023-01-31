@@ -84,7 +84,7 @@ multiLevelInterpParrallel <- function(boundary, ds_layer, ancillary_list, clip_d
   no_cores <- 3 ## Seems more stable, although slower, to use less than half of cores
   
   ## Creating projected version of boundary .shp that corresponds with output projection
-  boundary_proj <- boundary %>% st_transform(crs(ancillary_list[[1]]))
+  boundary_proj <- boundary %>% st_buffer(-20000) %>% st_transform(crs(ancillary_list[[1]]))
   
   ## Looping through each of the DEMs
   for(iter in 1:(length(ancillary_list)-1)){
@@ -164,23 +164,14 @@ multiLevelInterpParrallel <- function(boundary, ds_layer, ancillary_list, clip_d
 }
 ```
 
-```{r, import data}
-
-clim <- rast(here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040/ensemble_8GCMs_ssp370_2011_2040_bioclim/ensemble_8GCMs_ssp370_2011_2040_AHM.tif")) 
-SRM <- st_read(here("Data/Spatial/Ecoregions/us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=crs(clim))
-clim <- clim %>% crop(SRM)
-
+```{r, import dem data}
 dem <- rast(here("Data/Spatial/DEM/DEM250.tif"))
-SRM <- st_read(here("Data/Spatial/Ecoregions/us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(dem))
+SRM <- st_read(here("Data/Spatial/Ecoregions/us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(dem)) %>% st_buffer(20000)
 dem <- dem %>% crop(SRM)
 
-
 ## Projecting both to UTM 13N
-clim <- clim %>% terra::project("+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
 elev <- dem %>% terra::project("+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
                       
-## Creating second DEM at same resolution as climate grid 
-elev_coarse <- terra::project(elev,clim, method="bilinear")
 ```
 
 ```{r, downscale}
@@ -191,20 +182,39 @@ elev_coarse <- terra::project(elev,clim, method="bilinear")
 # interpolate higher-resolution climate surfaces. This could also be done with higher-
 # resolution climate data, as we did for annual AET and CWD in this study.
 
-## A clipping perimeter is necessary for the function
+# import
 SRM <- st_read(here("Data/Spatial/Ecoregions/us_eco_l3.shp")) %>% 
   filter(US_L3NAME == 'Southern Rockies') %>% 
-  st_transform(crs(elev)) %>% 
-  st_buffer(-20000) # Reducing the size of clipping perimeter to reduce edge effects. This is how the function is used
-
+  st_transform(crs(elev)) %>% st_buffer(20000)
+ 
 ## And actually doing the downscaling, takes a minute or so depending on PC.
 # Warning message happens because number of raster cells is not evenly divisible
 # by number of cores on PC
-ds_layer <- multiLevelInterpParrallel(boundary = SRM, ds_layer = clim,
+select.climate.variables <-c("CMI", "CMD","MAP", "MAT", "MSP", "SHM", "MWMT", "MCMT", "PPT_sp", "PPT_at", "TD", "bFF", "RH", "DD_0", "DD5")
+dir.create(here("Data/Spatial/Downscaled"), showWarnings = FALSE)
+for(j in select.climate.variables){
+  ptm <- proc.time()
+  clim <- rast(paste0(here("Data/Spatial/Climate/CLimateNA/Normal_1981_2010/Normal_1981_2010_bioclim/Normal_1981_2010_"), j, ".tif"))
+  clim <- clim %>% terra::project("+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+  clim <- clim %>% crop(SRM)
+  
+  ## Projecting both to UTM 13N
+  clim <- clim %>% terra::project("+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+
+  if(j ==select.climate.variables[1]){elev_coarse <- terra::project(elev,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+  
+  ds_layer <- multiLevelInterpParrallel(boundary = SRM, ds_layer = clim,
                                       ancillary_list = list(elev_coarse, elev), 
                                       clip_dists = c(20000, 5000, 500))
 
-dir.create(here("Data/Spatial/Downscaled"), showWarnings = FALSE)
-writeRaster(ds_layer, here("Data/Spatial/Downscaled/ensemble_8GCMs_ssp370_2011_2040_AHM-downscaled.tif"))
+  writeRaster(ds_layer, paste0(here("Data/Spatial/Downscaled/Normal_1981_2010_"), j, "-downscaled.tif"))
+  rm(ds_layer) # remove 
+  gc() # clean up garbage (sometimes this helps)
+  print(j) # print j so we know how far along our code is
+  time <- proc.time() - ptm
+  print(time[3]/60) # print time for each iteration 
+}
+
+
 ```
 

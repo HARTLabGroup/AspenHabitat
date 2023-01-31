@@ -133,7 +133,6 @@ dem.rast <- sprc(dem.rast)
 dem.merge <- merge(dem.rast, first=T)
 writeRaster(dem.merge, here("Data/Spatial/DEM/DEM30-mosaic.tif"), overwrite=T)
 
-
 dem <- get_tiles(data=SRM, output_prefix = here("Data/Spatial/DEM/DEM250"), services="elevation", resolution=250)
 dem.rast <- lapply(dem$elevation,FUN=rast)
 writeRaster(dem.rast[[1]], here("Data/Spatial/DEM/DEM250.tif"), overwrite=T)
