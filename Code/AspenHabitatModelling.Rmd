@@ -52,10 +52,15 @@ pacman::p_load(
   terra, # raster data
   raster, # (old pkg)
   tmap, # easy plotting of maps
-  XPolaris, # access Polaris Soils data
   terrainr, # elevation data
   spatialEco, # hli, tpi
-  sdm # species distribution modeling
+  sdm,# species distribution modeling
+  rgdal,
+  parallel,
+  FNN,
+  maptools,
+  rgeos,
+  elevatr
 ) 
 
 cores <- parallel::detectCores() # Set number of cores for parallel processing
@@ -82,10 +87,10 @@ theme_set(theme_new())
 
 
 # Set directory structure for project
-dir.create(("../Data"), showWarnings = FALSE)
-dir.create(("../Data/Spatial"), showWarnings = FALSE)
-dir.create(("../Results/"), showWarnings = FALSE)
-dir.create(("../Results/Figures/"), showWarnings = FALSE)
+dir.create(here("Data"), showWarnings = FALSE)
+dir.create(here("Data", "Spatial"), showWarnings = FALSE)
+dir.create(here("Results"), showWarnings = FALSE)
+dir.create(here("Results", "Figures"), showWarnings = FALSE)
 ```
 
 # Objectives:
@@ -100,306 +105,287 @@ We will then use an ensemble modeling approach to generate predictions of aspen 
 
 
 # Data
-
+## Download data
 ### Ecoregions
-```{r download ecoregions, eval=F}
-temp <- here("Data/Spatial/Ecoregions/us_eco_l3.zip")
+```{r download ecoregions}
+temp <- here("Data", "Spatial", "Ecoregions","us_eco_l3.zip")
+if(!file.exists(temp)){
 download.file("https://gaftp.epa.gov/EPADataCommons/ORD/Ecoregions/us/us_eco_l3.zip", temp)
-unzip(temp, exdir=here("Data/Spatial/Ecoregions"))
+unzip(temp, exdir=here("Data", "Spatial", "Ecoregions"))
+}
 ```
 
-## High resolution aspen cover
+### High resolution aspen cover
 Cook and Balch (unpublished)
 - This code will download a 10 m resolution map of aspen cover for the Southern Rocky Mountain Ecoregion, which extends from southern Wyoming to northern New Mexico. The map represents aspen cover in ca. 2019 and was produced from Sentinel imagery (JFSP AIM 1)
 
-```{r, eval=F}
-dir.create(here("Data/Spatial/Aspen"), showWarnings = FALSE)
-temp <- here("Data/Spatial/Aspen/SRM_ASPEN_CLASSIFIED_RF_10M_V1.tif")
-download.file("https://drive.google.com/file/d/1dJZDMMCEss1to9j61LQ_lxmxzWetie10/view?usp=sharing", temp )
+```{r}
+dir.create(here("Data", "Spatial", "Aspen"), showWarnings = FALSE)
+temp <- here("Data", "Spatial", "Aspen", "SRM_ASPEN_CLASSIFIED_RF_10M_V1_0522.tif")
+if(!file.exists(temp)){
+download.file("https://drive.google.com/file/d/1uhV4rCJ6DM26HoyNU-emuh3rPxrR807Q/view?usp=sharing", temp )
+}
 ```
 
 ### Soils
+```{r}
+if(!file.exists(here("Data","Spatial", "Soils"))){
+  dir.create(here("Data","Spatial", "Soils"), showWarnings = FALSE)
+
+  #SRM %>% st_transform(crs=4326) %>% st_bbox --> lat: 35-43; lon:103-110
+  lons <- c("110-109", "109-108", "108-107", "107-106", "106-105", "105-104", "104-103")
+  lats <- c("3536", "3637", "3738", "3839","3940", "4041", "4142", "4243")
+
+  # download mean pH of top 0-5 cm
+  for(j in lons){
+    for(k in lats){
+      temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanPh_0_5.tif")
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/ph/mean/0_5/lat",   k, "_lon-", j, ".tif"), temp)
+    }
+  }
+  
+  # Merge mean pH files
+  ph.files <- list.files(path=here("Data","Spatial", "Soils"), pattern="meanPh_0_5.tif", full.names=T)
+  ph.rast <- lapply(ph.files,FUN=rast)
+  ph.rast <- sprc(ph.rast)
+  ph.merge <- merge(ph.rast, first=T)
+  writeRaster(ph.merge, here("Data","Spatial", "Soils", "meanPh_0_5-SRM.tif"))
+  
+  # download mean percent clay of top 0-5 cm
+  for(j in lons){
+    for(k in lats){
+      temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanClay_0_5.tif")
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/clay/mean/0_5/lat"  , k, "_lon-", j, ".tif"), temp)
+    }
+  }
+  
+  # Merge mean clay files
+  clay.files <- list.files(path=here("Data", "Spatial", "Soils"), pattern="meanClay_0_5.tif",   full.names=T)
+  clay.rast <- lapply(clay.files,FUN=rast)
+  clay.rast <- sprc(clay.rast)
+  clay.merge <- merge(clay.rast, first=T)
+  writeRaster(clay.merge, here("Data", "Spatial", "Soils", "meanClay_0_5-SRM.tif"))
+}
+```
 
 ### DEM
+```{r}
+if(!file.exists(here("Data", "Spatial","DEM"))){
+  
+  dir.create(here("Data", "Spatial","DEM"), showWarnings = FALSE)
+  
+  SRM <- st_read(here("Data", "Spatial", "Ecoregions",
+"us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=5071) %>% st_buffer(20000)
 
-```{r, eval=F}
-SRM <- st_read(here("Data/Spatial/Ecoregions/us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=5071)
-dir.create(here("Data/Spatial/DEM"), showWarnings = FALSE)
-
-# 30 m 
-dem <- get_tiles(data=SRM, output_prefix = here("Data/Spatial/DEM/DEM30"), services="elevation", resolution=30)
-dem.rast <- lapply(dem$elevation,FUN=rast)[1:11]
-dem.rast <- sprc(dem.rast)
-dem.merge <- merge(dem.rast, first=T)
-writeRaster(dem.merge, here("Data/Spatial/DEM/DEM30-mosaic.tif"), overwrite=T)
-
-dem <- get_tiles(data=SRM, output_prefix = here("Data/Spatial/DEM/DEM250"), services="elevation", resolution=250)
-dem.rast <- lapply(dem$elevation,FUN=rast)
-writeRaster(dem.rast[[1]], here("Data/Spatial/DEM/DEM250.tif"), overwrite=T)
-
+  # 30 m 
+  dem <- get_tiles(data=SRM, output_prefix = here("Data", "Spatial", "DEM", "DEM30"), services="elevation",   resolution=30)
+  dem.rast <- lapply(dem$elevation,FUN=rast)
+  for(j in 2:length(dem.rast)){dem.rast[[j]] <-  project(dem.rast[[j]], dem.rast[[1]], align=T)}
+  dem.sprc <- sprc(dem.rast)
+  dem.mosaic <- mosaic(dem.sprc)
+  writeRaster(dem.mosaic, here("Data", "Spatial", "DEM", "DEM30-mosaic.tif"), overwrite=T)
+  
+  # 250 m 
+  dem <- get_tiles(data=SRM, output_prefix = here("Data", "Spatial", "DEM", "DEM250"), services="elevation",   resolution=250)
+  dem.rast <- lapply(dem$elevation,FUN=rast)
+  writeRaster(dem.rast[[1]], here("Data", "Spatial", "DEM", "DEM250.tif"), overwrite=T)
+}
 ```
 
 ### Climate data
 #### ClimateNA
 
-```{r, eval=F}
-dir.create(here("Data/Spatial/Climate/CLimateNA"), showWarnings = FALSE)
-temp <- here("Data/Spatial/Climate/CLimateNA/Normal_1981_2010_bioclim.zip")
-download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp )
-unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+```{r}
+dir.create(here("Data","Spatial", "Climate"))
+if(!file.exists(here("Data","Spatial", "Climate", "ClimateNA"))){
+  dir.create(here("Data","Spatial", "Climate", "ClimateNA"), showWarnings = FALSE)
+  temp <- here("Data","Spatial", "Climate", "ClimateNA", "Normal_1981_2010_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp )
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  
+  ## 2011-2040 Emission Scenario SSP3-7.0
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2011_2040_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip", temp )
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  
+  ## 2040-2070 Emission Scenario SSP3-7.0
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2041_2070_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2041_2070_bioclim.zip", temp )
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  
+  ## 2071-2100 Emission Scenario SSP3-7.0
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2071_2100_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2071_2100_bioclim.zip", temp )
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+}
+```
 
-## 2011-2040 Emission Scenario SSP3-7.0
-temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip")
-download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip", temp )
-unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+#### TopoFire
 
-## 2040-2070 Emission Scenario SSP3-7.0
-temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2041_2070_bioclim.zip")
-download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2041_2070_bioclim.zip", temp )
-unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
-
-## 2071-2100 Emission Scenario SSP3-7.0
-temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2071_2100_bioclim.zip")
-download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2071_2100_bioclim.zip", temp )
-unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
-
+```{r}
+dir.create(here("Data","Spatial", "Climate"))
+if(!file.exists(here("Data","Spatial", "Climate", "TopoFire"))){
+  dir.create(here("Data","Spatial", "Climate", "TopoFire"), showWarnings = FALSE)
+  temp <- here("Data","Spatial", "Climate", "TopoFire", "aet_1981-2010_mean.tif")
+  download.file("https://topofire.dbs.umt.edu/public_data/topofire_weather/normals_old/aet_1981-2010_mean.tif", temp )
+  temp <- here("Data","Spatial", "Climate", "TopoFire", "def_1981-2010_mean.tif")
+  download.file("https://topofire.dbs.umt.edu/public_data/topofire_weather/normals_old/def_1981-2010_annual_mean.tif", temp )
+}
 ```
 
 ## Data processing
 ### Calculate heat load index
-
-```{r, eval=F}
-dem.mosaic <- raster(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
-hli.rast <- hli(dem.mosaic, force.hemisphere = "northern")
-writeRaster(hli.rast, here("Data/Spatial/DEM/DEM30-mosaic-HLI.tif"))
+```{r}
+if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-HLI.tif"))){
+  dem.mosaic <- rast(here(here("Data","Spatial", "DEM", "DEM30-mosaic.tif")))
+  hli.rast <- hli(dem.mosaic, force.hemisphere = "northern")
+  writeRaster(hli.rast, here("Data","Spatial", "DEM", "DEM30-mosaic-HLI.tif"))
+}
 ```
 
 ### Caculate topographic position index (TPI)
 #### 3 cell neighborhood
-```{r, eval=F}
-dem.mosaic <- rast(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
-tpi.rast <- tpi(dem.mosaic, scale=3)
-writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI3.tif"))
+```{r}
+if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-TPI3.tif"))){
+  dem.mosaic <- rast(here(here("Data","Spatial", "DEM", "DEM30-mosaic.tif")))
+  tpi.rast <- tpi(dem.mosaic, scale=3)
+  writeRaster(tpi.rast, here("Data","Spatial", "DEM", "DEM30-mosaic-TPI3.tif"))
+}
 ```
 
 #### 15 cell neighborhood
-```{r, eval=F}
-dem.mosaic <- rast(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
-tpi.rast <- tpi(dem.mosaic, scale=15)
-writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
+```{r}
+if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-TPI15.tif"))){
+  dem.mosaic <- rast(here(here("Data","Spatial", "DEM", "DEM30-mosaic.tif")))
+  tpi.rast <- tpi(dem.mosaic, scale=15)
+  writeRaster(tpi.rast, here("Data","Spatial", "DEM", "DEM30-mosaic-TPI15.tif"))
+}
 ```
 
-### Analyses
-#### Import data
+## Downscaling
 
-```{r}
-aspen <- rast(here("Data/Spatial/Aspen/SRM_ASPEN_CLASSIFIED_RF_10M_V1_0522.tif"))
-tpi3 <- rast(here("Data/Spatial/DEM/DEM30-mosaic-TPI3.tif"))
-tpi15 <- rast(here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
-
-climate <- list.files(here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040/ensemble_8GCMs_ssp370_2011_2040_bioclim"), pattern=".tif", full.names=T)
-climate <- rast(climate)
-names(climate) <- sapply(sapply(sapply(sapply(list.files(here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040/ensemble_8GCMs_ssp370_2011_2040_bioclim"), pattern=".tif", full.names=F), strsplit, split="2040_"), "[", 2), strsplit, split=".tif"), "[", 1)
-
+```{r, import dem data}
 
 ```
 
-#### Prepare data
-```{r}
-aspen.points <-  spatSample(aspen, 1000, method="stratified", replace=FALSE, na.rm=TRUE, 
-    as.raster=FALSE, as.df=TRUE, as.points=TRUE, values=TRUE, cells=FALSE, 
-    xy=TRUE, ext=NULL, warn=TRUE, weights=NULL, exp=5)
-aspen.points <- project(aspen.points, climate)
+```{r, downscale}
+source(here("Code", "GIDS-Downscaling-SJH.R"))
 
-aspen.dat <- extract(climate, aspen.points,method="simple") %>% dplyr::select(-ID)
-aspen.dat$Occurrence <- aspen.points$SRM_ASPEN_CLASSIFIED_RF_10M_V1_0522
+proj.proj <- "+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+dem <- rast(here("Data", "Spatial", "DEM", "DEM250.tif"))
+SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(dem)) %>% st_buffer(20000)
+dem <- dem %>% crop(SRM)
 
-```
-
-```{r}
-splitit <- initial_split(aspen.dat, prop=.7, strata=Occurrence) # partition data to create test and training datasets stratified by the response class
-datz.train <- training(splitit) # create object with training data
-datz.test <- testing(splitit) # create object with testing data
-
-d <- sdmData(formula= Occurrence~., train=datz.train)
-m1 <- sdm(Occurrence~., data=d, methods=c('glm','gam'))
-```
+## Projecting both to UTM 13N
+elev <- dem %>% terra::project(proj.proj)
+ 
+## And actually doing the downscaling, takes a minute or so depending on PC.
+# Warning message happens because number of raster cells is not evenly divisible
+# by number of cores on PC
 
 
+select.climate.variables <-c("bFFP", "CMD", "CMI", "DD_0", "DD5", "MAP", "MCMT", "MSP", "MWMT", "PPT_at", "PPT_sp", "RH", "SHM", "TD")
+dir.create(here("Data", "Spatial", "Downscaled"), showWarnings = FALSE)
 
-```{r}
-library(biomod2)
-library(raster)
-```
-
-# References
-
-```{r}
-pre_current<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_current.tif")
-
-```
-
-## getting the presece points for the aspen from raser layer
-```{r}
-
-
-aspen_presence <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
-
-
-```
-
-## BioMod2 all code
-```{r}
-
-
-library(sp)
-library(raster)
-library(ggplot2)
-library(sf)
-library(dplyr)
-library(rgdal)
-library(rgeos)
-install.packages("biomod2",dependencies = TRUE)
-devtools::install_github("biomodhub/biomod2",dependencies=TRUE)
-library(devtools)
-library(roxygen2)
-devtools::install_github("biomodhub/biomod2")
-library(stats)
-library(utils)
-library(methods)
-library(reshape)
-library(reshape2)
-library(abind)
-library(data.table)
-library(foreach)
-library(nnet)
-library(gbm)
-library(mda)
-library(randomForest)
-library(maxnet)
-library(rpart)
-library(MASS)
-library(pROC)
-library(PresenceAbsence)
-library(earth)
-library(Formula)
-library(plotmo)
-library(car)
-
-library(caret)
-library(dismo)  
-library(Hmisc)  
+for(j in select.climate.variables){
+  if(!file.exists(paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2011_2040_"), j, "-downscaled.tif"))){
+    ptm <- proc.time()
+    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp370_2011_2040", "ensemble_8GCMs_ssp370_2011_2040_bioclim", "ensemble_8GCMs_ssp370_2011_2040_"), j, ".  tif"))
+    clim <- clim %>% terra::project(proj.proj)
+    clim <- clim %>% crop(SRM)
   
-library(gam)
-library(splines)
-library(mgcv)
-library(rasterVis)
-library(iterators)
-library(parallel)
-##suggested Hmisc, gam, mgcv, car, caret, dismo, ENMeval, doParallel,rasterVis, ggpubr, testthat, knitr
-##Presence data
-DataAspen <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
-head(DataAspen)
-##Env data projection of wgs1984 (uniform to aspen presence data)#current predictor
-try1<-raster("C:/Users/paude/Downloads/ele/IND_msk_alt.gri")
-try2<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_current.tif")
-Env_1980 <- projectRaster(try2,crs=crs(try1))
+    if(j ==select.climate.variables[1]){elev_coarse <- terra::project(elev,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+    
+    ds_layer <- multiLevelInterpParrallel(boundary = SRM, ds_layer = clim,
+                                        ancillary_list = list(elev_coarse, elev), 
+                                        clip_dists = c(20000, 5000, 500))
+  
+    writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2011_2040_"), j, "-downscaled.tif"))
+    rm(ds_layer) # remove 
+    gc() # clean up garbage (sometimes this helps)
+    print(j) # print j so we know how far along our code is
+    time <- proc.time() - ptm
+    print(time[3]/60) # print time for each iteration 
+  }
 
-env<-stack(Env_1980)
+}
 
+for(j in select.climate.variables){
+  if(!file.exists(paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2041_2070_"), j, "-downscaled.tif"))){
 
-##Env data projection of wgs1984 #2040
+    ptm <- proc.time()
+    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp370_2041_2070", "ensemble_8GCMs_ssp370_2041_2070_bioclim", "ensemble_8GCMs_ssp370_2041_2070_"), j, ".tif"))
+    clim <- clim %>% terra::project(proj.proj)
+    clim <- clim %>% crop(SRM)
+  
+    if(j ==select.climate.variables[1]){elev_coarse <- terra::project(elev,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+    
+    ds_layer <- multiLevelInterpParrallel(boundary = SRM, ds_layer = clim,
+                                        ancillary_list = list(elev_coarse, elev), 
+                                        clip_dists = c(20000, 5000, 500))
+  
+    writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2041_2070_"), j, "-downscaled.tif"))
+    rm(ds_layer) # remove 
+    gc() # clean up garbage (sometimes this helps)
+    print(j) # print j so we know how far along our code is
+    time <- proc.time() - ptm
+    print(time[3]/60) # print time for each iteration
+  }
+}
 
-try3<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_370_2040.tif")
-Env_2040<-projectRaster(try3,crs=crs(try1))
-env_2040<-stack(Env_2040)
-##Env data projection of wgs1984 #2070
-try4<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_370_2070.tif")
-Env_2070<-projectRaster(try4,crs=crs(try1))
-env_2070<-stack(Env_2070)
-##Env data projection of wgs1984 #2100
-try5<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_370_2100.tif")
-Env_2100<-projectRaster(try5,crs=crs(try1))
-env_2100<-stack(Env_2100)
-##
+for(j in select.climate.variables){
+  if(!file.exists(paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2071_2100_"), j, "-downscaled.tif"))){
 
-DataAspen <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
-
-head(DataAspen)
-
-myRespName <- "Aspen"
-myResp <- as.numeric(DataAspen[,myRespName])
-myRespXY <- DataAspen[,c("longitude","lattitude")]
-
-myExpl=env
-library(raster)
-library(biomod2)
-
-
-myBiomodData <- BIOMOD_FormatingData(resp.var = myResp,
-                                     expl.var = myExpl,
-                                     resp.xy = myRespXY,
-                                     resp.name = myRespName,
-                                     PA.nb.rep = 1,
-                                     PA.nb.absences = 1000,
-                                     PA.strategy = 'random')
-
-myBiomodOption <- BIOMOD_ModelingOptions()
-
-Aspen_models <-
-  BIOMOD_Modeling(
-    bm.format = myBiomodData,
-    models = c("GLM", "GBM", "RF"),
-    bm.options = myBiomodOption,
-    nb.rep = 2,
-    data.split.perc = 80,
-    var.import = 3,
-    modeling.id = 'demo1'
-  )
-Aspen_models
-get_variables_importance(Aspen_models,as.data.frame=TRUE)
-
-myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,
-                                    modeling.id = 'AllModels',
-                                    models = c('RF', 'GLM'),
-                                    bm.options = myBiomodOption,
-                                    nb.rep = 2,
-                                    data.split.perc = 80,
-                                    metric.eval = c('TSS','ROC'),
-                                    var.import = 3,
-                                    do.full.models = FALSE,
-                                    seed.val = 42)
-myBiomodModelOut
-get_variables_importance(myBiomodModelOut,as.data.frame=TRUE)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    ptm <- proc.time()
+    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp370_2071_2100", "ensemble_8GCMs_ssp370_2071_2100_bioclim", "ensemble_8GCMs_ssp370_2071_2100_"), j, ".tif"))
+    clim <- clim %>% terra::project("+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+    clim <- clim %>% crop(SRM)
+    
+    ## Projecting both to UTM 13N
+    clim <- clim %>% terra::project("+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+  
+    if(j ==select.climate.variables[1]){elev_coarse <- terra::project(elev,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+    
+    ds_layer <- multiLevelInterpParrallel(boundary = SRM, ds_layer = clim,
+                                        ancillary_list = list(elev_coarse, elev), 
+                                        clip_dists = c(20000, 5000, 500))
+  
+    writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2071_2100_"), j, "-downscaled.tif"))
+    rm(ds_layer) # remove 
+    gc() # clean up garbage (sometimes this helps)
+    print(j) # print j so we know how far along our code is
+    time <- proc.time() - ptm
+    print(time[3]/60) # print time for each iteration 
+  }
+}
 ```
 
 
-
-#### Multicollinearity check
+## Analyses
+#### Import data
 ```{r}
-library (raster)
-library(usdm)
+# RESAMPLE 
+aspen <- rast(here("Data", "Spatial", "Aspen", "SRM_ASPEN_CLASSIFIED_RF_10M_V1_0522.tif"))
+tpi3 <- rast(here("Data", "Spatial", "DEM", "DEM30-mosaic-TPI3.tif")) 
+tpi15 <- rast(here("Data", "Spatial", "DEM", "DEM30-mosaic-TPI15.tif"))
+hli <- rast(here("Data", "Spatial", "DEM", "DEM30-mosaic-HLI.tif"))
+topo <- c(tpi3, tpi15, hli) %>% project(crs(aspen))
+names(topo) <- c("tpi3", "tpi15", "hli")
+if(!file.exists(filename=here("Data", "Spatial", "DEM", "Topo10.tif"))){
+  topo.re <- resample(topo, aspen, method="near", threads=T, filename=here("Data", "Spatial", "DEM", "Topo10.tif"),overwrite=TRUE)
+}
+ph <- rast(here("Data", "Spatial", "Soils", "meanPh_0_5-SRM.tif"))  %>% project(crs(aspen))
+clay <- rast(here("Data", "Spatial", "Soils", "meanClay_0_5-SRM.tif"))  %>% project(crs(aspen))
+soil <- c(ph, clay)
+names(soil) <- c("pH", "clay")
+soil.re <- resample(soil, aspen, method="near", threads=T, filename=here("Data", "Spatial", "Soils", "Topo10.tif"),overwrite=TRUE)
 
-myExpl
-v1 = vifstep(myExpl, th=10 ) 
-v2 = vifcor(myExpl, th=0.9)
-v1
-v2
+climate <- list.files(here("Data", "Spatial", "Downscaled"), pattern="Normal", full.names=T)
+climate <- rast(climate) %>% project(crs(aspen))
+names(climate) <- sapply(sapply(sapply(sapply(list.files(here("Data", "Spatial", "Downscaled"), pattern="Normal", full.names=T), strsplit, split="2010_"), "[", 2), strsplit, split="-downscaled.tif"), "[", 1)
+climate.re <- resample(climate, aspen, method="near", threads=T, filename=here("Data", "Spatial", "Downscaled", "Climate10.tif"),overwrite=TRUE)
 
+predictors <- c(climate.re, soil.re, topo.re)
 ```
 
 

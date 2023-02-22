@@ -1,31 +1,10 @@
----
-title: "Code for downscaling climate variables"
-output: html_document
-date: "2023-01-10"
----
+#######################################################################################
+## This code performs a multi-step procedure that spatially downscales gridded climate
+# data using GIDS (Gradient and Inverse Distance-Squared) of Nalder and Wein (1998)and
+# Flint and Flint (2012)
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+###################################################################################
 
-if (!require("pacman")) install.packages("pacman")
-pacman::p_load(
-  here, # easy file structure
-  tidyverse, # data manipulation
-  raster,
-  rgdal,
-  sf,
-  parallel,
-  FNN,
-  maptools,
-  rgeos,
-  elevatr,
-  terra
-)
-```
-
-This code performs a multi-step procedure that spatially downscales gridded climate data using GIDS (Gradient and Inverse Distance-Squared) of Nalder and Wein (1998) and Flint and Flint (2012)
-
-```{r SetUpFunctions}
 ## Quick function for slitting raster to tiles. Useful in broader areas
 SplitRas <- function(rast,ntiles_x = 3, ntiles_y = 4){
   h <- ceiling(ncol(rast)/ntiles_x)
@@ -162,5 +141,3 @@ multiLevelInterpParrallel <- function(boundary, ds_layer, ancillary_list, clip_d
   ## Return function output to global environment for later use. Comment out if just writing output to disk
   return(downscaled)
 }
-```
-
