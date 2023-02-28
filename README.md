@@ -14,15 +14,18 @@ The project has the following structure:
 
 ```
 AspenHabitat
-|-- AspenHabitat.Rproj    # RStudio project
-|-- CITATION.md           # information on how to cite
-|-- Code                  # All code written for this project
-    |-- Manuscript.rmd    # A template R Markdown file formated for creation of scientific manuscript
-|-- Documents             # Any documents (e.g. drafts of manuscripts).
-|-- ecology.csl           # Citation style language file for generating references following *Ecology* guidlines
-|-- LICENSE               # License file
-|-- README.md             # README file
-|-- Results               # Results    
+|-- AspenHabitat.Rproj              # RStudio project
+|-- CITATION.md                     # information on how to cite
+|-- Code                            # All code written for this project
+    |-- AspenHabitatModelling.rmd   # The code for all analyses
+    |-- Back                        # A folder containing any old code that is no longer used
+    |-- GIDS-Downscaling-SJH.R      # Code for downscaling climate data modified from Rodman et al. 2020 (doi:10.1111/geb.13174)
+    |-- WordTemplate                # A word template for generating word files 
+|-- Documents                       # Any documents (e.g. drafts of manuscripts).
+|-- ecology.csl                     # Citation style language file for generating references following *Ecology* guidlines
+|-- LICENSE                         # License file
+|-- README.md                       # README file
+|-- Results                         # Results    
 ```
 
 ## License
