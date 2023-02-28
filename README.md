@@ -8,6 +8,8 @@ output: rmarkdown::html_vignette
 
 ## Description of the project
 
+This objective of this project is to model the habitat suitability of aspen across the Southern Rocky Mountains and forecast future habitat suitability under several climate change scenarios.
+
 ## Organization of the project
 
 The project has the following structure:
