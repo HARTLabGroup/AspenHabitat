@@ -1,8 +1,8 @@
 ---
 title: "README file"
-author: "Author"
-contact: "Email"
-date: "date"
+author: "Sarah Hart"
+contact: "Sarah.Hart@colostate.edu"
+date: "Feb 28, 2023"
 output: rmarkdown::html_vignette
 ---
 
@@ -14,14 +14,13 @@ The project has the following structure:
 
 ```
 Template
+|-- AspenHabitat.Rproj    # RStudio project
 |-- CITATION.md           # information on how to cite
-|-- CONTRIBUTING.md       # information on how to contribute
 |-- Code                  # All code written for this project
     |-- Manuscript.rmd    # A template R Markdown file formated for creation of scientific manuscript
-|-- Data                  # Data (e.g data files, link to source, metadata). This folder will be generated after running `Manuscript.Rmd`
+|-- Documents             # Any documents (e.g. drafts of manuscripts).
 |-- ecology.csl           # Citation style language file for generating references following *Ecology* guidlines
 |-- LICENSE               # License file
-|-- mylib.bib             # A Bibtext file containing a citation for R. This should be replaced with a bibtex file containing all works referenced in the project.
 |-- README.md             # README file
 |-- Results               # Results    
 ```
@@ -31,4 +30,4 @@ Template
 
 ## Citation
 Please cite this work as:
-Author (in prep)
+Hart, S.J. and A. Paudel (in prep)
