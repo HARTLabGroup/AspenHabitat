@@ -264,25 +264,23 @@ if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-TPI15.tif"))){
 
 ## Downscaling
 
-```{r, import dem data}
-
-```
 
 ```{r, downscale}
 source(here("Code", "GIDS-Downscaling-SJH.R"))
 
+# Set desired projection
 proj.proj <- "+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
-dem <- rast(here("Data", "Spatial", "DEM", "DEM250.tif"))
-SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(dem)) %>% st_buffer(20000)
-dem <- dem %>% crop(SRM)
 
-## Projecting both to UTM 13N
-elev <- dem %>% terra::project(proj.proj)
+# Import study area boundary
+study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(proj.proj)) %>% st_buffer(20000)
+
+# Import template for downscaling
+template <- rast(here("Data", "Spatial", "DEM", "DEM250.tif"))
+template <- template %>% terra::project(proj.proj)
+template<- template %>% crop(study.area)
  
-## And actually doing the downscaling, takes a minute or so depending on PC.
 # Warning message happens because number of raster cells is not evenly divisible
 # by number of cores on PC
-
 
 select.climate.variables <-c("bFFP", "CMD", "CMI", "DD_0", "DD5", "MAP", "MCMT", "MSP", "MWMT", "PPT_at", "PPT_sp", "RH", "SHM", "TD")
 dir.create(here("Data", "Spatial", "Downscaled"), showWarnings = FALSE)
@@ -290,14 +288,14 @@ dir.create(here("Data", "Spatial", "Downscaled"), showWarnings = FALSE)
 for(j in select.climate.variables){
   if(!file.exists(paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2011_2040_"), j, "-downscaled.tif"))){
     ptm <- proc.time()
-    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp370_2011_2040", "ensemble_8GCMs_ssp370_2011_2040_bioclim", "ensemble_8GCMs_ssp370_2011_2040_"), j, ".  tif"))
+    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp370_2011_2040", "ensemble_8GCMs_ssp370_2011_2040_bioclim", "ensemble_8GCMs_ssp370_2011_2040_"), j, ".tif"))
     clim <- clim %>% terra::project(proj.proj)
-    clim <- clim %>% crop(SRM)
+    clim <- clim %>% crop(study.area)
   
-    if(j ==select.climate.variables[1]){elev_coarse <- terra::project(elev,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+    if(j ==select.climate.variables[1]){template_coarse <- terra::project(template ,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
     
-    ds_layer <- multiLevelInterpParrallel(boundary = SRM, ds_layer = clim,
-                                        ancillary_list = list(elev_coarse, elev), 
+    ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim,
+                                        ancillary_list = list(template_coarse, template), 
                                         clip_dists = c(20000, 5000, 500))
   
     writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2011_2040_"), j, "-downscaled.tif"))
@@ -316,14 +314,13 @@ for(j in select.climate.variables){
     ptm <- proc.time()
     clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp370_2041_2070", "ensemble_8GCMs_ssp370_2041_2070_bioclim", "ensemble_8GCMs_ssp370_2041_2070_"), j, ".tif"))
     clim <- clim %>% terra::project(proj.proj)
-    clim <- clim %>% crop(SRM)
+    clim <- clim %>% crop(study.area)
   
-    if(j ==select.climate.variables[1]){elev_coarse <- terra::project(elev,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+    if(j ==select.climate.variables[1]){template_coarse <- terra::project(template,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
     
-    ds_layer <- multiLevelInterpParrallel(boundary = SRM, ds_layer = clim,
-                                        ancillary_list = list(elev_coarse, elev), 
+    ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim,
+                                        ancillary_list = list(template_coarse, template), 
                                         clip_dists = c(20000, 5000, 500))
-  
     writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2041_2070_"), j, "-downscaled.tif"))
     rm(ds_layer) # remove 
     gc() # clean up garbage (sometimes this helps)
@@ -339,17 +336,13 @@ for(j in select.climate.variables){
     ptm <- proc.time()
     clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp370_2071_2100", "ensemble_8GCMs_ssp370_2071_2100_bioclim", "ensemble_8GCMs_ssp370_2071_2100_"), j, ".tif"))
     clim <- clim %>% terra::project("+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
-    clim <- clim %>% crop(SRM)
+    clim <- clim %>% crop(study.area)
     
-    ## Projecting both to UTM 13N
-    clim <- clim %>% terra::project("+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
-  
-    if(j ==select.climate.variables[1]){elev_coarse <- terra::project(elev,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+    if(j ==select.climate.variables[1]){template_coarse <- terra::project(template,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
     
-    ds_layer <- multiLevelInterpParrallel(boundary = SRM, ds_layer = clim,
-                                        ancillary_list = list(elev_coarse, elev), 
+    ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim,
+                                        ancillary_list = list(template_coarse, template), 
                                         clip_dists = c(20000, 5000, 500))
-  
     writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2071_2100_"), j, "-downscaled.tif"))
     rm(ds_layer) # remove 
     gc() # clean up garbage (sometimes this helps)
