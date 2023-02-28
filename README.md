@@ -13,7 +13,7 @@ output: rmarkdown::html_vignette
 The project has the following structure:
 
 ```
-Template
+AspenHabitat
 |-- AspenHabitat.Rproj    # RStudio project
 |-- CITATION.md           # information on how to cite
 |-- Code                  # All code written for this project
