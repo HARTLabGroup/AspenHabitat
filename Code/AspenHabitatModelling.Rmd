@@ -118,15 +118,17 @@ unzip(temp, exdir=here("Data", "Spatial", "Ecoregions"))
 ### High resolution aspen cover
 Cook and Balch (unpublished)
 - This code will download a 10 m resolution map of aspen cover for the Southern Rocky Mountain Ecoregion, which extends from southern Wyoming to northern New Mexico. The map represents aspen cover in ca. 2019 and was produced from Sentinel imagery (JFSP AIM 1)
+Updated aspen data with 0.64 probability
 
 ```{r}
 dir.create(here("Data", "Spatial", "Aspen"), showWarnings = FALSE)
-temp <- here("Data", "Spatial", "Aspen", "SRM_ASPEN_CLASSIFIED_RF_10M_V1_0522.tif")
+temp <- here("Data", "Spatial", "Aspen", "SRM_ASPEN_CLASSIFIED_RF_10M_V1_0223.tif")
 if(!file.exists(temp)){
-download.file("https://drive.google.com/file/d/1uhV4rCJ6DM26HoyNU-emuh3rPxrR807Q/view?usp=sharing", temp )
+download.file("https://1drv.ms/u/s!Aq4s9rj0qHBilL4B4PH1amvdUoiLyg?e=jHRUWI", temp )
 }
 ```
 
+#https://drive.google.com/file/d/1uhV4rCJ6DM26HoyNU-emuh3rPxrR807Q/view?usp=sharing
 ### Soils
 ```{r}
 if(!file.exists(here("Data","Spatial", "Soils"))){
@@ -136,36 +138,65 @@ if(!file.exists(here("Data","Spatial", "Soils"))){
   lons <- c("110-109", "109-108", "108-107", "107-106", "106-105", "105-104", "104-103")
   lats <- c("3536", "3637", "3738", "3839","3940", "4041", "4142", "4243")
 
-  # download mean pH of top 0-5 cm
+  # download mean pH of top 5-15 cm
   for(j in lons){
     for(k in lats){
-      temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanPh_0_5.tif")
-      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/ph/mean/0_5/lat",   k, "_lon-", j, ".tif"), temp)
+      temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanPh_5_15.tif")
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/ph/mean/5_15/lat",   k, "_lon-", j, ".tif"), temp)
     }
   }
   
   # Merge mean pH files
-  ph.files <- list.files(path=here("Data","Spatial", "Soils"), pattern="meanPh_0_5.tif", full.names=T)
+  ph.files <- list.files(path=here("Data","Spatial", "Soils"), pattern="meanPh_5_15.tif", full.names=T)
   ph.rast <- lapply(ph.files,FUN=rast)
   ph.rast <- sprc(ph.rast)
   ph.merge <- merge(ph.rast, first=T)
-  writeRaster(ph.merge, here("Data","Spatial", "Soils", "meanPh_0_5-SRM.tif"))
+  writeRaster(ph.merge, here("Data","Spatial", "Soils", "meanPh_5_15-SRM.tif"))
   
-  # download mean percent clay of top 0-5 cm
+  # download mean percent clay of top 5-15 cm
   for(j in lons){
     for(k in lats){
-      temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanClay_0_5.tif")
-      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/clay/mean/0_5/lat"  , k, "_lon-", j, ".tif"), temp)
+      temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanClay_5_15.tif")
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/clay/mean/5_15/lat"  , k, "_lon-", j, ".tif"), temp)
     }
   }
   
   # Merge mean clay files
-  clay.files <- list.files(path=here("Data", "Spatial", "Soils"), pattern="meanClay_0_5.tif",   full.names=T)
+  clay.files <- list.files(path=here("Data", "Spatial", "Soils"), pattern="meanClay_5_15.tif",   full.names=T)
   clay.rast <- lapply(clay.files,FUN=rast)
   clay.rast <- sprc(clay.rast)
   clay.merge <- merge(clay.rast, first=T)
-  writeRaster(clay.merge, here("Data", "Spatial", "Soils", "meanClay_0_5-SRM.tif"))
+  writeRaster(clay.merge, here("Data", "Spatial", "Soils", "meanClay_5_15-SRM.tif"))
 }
+### download mean percent theta_s (saturated soil water content) of top 5-15 cm
+  for(j in lons){
+    for(k in lats){
+      temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meantheta_s_5_15.tif")
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/theta_s/mean/5_15/lat"  , k, "_lon-", j, ".tif"), temp)
+    }
+  }
+  
+  # Merge theta_s files
+  theta_s.files <- list.files(path=here("Data", "Spatial", "Soils"), pattern="meantheta_s_5_15.tif",   full.names=T)
+  theta_s.rast <- lapply(theta_s.files,FUN=rast)
+  theta_s.rast <- sprc(theta_s.rast)
+  theta_s.merge <- merge(theta_s.rast, first=T)
+  writeRaster(theta_s.merge, here("Data", "Spatial", "Soils", "meantheta_s_5_15-SRM.tif"))
+  
+  ##download mean percent om (organic matter) of top 5-15 cm
+  for(j in lons){
+    for(k in lats){
+      temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanom_5_15.tif")
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/om/mean/5_15/lat"  , k, "_lon-", j, ".tif"), temp)
+    }
+  }
+  
+ # Merge om files
+  om.files <- list.files(path=here("Data", "Spatial", "Soils"), pattern="meanom_5_15.tif",   full.names=T)
+  om.rast <- lapply(om.files,FUN=rast)
+  om.rast <- sprc(om.rast)
+  om.merge <- merge(om.rast, first=T)
+  writeRaster(om.merge, here("Data", "Spatial", "Soils", "meanom_5_15-SRM.tif"))  
 ```
 
 ### DEM
