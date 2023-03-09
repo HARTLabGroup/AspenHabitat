@@ -128,7 +128,7 @@ download.file("https://1drv.ms/u/s!Aq4s9rj0qHBilL4B4PH1amvdUoiLyg?e=jHRUWI", tem
 }
 ```
 
-#https://drive.google.com/file/d/1uhV4rCJ6DM26HoyNU-emuh3rPxrR807Q/view?usp=sharing
+
 ### Soils
 ```{r}
 if(!file.exists(here("Data","Spatial", "Soils"))){
@@ -211,7 +211,7 @@ if(!file.exists(here("Data", "Spatial","DEM"))){
   # 30 m 
   dem <- get_tiles(data=SRM, output_prefix = here("Data", "Spatial", "DEM", "DEM30"), services="elevation",   resolution=30)
   dem.rast <- lapply(dem$elevation,FUN=rast)
-  for(j in 2:length(dem.rast)){dem.rast[[j]] <-  project(dem.rast[[j]], dem.rast[[1]], align=T)}
+  for(j in 2:length(dem.rast)){dem.rast[[j]] <-  rast::project(dem.rast[[j]], dem.rast[[1]], align=T)}
   dem.sprc <- sprc(dem.rast)
   dem.mosaic <- mosaic(dem.sprc)
   writeRaster(dem.mosaic, here("Data", "Spatial", "DEM", "DEM30-mosaic.tif"), overwrite=T)
