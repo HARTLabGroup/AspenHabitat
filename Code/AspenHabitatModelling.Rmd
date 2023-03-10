@@ -110,7 +110,7 @@ We will then use an ensemble modeling approach to generate predictions of aspen 
 ```{r download ecoregions}
 temp <- here("Data", "Spatial", "Ecoregions","us_eco_l3.zip")
 if(!file.exists(temp)){
-download.file("https://gaftp.epa.gov/EPADataCommons/ORD/Ecoregions/us/us_eco_l3.zip", temp)
+download.file("https://gaftp.epa.gov/EPADataCommons/ORD/Ecoregions/us/us_eco_l3.zip", temp, mode="wb")
 unzip(temp, exdir=here("Data", "Spatial", "Ecoregions"))
 }
 ```
@@ -122,7 +122,7 @@ Updated aspen data with 0.64 probability
 
 ```{r}
 dir.create(here("Data", "Spatial", "Aspen"), showWarnings = FALSE)
-temp <- here("Data", "Spatial", "Aspen", "SRM_ASPEN_CLASSIFIED_RF_10M_V1_0223.tif")
+temp <- here("Data", "Spatial", "Aspen", "SRM_ASPEN_CLASSIFIED_RF_10M_V1_0223.tif", mode="wb")
 if(!file.exists(temp)){
 download.file("https://1drv.ms/u/s!Aq4s9rj0qHBilL4B4PH1amvdUoiLyg?e=jHRUWI", temp )
 }
@@ -142,7 +142,7 @@ if(!file.exists(here("Data","Spatial", "Soils"))){
   for(j in lons){
     for(k in lats){
       temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanPh_5_15.tif")
-      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/ph/mean/5_15/lat",   k, "_lon-", j, ".tif"), temp)
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/ph/mean/5_15/lat",   k, "_lon-", j, ".tif"), temp, mode="wb")
     }
   }
   
@@ -157,7 +157,7 @@ if(!file.exists(here("Data","Spatial", "Soils"))){
   for(j in lons){
     for(k in lats){
       temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanClay_5_15.tif")
-      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/clay/mean/5_15/lat"  , k, "_lon-", j, ".tif"), temp)
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/clay/mean/5_15/lat"  , k, "_lon-", j, ".tif"), temp, mode="wb")
     }
   }
   
@@ -172,7 +172,7 @@ if(!file.exists(here("Data","Spatial", "Soils"))){
   for(j in lons){
     for(k in lats){
       temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meantheta_s_5_15.tif")
-      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/theta_s/mean/5_15/lat"  , k, "_lon-", j, ".tif"), temp)
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/theta_s/mean/5_15/lat"  , k, "_lon-", j, ".tif"), temp, mode="wb")
     }
   }
   
@@ -187,7 +187,7 @@ if(!file.exists(here("Data","Spatial", "Soils"))){
   for(j in lons){
     for(k in lats){
       temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanom_5_15.tif")
-      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/om/mean/5_15/lat"  , k, "_lon-", j, ".tif"), temp)
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/om/mean/5_15/lat"  , k, "_lon-", j, ".tif"), temp, mode="wb")
     }
   }
   
@@ -231,22 +231,22 @@ dir.create(here("Data","Spatial", "Climate"))
 if(!file.exists(here("Data","Spatial", "Climate", "ClimateNA"))){
   dir.create(here("Data","Spatial", "Climate", "ClimateNA"), showWarnings = FALSE)
   temp <- here("Data","Spatial", "Climate", "ClimateNA", "Normal_1981_2010_bioclim.zip")
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp )
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp, mode="wb")
   unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
   
   ## 2011-2040 Emission Scenario SSP3-7.0
   temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2011_2040_bioclim.zip")
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip", temp )
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip", temp, mode="wb")
   unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
   
   ## 2040-2070 Emission Scenario SSP3-7.0
   temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2041_2070_bioclim.zip")
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2041_2070_bioclim.zip", temp )
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2041_2070_bioclim.zip", temp, mode="wb")
   unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
   
   ## 2071-2100 Emission Scenario SSP3-7.0
   temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2071_2100_bioclim.zip")
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2071_2100_bioclim.zip", temp )
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2071_2100_bioclim.zip", temp, mode="wb")
   unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
 }
 ```
@@ -258,9 +258,9 @@ dir.create(here("Data","Spatial", "Climate"))
 if(!file.exists(here("Data","Spatial", "Climate", "TopoFire"))){
   dir.create(here("Data","Spatial", "Climate", "TopoFire"), showWarnings = FALSE)
   temp <- here("Data","Spatial", "Climate", "TopoFire", "aet_1981-2010_mean.tif")
-  download.file("https://topofire.dbs.umt.edu/public_data/topofire_weather/normals_old/aet_1981-2010_mean.tif", temp )
+  download.file("https://topofire.dbs.umt.edu/public_data/topofire_weather/normals_old/aet_1981-2010_mean.tif", temp, mode="wb")
   temp <- here("Data","Spatial", "Climate", "TopoFire", "def_1981-2010_mean.tif")
-  download.file("https://topofire.dbs.umt.edu/public_data/topofire_weather/normals_old/def_1981-2010_annual_mean.tif", temp )
+  download.file("https://topofire.dbs.umt.edu/public_data/topofire_weather/normals_old/def_1981-2010_annual_mean.tif", temp, mode="wb")
 }
 ```
 
