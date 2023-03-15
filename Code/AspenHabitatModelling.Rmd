@@ -234,19 +234,34 @@ if(!file.exists(here("Data","Spatial", "Climate", "ClimateNA"))){
   download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp, mode="wb")
   unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
   
-  ## 2011-2040 Emission Scenario SSP3-7.0
-  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2011_2040_bioclim.zip")
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip", temp, mode="wb")
+  ## 2011-2040 Emission Scenario SSP2-4.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2011_2040_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2011_2040_bioclim.zip", temp, mode="wb")
   unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
   
-  ## 2040-2070 Emission Scenario SSP3-7.0
-  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2041_2070_bioclim.zip")
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2041_2070_bioclim.zip", temp, mode="wb")
+  ## 2040-2070 Emission Scenario SSP2-4.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2041_2070_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2041_2070_bioclim.zip", temp, mode="wb")
   unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
   
-  ## 2071-2100 Emission Scenario SSP3-7.0
-  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2071_2100_bioclim.zip")
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2071_2100_bioclim.zip", temp, mode="wb")
+  ## 2071-2100 Emission Scenario SSP2-4.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2071_2100_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2071_2100_bioclim.zip", temp, mode="wb")
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+ 
+  ##2011-2040 Emission Scenario SSP5-8.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2011_2040_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2011_2040_bioclim.zip", temp, mode="wb")
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+ 
+  ##2041-2070 Emission Scenario SSP5-8.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2041_2070_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2041_2070_bioclim.zip", temp, mode="wb")
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  
+  ##2071-2100 Emission Scenario SSP5-8.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2071_2100_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2071_2100_bioclim.zip", temp, mode="wb")
   unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
 }
 ```
