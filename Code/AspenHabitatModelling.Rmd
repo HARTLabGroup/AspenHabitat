@@ -210,8 +210,8 @@ if(!file.exists(here("Data", "Spatial","DEM"))){
 
   # 30 m 
   dem <- get_tiles(data=SRM, output_prefix = here("Data", "Spatial", "DEM", "DEM30"), services="elevation",   resolution=30)
-  dem.rast <- lapply(dem$elevation,FUN=rast)
-  for(j in 2:length(dem.rast)){dem.rast[[j]] <-  rast::project(dem.rast[[j]], dem.rast[[1]], align=T)}
+dem.rast <- lapply(dem$elevation,FUN=rast)
+  for(j in 2:length(dem.rast)){dem.rast[[j]] <-  terra::project(dem.rast[[j]], dem.rast[[1]], align=T)}
   dem.sprc <- sprc(dem.rast)
   dem.mosaic <- mosaic(dem.sprc)
   writeRaster(dem.mosaic, here("Data", "Spatial", "DEM", "DEM30-mosaic.tif"), overwrite=T)
@@ -328,13 +328,12 @@ template<- template %>% crop(study.area)
 # Warning message happens because number of raster cells is not evenly divisible
 # by number of cores on PC
 
-select.climate.variables <-c("bFFP", "CMD", "CMI", "DD_0", "DD5", "MAP", "MCMT", "MSP", "MWMT", "PPT_at", "PPT_sp", "RH", "SHM", "TD")
+select.climate.variables <-c("CMD", "DD_0", "DD5", "MAP", "MCMT", "MSP", "MWMT", "RH", "SHM", "TD","Tmax")
 dir.create(here("Data", "Spatial", "Downscaled"), showWarnings = FALSE)
-
 for(j in select.climate.variables){
-  if(!file.exists(paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2011_2040_"), j, "-downscaled.tif"))){
+  if(!file.exists(paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp245_2011_2040_"), j, "-downscaled.tif"))){
     ptm <- proc.time()
-    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp370_2011_2040", "ensemble_8GCMs_ssp370_2011_2040_bioclim", "ensemble_8GCMs_ssp370_2011_2040_"), j, ".tif"))
+    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp245_2011_2040", "ensemble_8GCMs_ssp245_2011_2040_bioclim", "ensemble_8GCMs_ssp245_2011_2040_"), j, ".tif"))
     clim <- clim %>% terra::project(proj.proj)
     clim <- clim %>% crop(study.area)
   
@@ -344,7 +343,7 @@ for(j in select.climate.variables){
                                         ancillary_list = list(template_coarse, template), 
                                         clip_dists = c(20000, 5000, 500))
   
-    writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2011_2040_"), j, "-downscaled.tif"))
+    writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp245_2011_2040_"), j, "-downscaled.tif"))
     rm(ds_layer) # remove 
     gc() # clean up garbage (sometimes this helps)
     print(j) # print j so we know how far along our code is
@@ -355,10 +354,10 @@ for(j in select.climate.variables){
 }
 
 for(j in select.climate.variables){
-  if(!file.exists(paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2041_2070_"), j, "-downscaled.tif"))){
+  if(!file.exists(paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp245_2041_2070_"), j, "-downscaled.tif"))){
 
     ptm <- proc.time()
-    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp370_2041_2070", "ensemble_8GCMs_ssp370_2041_2070_bioclim", "ensemble_8GCMs_ssp370_2041_2070_"), j, ".tif"))
+    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp245_2041_2070", "ensemble_8GCMs_ssp245_2041_2070_bioclim", "ensemble_8GCMs_ssp245_2041_2070_"), j, ".tif"))
     clim <- clim %>% terra::project(proj.proj)
     clim <- clim %>% crop(study.area)
   
@@ -367,7 +366,7 @@ for(j in select.climate.variables){
     ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim,
                                         ancillary_list = list(template_coarse, template), 
                                         clip_dists = c(20000, 5000, 500))
-    writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2041_2070_"), j, "-downscaled.tif"))
+    writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp245_2041_2070_"), j, "-downscaled.tif"))
     rm(ds_layer) # remove 
     gc() # clean up garbage (sometimes this helps)
     print(j) # print j so we know how far along our code is
@@ -377,10 +376,10 @@ for(j in select.climate.variables){
 }
 
 for(j in select.climate.variables){
-  if(!file.exists(paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2071_2100_"), j, "-downscaled.tif"))){
+  if(!file.exists(paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp245_2071_2100_"), j, "-downscaled.tif"))){
 
     ptm <- proc.time()
-    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp370_2071_2100", "ensemble_8GCMs_ssp370_2071_2100_bioclim", "ensemble_8GCMs_ssp370_2071_2100_"), j, ".tif"))
+    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "ensemble_8GCMs_ssp245_2071_2100", "ensemble_8GCMs_ssp245_2071_2100_bioclim", "ensemble_8GCMs_ssp245_2071_2100_"), j, ".tif"))
     clim <- clim %>% terra::project("+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
     clim <- clim %>% crop(study.area)
     
@@ -389,7 +388,7 @@ for(j in select.climate.variables){
     ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim,
                                         ancillary_list = list(template_coarse, template), 
                                         clip_dists = c(20000, 5000, 500))
-    writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2071_2100_"), j, "-downscaled.tif"))
+    writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp245_2071_2100_"), j, "-downscaled.tif"))
     rm(ds_layer) # remove 
     gc() # clean up garbage (sometimes this helps)
     print(j) # print j so we know how far along our code is
