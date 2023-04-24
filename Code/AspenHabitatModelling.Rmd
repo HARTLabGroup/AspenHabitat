@@ -427,6 +427,7 @@ predictors <- c(climate.re, soil.re, topo.re)
 ```
 
 #random sampling of Aspen presence and absence
+#Projecting all to WGS_1984 is importnat becasue biomod doesn't work in NAD..
 #Correlation matrix and predictor variable selection
 #BioMod2
 ```{r}
@@ -435,12 +436,150 @@ library(raster)
 library(rasterVis)
 library(ggplot2)
 library(gridExtra)
-#Heat Load Index
+library(dplyr)#for correlation matrix
 
-#Stacking soil and climate data
+
 setwd("D:/BioMod2Try/0_Data_final/current")
 rlist=list.files(pattern="tif$",full.names = TRUE)
-s_xvar=stack(rlist)
-names(s_xvar)
+s_xvar1=stack(rlist)#Stacking soil and climate data
+names(s_xvar1)
+
+presvals_all<-cbind(raster::extract(s_xvar1,Aspen[,c("longitude","lattitude")]),Aspen[,c("longitude","lattitude")])
+cor_aspen_all<-presvals_all%>% select(-c("longitude","lattitude"))%>%cor()
+cor_aspen_all
+write.csv(cor_aspen_all,"D:/BioMod2Try/aspen_cor_finaldata.csv")
+
+#Response varaible
+AspenData <- read.csv("D:/BioMod2Try/Max_Aspen_Raster/Aspen_Ran2000.csv")
+head(AspenData)
+myRespName <- "Aspen"
+myResp <- as.numeric(AspenData[,myRespName])
+myRespXY <- AspenData[,c("longitude","lattitude")]
+#predictor variables
+Explvar=raster::stack(s_xvar1$ADI,s_xvar1$MSPDD5,s_xvar1$Clay,s_xvar1$pH,s_xvar1$MSP,s_xvar1$om)
+myExpl=raster::stack(Explvar)
+
+myBiomodData <- BIOMOD_FormatingData(resp.var = myResp,
+                                     expl.var = myExpl,
+                                     resp.xy = myRespXY,
+                                     resp.name = myRespName, )
+myBiomodData
+plot(myBiomodData)                               
+myBiomodOption <- BIOMOD_ModelingOptions()
+Aspen_2010 <-
+  BIOMOD_Modeling(
+    bm.format = myBiomodData,
+    models = c("GBM", "RF","GAM"),
+    bm.options = myBiomodOption,
+    nb.rep = 2,
+    data.split.perc = 80,
+    var.import = 5,
+    modeling.id = 'demo1'
+  )
+Aspen_2010
+summary(Aspen_2010)
+#get model evaluation scores
+#get_evaluations(Aspen_models)
+#not working
+bm_PlotEvalMean(
+  Aspen_2010,
+  by="models",
+  metrics=c("ROC","TSS"),
+  xlim=c(0.5,1),
+  ylim=c(0.5,1)
+)
+  
+#plot scores
+# Get evaluation scores & variables importance
+
+#VarImport <- get_variables_importance(Aspen_models, as.data.frame = TRUE)
+VarImport <- get_variables_importance(Aspen_2010)#gives mean of most important variables 
+
+VarImport
+apply(VarImport,c(1,2),mean)#mean of imp_variables
+#individual models response plots
+#Aspen_glm<-BIOMOD_LoadModels(Aspen_2010,models="GLM")
+Aspen_rf<-BIOMOD_LoadModels(Aspen_2010,models="RF")
+Aspen_gbm<-BIOMOD_LoadModels(Aspen_2010,models="GBM")
+Aspen_gam<-BIOMOD_LoadModels(Aspen_2010,models="GAM")
+
+#biomod2::response.plot2( 
+glm_eval_strip<-
+  bm_PlotResponseCurves(
+    bm.out=Aspen_2010,
+    models=Aspen_rf,
+    Data=get_formal_data(Aspen_2010,'expl.var'),
+    show.variables=get_formal_data(Aspen_2010,'expl.var.names'),
+    do.bivariate=FALSE,
+    fixed.var.metric='median',
+    legend=FALSE,
+    display_title=FALSE,
+    data_species=get_formal_data(Aspen_2010,'resp.var')
+  )
+glm_eval_strip
+##Eval
+myEval <- get_evaluations(Aspen_2010, as.data.frame = TRUE)
+myEval
+
+myEval$CV.strategy <- "Random"
+myEval$CV.strategy[grepl("13", myEval$Model.name)] <- "Full"
+myEval$CV.strategy[grepl("11|12", myEval$Model.name)] <- "Stratified"
+head(myEval)
+p=boxplot(myEval$Testing.data ~ interaction(myEval$Algo, myEval$CV.strategy),
+        xlab = "", ylab = "ROC AUC", col = rep(c("brown", "cadetblue"), 3))
+
+p1=bm_PlotVarImpBoxplot(bm.out = Aspen_2010, group.by = c('expl.var', 'algo', 'algo'))
+
+p2=bm_PlotVarImpBoxplot(bm.out = Aspen_2010, group.by = c('expl.var', 'algo', 'dataset'))
+p3=bm_PlotVarImpBoxplot(bm.out = Aspen_2010, group.by = c('algo', 'expl.var', 'dataset'))
+#impvar= get_variables_importance(Aspen_models,as.data.frame=TRUE)
+#plot(impvar)
+
+
+myBiomodEM <- BIOMOD_EnsembleModeling(bm.mod = Aspen_2010,
+                                      models.chosen = 'all',
+                                      em.by = 'all',
+                                      metric.select = c('TSS'),
+                                      metric.select.thresh = c(0.7),
+                                      metric.eval = c('TSS', 'ROC'),
+                                      var.import = 3,
+                                      prob.mean = TRUE,
+                                      prob.median = FALSE,
+                                      prob.cv = FALSE,
+                                      prob.ci = FALSE,
+                                      prob.ci.alpha = 0.05,
+                                      committee.averaging = TRUE,
+                                      prob.mean.weight = TRUE,
+                                      prob.mean.weight.decay = 'proportional',
+                                      seed.val = 42)
+p4=bm_PlotVarImpBoxplot(bm.out = myBiomodEM, group.by = c('expl.var', 'algo', 'algo'))
+p5=bm_PlotVarImpBoxplot(bm.out = myBiomodEM, group.by = c('expl.var', 'algo', 'dataset'))
+p6=bm_PlotVarImpBoxplot(bm.out = myBiomodEM, group.by = c('algo', 'expl.var', 'dataset'))
+
+myBiomodProj <- BIOMOD_Projection(bm.mod = Aspen_2010,
+                                  proj.name = 'Current',
+                                  new.env = myExpl,
+                                  models.chosen = 'all',
+                                  metric.binary = 'all',
+                                  metric.filter = 'all',
+                                  build.clamping.mask = TRUE,
+                                  output.format = '.img')
+myBiomodProj
+
+plot(myBiomodProj)
+
+BiomodEMProj <- BIOMOD_EnsembleForecasting(bm.em = myBiomodEM,
+                                           proj.name = 'CurrentEM',
+                                           new.env = myExpl,
+                                           models.chosen = 'all',
+                                           metric.binary = 'all',
+                                           metric.filter = 'all',
+                                           output.format = '.img')
+
+BiomodEMProj
+plot(BiomodEMProj)
+
+CurrentProj <- get_predictions(myBiomodProj)
+CurrentProj
 ```
 
