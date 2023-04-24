@@ -426,4 +426,21 @@ climate.re <- resample(climate, aspen, method="near", threads=T, filename=here("
 predictors <- c(climate.re, soil.re, topo.re)
 ```
 
+#random sampling of Aspen presence and absence
+#Correlation matrix and predictor variable selection
+#BioMod2
+```{r}
+library(biomod2)
+library(raster)
+library(rasterVis)
+library(ggplot2)
+library(gridExtra)
+#Heat Load Index
+
+#Stacking soil and climate data
+setwd("D:/BioMod2Try/0_Data_final/current")
+rlist=list.files(pattern="tif$",full.names = TRUE)
+s_xvar=stack(rlist)
+names(s_xvar)
+```
 
