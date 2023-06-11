@@ -437,73 +437,135 @@ library(rasterVis)
 library(ggplot2)
 library(gridExtra)
 library(dplyr)#for correlation matrix
+library(gridExtra)
+library(usdm)#for VIF
+######Sampling Aspen Data from Max Data
+library(rgdal)#required for random numbers of raw selection
+setwd("D:/BioMod2Try/Max_Aspen_Raster/samplingjune42023")
+myshapefile <- readOGR(dsn = ".",layer = "presence1")
 
+myshapefile
+class(myshapefile)
+my_df<-as.data.frame(myshapefile)
+dim(my_df)
+my_sample<-my_df[sample(nrow(my_df),2000),]
+write.csv(my_sample,"D:/BioMod2Try/Max_Aspen_Raster/samplingjune42023/presence.csv")
+#absence
+setwd("D:/BioMod2Try/Max_Aspen_Raster/samplingjune42023")
+myshapefile <- readOGR(dsn = ".",layer = "absence0")
+myshapefile
+class(myshapefile)
+my_df<-as.data.frame(myshapefile)
+dim(my_df)
+my_sample<-my_df[sample(nrow(my_df),2000),]
+write.csv(my_sample,"D:/BioMod2Try/Max_Aspen_Raster/samplingjune42023/absence.csv")
 
-setwd("D:/BioMod2Try/0_Data_final/current")
+#Stacking predictor variables data
+setwd("D:/BioMod2Try/0_Data_final/current/clip")
 rlist=list.files(pattern="tif$",full.names = TRUE)
-s_xvar1=stack(rlist)#Stacking soil and climate data
-names(s_xvar1)
+s_xvar=stack(rlist)
+names(s_xvar)
 
-presvals_all<-cbind(raster::extract(s_xvar1,Aspen[,c("longitude","lattitude")]),Aspen[,c("longitude","lattitude")])
+#Projecting all to WGS_1984 because biomod doesn't work in NAD..
+#r1=raster("D:/sdm/current_projection/Current_projection.grd")#reference for WGS projection
+r1=raster("C:/Users/paude/OneDrive - Colostate/sdm/current_projection/Current_projection.grd")
+
+r1
+
+s_xvar1=projectRaster(s_xvar, crs = r1)#projecting stack downscaled variables along with soil
+s_xvar1
+
+#Testing multicollinearity 
+AspenData <- read.csv("D:/BioMod2Try/Max_Aspen_Raster/samplingjune42023/presence.csv")#presence only data for multicollinearity
+head(AspenData)
+#Correlation Maxtix
+library(dplyr)#for correlation matrix
+presvals_all<-cbind(raster::extract(s_xvar1,AspenData[,c("longitude","lattitude")]),AspenData[,c("longitude","lattitude")])
 cor_aspen_all<-presvals_all%>% select(-c("longitude","lattitude"))%>%cor()
 cor_aspen_all
-write.csv(cor_aspen_all,"D:/BioMod2Try/aspen_cor_finaldata.csv")
+write.csv(cor_aspen_all,"D:/BioMod2Try/cor_newsamplewithpresenceonly_SRMClipped.csv")#saving correlation values
+##for Variance Inflation Factor
+library(usdm)
+presvals_all<-cbind(raster::extract(s_xvar1,AspenData[,c("longitude","lattitude")]),AspenData[,c("longitude","lattitude")])
+vifcor_1<-presvals_all%>% select(-c("longitude","lattitude"))%>%vifcor()
+vifcor_1
 
-#Response varaible
-AspenData <- read.csv("D:/BioMod2Try/Max_Aspen_Raster/Aspen_Ran2000.csv")
+#SDM Model_Response variable with 2000 presence and 2000 absence sample
+##Response
+AspenData <- read.csv("D:/BioMod2Try/Max_Aspen_Raster/samplingjune42023/AspenData.csv")
 head(AspenData)
 myRespName <- "Aspen"
 myResp <- as.numeric(AspenData[,myRespName])
 myRespXY <- AspenData[,c("longitude","lattitude")]
-#predictor variables
-Explvar=raster::stack(s_xvar1$ADI,s_xvar1$MSPDD5,s_xvar1$Clay,s_xvar1$pH,s_xvar1$MSP,s_xvar1$om)
-myExpl=raster::stack(Explvar)
 
+#Explanatory Variable and formatting for BioMod2
+Explvar=raster::stack(s_xvar1$ADI,s_xvar1$MSPDD5,s_xvar1$MSP,s_xvar1$Clay,s_xvar1$pH,s_xvar1$om)
+myExpl=raster::stack(Explvar)
+myBiomodData <- BIOMOD_FormatingData(resp.var = myResp,
+                                     expl.var = myExpl,
+                                     resp.xy = myRespXY,
+                                     resp.name = myRespName, )
+
+myBiomodData
+# Create default modeling options
+myBiomodOption <- BIOMOD_ModelingOptions()
+#Format response and predictor variable to biomod2 run setting
 myBiomodData <- BIOMOD_FormatingData(resp.var = myResp,
                                      expl.var = myExpl,
                                      resp.xy = myRespXY,
                                      resp.name = myRespName, )
 myBiomodData
-plot(myBiomodData)                               
-myBiomodOption <- BIOMOD_ModelingOptions()
+                             
+myBiomodOption <- BIOMOD_ModelingOptions()#this will include the default model evaluation metrics, ROC_AUC, Test Statistics which will help to understand model performance and pick algorithms that gives higher ROC-AUC value and greater TSS, The True Skill Statistic (TSS) is a measure of the accuracy of a binary classification model
 Aspen_2010 <-
   BIOMOD_Modeling(
     bm.format = myBiomodData,
-    models = c("GBM", "RF","GAM"),
     bm.options = myBiomodOption,
-    nb.rep = 2,
-    data.split.perc = 80,
+    nb.rep = 10,
+    data.split.perc = 70,
     var.import = 5,
     modeling.id = 'demo1'
   )
-Aspen_2010
-summary(Aspen_2010)
-#get model evaluation scores
-#get_evaluations(Aspen_models)
-#not working
-bm_PlotEvalMean(
-  Aspen_2010,
-  by="models",
-  metrics=c("ROC","TSS"),
-  xlim=c(0.5,1),
-  ylim=c(0.5,1)
-)
-  
-#plot scores
-# Get evaluation scores & variables importance
-
-#VarImport <- get_variables_importance(Aspen_models, as.data.frame = TRUE)
+#Plot the evaluation metric to decide which algorithm to consider
+bm_PlotEvalMean(Aspen_2010)#plots ROC-AUC and TSS
+##Droped one model that had poor ROC-AUC and TSS
+#Then Run Model Again dropping one algorith
+Aspen_2010 <-
+  BIOMOD_Modeling(
+    bm.format = myBiomodData,
+    models = c('GLM', 'GBM', 'GAM', 'CTA', 'ANN', 'MARS', 'RF', 'MAXENT.Phillips','FDA'),
+    bm.options = myBiomodOption,
+    nb.rep = 10,
+    data.split.perc = 70,
+    var.import = 5,
+    modeling.id = 'demo1'
+  )
+#Now get importnace variables and evaluation metric as dataframe and save as CSV file
 VarImport <- get_variables_importance(Aspen_2010)#gives mean of most important variables 
-
 VarImport
 apply(VarImport,c(1,2),mean)#mean of imp_variables
-#individual models response plots
-#Aspen_glm<-BIOMOD_LoadModels(Aspen_2010,models="GLM")
-Aspen_rf<-BIOMOD_LoadModels(Aspen_2010,models="RF")
-Aspen_gbm<-BIOMOD_LoadModels(Aspen_2010,models="GBM")
-Aspen_gam<-BIOMOD_LoadModels(Aspen_2010,models="GAM")
+                
+##Evaluation metrics in dataframe and save as CSV
+myEval <- get_evaluations(Aspen_2010, as.data.frame = TRUE)
+myEval
+write.csv(myEval,"D:/BioMod2Try/0_Data_final/plots&results/results with newsample and clipped SRM/evalmetric.csv")#saving eval values
+myEval$CV.strategy <- "Random"
+myEval$CV.strategy[grepl("13", myEval$Model.name)] <- "Full"
+myEval$CV.strategy[grepl("11|12", myEval$Model.name)] <- "Stratified"
+head(myEval)
+p=boxplot(myEval$Testing.data ~ interaction(myEval$Algo, myEval$CV.strategy),
+        xlab = "", ylab = "ROC AUC", col = rep(c("brown", "cadetblue"), 3))
+p=boxplot(myEval$Testing.data ~ interaction(myEval$Algo, myEval$CV.strategy),
+          xlab = "", ylab = "ROC AUC")
+p1=bm_PlotVarImpBoxplot(bm.out = Aspen_2010, group.by = c('expl.var', 'algo', 'algo'))
 
-#biomod2::response.plot2( 
+p2=bm_PlotVarImpBoxplot(bm.out = Aspen_2010, group.by = c('expl.var', 'algo', 'dataset'))
+p3=bm_PlotVarImpBoxplot(bm.out = Aspen_2010, group.by = c('algo', 'expl.var', 'dataset'))
+
+##Generate Response Curves
+Aspen_rf<-BIOMOD_LoadModels(Aspen_2010,models="RF")
+
+#Creating response curve
 glm_eval_strip<-
   bm_PlotResponseCurves(
     bm.out=Aspen_2010,
@@ -516,33 +578,14 @@ glm_eval_strip<-
     display_title=FALSE,
     data_species=get_formal_data(Aspen_2010,'resp.var')
   )
-glm_eval_strip
-##Eval
-myEval <- get_evaluations(Aspen_2010, as.data.frame = TRUE)
-myEval
-
-myEval$CV.strategy <- "Random"
-myEval$CV.strategy[grepl("13", myEval$Model.name)] <- "Full"
-myEval$CV.strategy[grepl("11|12", myEval$Model.name)] <- "Stratified"
-head(myEval)
-p=boxplot(myEval$Testing.data ~ interaction(myEval$Algo, myEval$CV.strategy),
-        xlab = "", ylab = "ROC AUC", col = rep(c("brown", "cadetblue"), 3))
-
-p1=bm_PlotVarImpBoxplot(bm.out = Aspen_2010, group.by = c('expl.var', 'algo', 'algo'))
-
-p2=bm_PlotVarImpBoxplot(bm.out = Aspen_2010, group.by = c('expl.var', 'algo', 'dataset'))
-p3=bm_PlotVarImpBoxplot(bm.out = Aspen_2010, group.by = c('algo', 'expl.var', 'dataset'))
-#impvar= get_variables_importance(Aspen_models,as.data.frame=TRUE)
-#plot(impvar)
-
-
+###Now creating ensembled for better performance, the ensembled model is made selecting the algorithms that had better performance, like in our result we found the TSS hovers from 30%-57% therefore we considered 50% as the threshold and only those above 50% TSS is selected for ensembling. 
 myBiomodEM <- BIOMOD_EnsembleModeling(bm.mod = Aspen_2010,
                                       models.chosen = 'all',
-                                      em.by = 'all',
+                                      em.by = 'all', 
                                       metric.select = c('TSS'),
-                                      metric.select.thresh = c(0.7),
+                                      metric.select.thresh = c(0.5), 
                                       metric.eval = c('TSS', 'ROC'),
-                                      var.import = 3,
+                                      var.import = 5,
                                       prob.mean = TRUE,
                                       prob.median = FALSE,
                                       prob.cv = FALSE,
@@ -552,10 +595,28 @@ myBiomodEM <- BIOMOD_EnsembleModeling(bm.mod = Aspen_2010,
                                       prob.mean.weight = TRUE,
                                       prob.mean.weight.decay = 'proportional',
                                       seed.val = 42)
+#bm.mod = Aspen_2010,#specifies the model or dataset to be used in ensemble process
+#models.chosen = 'all',#this indicates all available models will be used in Aspen_2010 
+#em.by = 'all',#specifies that all available ensemble methods will be used 
+#metric.select = c('TSS'),#specifies that the evaluation metric used for selecting the model is TSS, s a measure of the accuracy of a binary classification model
+#metric.select.thresh = c(0.5),#sets threshold value for the selected evaluation metric Models with a TSS value greater than or equal to 0.5 will be considered for selection 
+#metric.eval = c('TSS', 'ROC'),#Specifies the evaluation metric to be used for model evaluation. In addition to TSS, the Receiver Operating Characteristic (ROC) curve will also be evaluated
+#var.import = 5, the number of top variables to be retained in the modeling process. Only top 5 with highest importance will be conidered. Usually 3-5 is recommended
+#prob.mean = TRUE,#indicates that the mean probabilities will be calculated for the ensemble predictions
+#prob.median = FALSE,#Median probabilities will not be calculated
+#prob.cv = FALSE,# cross validation will not be used to estimate probabilities
+#prob.ci = FALSE,#confidence interval for the probabilities will not be calculated
+#prob.ci.alpha = 0.05,if prob.ci was set to true then this defines alpha level (significance level) for the confidence interval
+#committee.averaging = TRUE,#indicates committee averaging will be used to aggregate the predictions from different models in the ensemble
+#prob.mean.weight = TRUE,# mean weight will be calculated for the ensemble models
+#prob.mean.weight.decay = 'proportional',proportional decay method for mean weights means model performing better are asigned higer weight and vice-versa.
+#seed.val = 42)#this parameter sets the value for reproducibility, The same seed value will produce the same results if the process is run again
 p4=bm_PlotVarImpBoxplot(bm.out = myBiomodEM, group.by = c('expl.var', 'algo', 'algo'))
 p5=bm_PlotVarImpBoxplot(bm.out = myBiomodEM, group.by = c('expl.var', 'algo', 'dataset'))
 p6=bm_PlotVarImpBoxplot(bm.out = myBiomodEM, group.by = c('algo', 'expl.var', 'dataset'))
 
+
+#Projecting from single models
 myBiomodProj <- BIOMOD_Projection(bm.mod = Aspen_2010,
                                   proj.name = 'Current',
                                   new.env = myExpl,
@@ -567,7 +628,7 @@ myBiomodProj <- BIOMOD_Projection(bm.mod = Aspen_2010,
 myBiomodProj
 
 plot(myBiomodProj)
-
+##Projecting from ensembled models 
 BiomodEMProj <- BIOMOD_EnsembleForecasting(bm.em = myBiomodEM,
                                            proj.name = 'CurrentEM',
                                            new.env = myExpl,
