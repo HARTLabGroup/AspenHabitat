@@ -615,9 +615,20 @@ p4=bm_PlotVarImpBoxplot(bm.out = myBiomodEM, group.by = c('expl.var', 'algo', 'a
 p5=bm_PlotVarImpBoxplot(bm.out = myBiomodEM, group.by = c('expl.var', 'algo', 'dataset'))
 p6=bm_PlotVarImpBoxplot(bm.out = myBiomodEM, group.by = c('algo', 'expl.var', 'dataset'))
 
+#Get Evaluation Metric of Ensembled Models
+myEval <- get_evaluations(myBiomodEM, as.data.frame = TRUE)
+myEval
 
+
+####Ensembled varimportnace
+VarImport <- get_variables_importance(myBiomodEM)#gives mean of most important variables 
+VarImport
+apply(VarImport,c(1,2),mean)#mean of imp_variables
+p4=bm_PlotVarImpBoxplot(bm.out = myBiomodEM, group.by = c('expl.var', 'algo', 'algo'))
+p5=bm_PlotVarImpBoxplot(bm.out = myBiomodEM, group.by = c('expl.var', 'algo', 'dataset'))
+p6=bm_PlotVarImpBoxplot(bm.out = myBiomodEM, group.by = c('algo', 'expl.var', 'dataset'))
 #Projecting from single models
-myBiomodProj <- BIOMOD_Projection(bm.mod = Aspen_2010,
+myBiomodProj <- BIOMOD_Projection(bm.mod = Aspen_2010,#invidual models
                                   proj.name = 'Current',
                                   new.env = myExpl,
                                   models.chosen = 'all',
@@ -629,7 +640,7 @@ myBiomodProj
 
 plot(myBiomodProj)
 ##Projecting from ensembled models 
-BiomodEMProj <- BIOMOD_EnsembleForecasting(bm.em = myBiomodEM,
+BiomodEMProj <- BIOMOD_EnsembleForecasting(bm.em = myBiomodEM,#consider ensembled model
                                            proj.name = 'CurrentEM',
                                            new.env = myExpl,
                                            models.chosen = 'all',
@@ -642,5 +653,379 @@ plot(BiomodEMProj)
 
 CurrentProj <- get_predictions(myBiomodProj)
 CurrentProj
+
+
+##Climate Change Scenario SS2_4.5_2010_2040
+setwd("D:/BioMod2Try/0_Data_final/LowEmisSce/2040/clip")
+#setwd("C:/Users/paude/OneDrive - Colostate/sdm/0_downscaled_variables/Ss4.5_2041_2070")
+rlist=list.files(pattern="tif$",full.names = TRUE)
+s_xvar=stack(rlist)
+names(s_xvar)
+#r1=raster("D:/sdm/current_projection/Current_projection.grd")#reference for WGS projection
+r1=raster("C:/Users/paude/OneDrive - Colostate/sdm/current_projection/Current_projection.grd")
+
+r1
+
+s_xvar1=projectRaster(s_xvar, crs = r1)#projecting stack downscaled variables along with soil
+s_xvar1
+
+#2040
+Explvar_2040=raster::stack(s_xvar1$ADI,s_xvar1$MSPDD5,s_xvar1$Clay,s_xvar1$pH,s_xvar1$MSP,s_xvar1$om )
+#Explvar=raster::stack(s_xvar1$ADI1,s_xvar1$GSPDD5,s_xvar1$RH,s_xvar1$MSP,s_xvar1$hli,s_xvar1$clay,s_xvar1$ph)
+
+#Explvar=raster::stack(s_xvar1$ADI1,s_xvar1$GSPDD5,s_xvar1$RH,s_xvar1$TD)
+
+myExpl_2040=raster::stack(Explvar_2040)
+
+
+myBiomodData_2040 <- BIOMOD_FormatingData(resp.var = myResp,
+                                     expl.var = myExpl_2040,
+                                     resp.xy = myRespXY,
+                                     resp.name = myRespName, )
+myBiomodData_2040
+#plot(myBiomodData_2040)                               
+myBiomodOption <- BIOMOD_ModelingOptions()
+Aspen_2040 <-
+  BIOMOD_Modeling(
+    bm.format = myBiomodData_2040,
+    models = c('GLM', 'GBM', 'GAM', 'CTA', 'ANN', 'MARS', 'RF', 'MAXENT.Phillips','FDA'),
+    bm.options = myBiomodOption,
+    nb.rep = 10,
+    data.split.perc = 70,
+    var.import = 5,
+    modeling.id = 'demo1'
+  )
+Aspen_2040
+
+myBiomodEM_2040 <- BIOMOD_EnsembleModeling(bm.mod = Aspen_2040,
+                                      models.chosen = 'all',
+                                      em.by = 'all',
+                                      metric.select = c('TSS'),
+                                      metric.select.thresh = c(0.5),
+                                      metric.eval = c('TSS', 'ROC'),
+                                      var.import = 5,
+                                      prob.mean = TRUE,
+                                      prob.median = FALSE,
+                                      prob.cv = FALSE,
+                                      prob.ci = FALSE,
+                                      prob.ci.alpha = 0.05,
+                                      committee.averaging = TRUE,
+                                      prob.mean.weight = TRUE,
+                                      prob.mean.weight.decay = 'proportional',
+                                      seed.val = 42)
+myBiomodEM_2040
+
+BiomodEMProj_2040 <- BIOMOD_EnsembleForecasting(bm.em = myBiomodEM_2040,
+                                           proj.name = 'BiomodEMProj_2040',
+                                           new.env = myExpl_2040,
+                                           models.chosen = 'all',
+                                           metric.binary = 'all',
+                                           metric.filter = 'all',
+                                           output.format = '.img')
+
+
+FutureProj_2040 <- get_predictions(BiomodEMProj_2040)
+
+FutureProj_2040
+
+##Climate Change Scenario SS2_4.5_2041_2070
+setwd("D:/BioMod2Try/0_Data_final/LowEmisSce/2070/clip")
+#setwd("C:/Users/paude/OneDrive - Colostate/sdm/0_downscaled_variables/Ss4.5_2041_2070")
+rlist=list.files(pattern="tif$",full.names = TRUE)
+s_xvar=stack(rlist)
+names(s_xvar)
+#r1=raster("D:/sdm/current_projection/Current_projection.grd")#reference for WGS projection
+r1=raster("C:/Users/paude/OneDrive - Colostate/sdm/current_projection/Current_projection.grd")
+
+r1
+
+s_xvar1=projectRaster(s_xvar, crs = r1)#projecting stack downscaled variables along with soil
+s_xvar1  
+####2070
+Explvar_2070=raster::stack(s_xvar1$ADI,s_xvar1$MSPDD5,s_xvar1$MSP,s_xvar1$Clay,s_xvar1$pH,s_xvar1$om)
+#Explvar=raster::stack(s_xvar1$ADI1,s_xvar1$GSPDD5,s_xvar1$RH,s_xvar1$MSP,s_xvar1$hli,s_xvar1$clay,s_xvar1$ph)
+
+#Explvar=raster::stack(s_xvar1$ADI1,s_xvar1$GSPDD5,s_xvar1$RH,s_xvar1$TD)
+
+myExpl_2070=raster::stack(Explvar_2070)
+
+
+myBiomodData_2070 <- BIOMOD_FormatingData(resp.var = myResp,
+                                          expl.var = myExpl_2070,
+                                          resp.xy = myRespXY,
+                                          resp.name = myRespName, )
+myBiomodData_2070
+plot(myBiomodData_2070)                               
+myBiomodOption <- BIOMOD_ModelingOptions()
+Aspen_2070 <-
+  BIOMOD_Modeling(
+    bm.format = myBiomodData_2070,
+    models = c('GLM', 'GBM', 'GAM', 'CTA', 'ANN', 'MARS', 'RF', 'MAXENT.Phillips','FDA'),
+    bm.options = myBiomodOption,
+    nb.rep = 10,
+    data.split.perc = 70,
+    var.import = 5,
+    modeling.id = 'demo1'
+  )
+Aspen_2070
+
+myBiomodEM_2070 <- BIOMOD_EnsembleModeling(bm.mod = Aspen_2070,
+                                           models.chosen = 'all',
+                                           em.by = 'all',
+                                           metric.select = c('TSS'),
+                                           metric.select.thresh = c(0.5),
+                                           metric.eval = c('TSS', 'ROC'),
+                                           var.import = 5,
+                                           prob.mean = TRUE,
+                                           prob.median = FALSE,
+                                           prob.cv = FALSE,
+                                           prob.ci = FALSE,
+                                           prob.ci.alpha = 0.05,
+                                           committee.averaging = TRUE,
+                                           prob.mean.weight = TRUE,
+                                           prob.mean.weight.decay = 'proportional',
+                                           seed.val = 42)
+
+
+myBiomodEM_2070
+BiomodEMProj_2070 <- BIOMOD_EnsembleForecasting(bm.em = myBiomodEM_2070,
+                                                proj.name = 'BiomodEMProj_2070',
+                                                new.env = myExpl_2070,
+                                                models.chosen = 'all',
+                                                metric.binary = 'all',
+                                                metric.filter = 'all',
+                                                output.format = '.img')
+
+FutureProj_2070 <- get_predictions(BiomodEMProj_2070)
+FutureProj_2070
+
+
+##2100
+##Climate Change Scenario SS2_4.5_2071_2100
+#C:/Users/paude/Desktop/BioMod2Try/SS245_biomod2/Ssp4.5_2071_2100
+setwd("D:/BioMod2Try/0_Data_final/LowEmisSce/2100/clip")
+#setwd("C:/Users/paude/OneDrive - Colostate/sdm/0_downscaled_variables/Ss4.5_2041_2070")
+rlist=list.files(pattern="tif$",full.names = TRUE)
+s_xvar=stack(rlist)
+names(s_xvar)
+#r1=raster("D:/sdm/current_projection/Current_projection.grd")#reference for WGS projection
+r1=raster("C:/Users/paude/OneDrive - Colostate/sdm/current_projection/Current_projection.grd")
+
+r1
+
+s_xvar1=projectRaster(s_xvar, crs = r1)#projecting stack downscaled variables along with soil
+s_xvar1  
+####2100
+Explvar_2100=raster::stack(s_xvar1$ADI,s_xvar1$MSPDD5,s_xvar1$MSP,s_xvar1$Clay,s_xvar1$pH, s_xvar1$om)
+#Explvar=raster::stack(s_xvar1$ADI1,s_xvar1$GSPDD5,s_xvar1$RH,s_xvar1$MSP,s_xvar1$hli,s_xvar1$clay,s_xvar1$ph)
+
+#Explvar=raster::stack(s_xvar1$ADI1,s_xvar1$GSPDD5,s_xvar1$RH,s_xvar1$TD)
+
+myExpl_2100=raster::stack(Explvar_2100)
+
+
+myBiomodData_2100 <- BIOMOD_FormatingData(resp.var = myResp,
+                                          expl.var = myExpl_2100,
+                                          resp.xy = myRespXY,
+                                          resp.name = myRespName, )
+myBiomodData_2100
+plot(myBiomodData_2100)                               
+myBiomodOption_2100 <- BIOMOD_ModelingOptions()
+Aspen_2100 <-
+  BIOMOD_Modeling(
+    bm.format = myBiomodData_2100,
+    models = c('GLM', 'GBM', 'GAM', 'CTA', 'ANN', 'MARS', 'RF', 'MAXENT.Phillips','FDA'),
+    bm.options = myBiomodOption,
+    nb.rep = 10,
+    data.split.perc = 70,
+    var.import = 5,
+    modeling.id = 'demo1'
+  )
+Aspen_2100
+
+myBiomodEM_2100 <- BIOMOD_EnsembleModeling(bm.mod = Aspen_2100,
+                                           models.chosen = 'all',
+                                           em.by = 'all',
+                                           metric.select = c('TSS'),
+                                           metric.select.thresh = c(0.5),
+                                           metric.eval = c('TSS', 'ROC'),
+                                           var.import = 5,
+                                           prob.mean = TRUE,
+                                           prob.median = FALSE,
+                                           prob.cv = FALSE,
+                                           prob.ci = FALSE,
+                                           prob.ci.alpha = 0.05,
+                                           committee.averaging = TRUE,
+                                           prob.mean.weight = TRUE,
+                                           prob.mean.weight.decay = 'proportional',
+                                           seed.val = 42)
+
+
+
+BiomodEMProj_2100 <- BIOMOD_EnsembleForecasting(bm.em = myBiomodEM_2100,
+                                                proj.name = 'BiomodEMProj_2100',
+                                                new.env = myExpl_2100,
+                                                models.chosen = 'all',
+                                                metric.binary = 'all',
+                                                metric.filter = 'all',
+                                                output.format = '.img')
+
+BiomodEMProj_2100
+plot(BiomodEMProj_2100)
+
+FutureProj_2100 <- get_predictions(BiomodEMProj_2100)
+FutureProj_2100
+
+
+CurrentProj <- get_predictions(BiomodEMProj)
+CurrentProj
+
+###Species Range Change 2011-2040####
+
+SRC_Curr2040 <- BIOMOD_RangeSize(proj.current = CurrentProj, proj.future = FutureProj_2040)
+SRC_Curr2040
+
+SRC_Curr2040$Compt.By.Models
+
+###Species Range Change 2041-2070
+
+SRC_Curr2070 <- BIOMOD_RangeSize(proj.current = FutureProj_2040, proj.future = FutureProj_2070)
+SRC_Curr2070
+
+SRC_Curr2070$Compt.By.Models
+
+###Species Range Change 2071-2100
+
+SRC_Curr2100 <- BIOMOD_RangeSize(proj.current = FutureProj_2070, proj.future = FutureProj_2100)
+SRC_Curr2100
+
+SRC_Curr2100$Compt.By.Models
+
+######Species Range Change 2011-2100
+
+SRC_Curr2011_2100 <- BIOMOD_RangeSize(proj.current = CurrentProj, proj.future = FutureProj_2100)
+SRC_Curr2011_2100
+
+SRC_Curr2011_2100$Compt.By.Models
+
+
+######Species Range Change 2011-2070
+
+SRC_Curr2011_2070 <- BIOMOD_RangeSize(proj.current = CurrentProj, proj.future = FutureProj_2070)
+SRC_Curr2011_2070
+
+SRC_Curr2011_2070$Compt.By.Models
+
+######Species Range Change 2011-2040
+
+SRC_Curr2011_2040 <- BIOMOD_RangeSize(proj.current = CurrentProj, proj.future = FutureProj_2040)
+SRC_Curr2011_2040
+
+SRC_Curr2011_2040$Compt.By.Models
+
+
+###Load binary projection
+Aspen_bin_proj_current<-
+  stack(
+    c(
+      ca="D:/BioMod2Try/0_Data_final/current/Aspen/proj_CurrentEM/individual_projections/Aspen_EMcaByTSS_mergedAlgo_mergedRun_mergedData.img",
+      wm="D:/BioMod2Try/0_Data_final/current/Aspen/proj_CurrentEM/individual_projections/Aspen_EMwmeanByTSS_mergedAlgo_mergedRun_mergedData.img"
+    )
+  )
+
+
+##2040
+Aspen_bin_proj_2040<-
+  stack(
+    c(
+      ca="D:/BioMod2Try/0_Data_final/LowEmisSce/2040/Aspen/proj_BiomodEMProj_2040/individual_projections/Aspen_EMcaByTSS_mergedAlgo_mergedRun_mergedData.img",
+      wm="D:/BioMod2Try/0_Data_final/LowEmisSce/2040/Aspen/proj_BiomodEMProj_2040/individual_projections/Aspen_EMwmeanByTSS_mergedAlgo_mergedRun_mergedData.img"
+    )
+  )
+
+##2070
+Aspen_bin_proj_2070<-
+  stack(
+    c(
+      ca="D:/BioMod2Try/0_Data_final/LowEmisSce/2070/Aspen/proj_BiomodEMProj_2070/individual_projections/Aspen_EMcaByTSS_mergedAlgo_mergedRun_mergedData.img",
+      wm="D:/BioMod2Try/0_Data_final/LowEmisSce/2070/Aspen/proj_BiomodEMProj_2070/individual_projections/Aspen_EMwmeanByTSS_mergedAlgo_mergedRun_mergedData.img"
+    )
+  )
+
+###2100
+Aspen_bin_proj_2100<-
+  stack(
+    c(
+      ca="D:/BioMod2Try/0_Data_final/LowEmisSce/2100/Aspen/proj_BiomodEMProj_2100/individual_projections/Aspen_EMcaByTSS_mergedAlgo_mergedRun_mergedData.img",
+      wm="D:/BioMod2Try/0_Data_final/LowEmisSce/2100/Aspen/proj_BiomodEMProj_2100/individual_projections/Aspen_EMwmeanByTSS_mergedAlgo_mergedRun_mergedData.img"
+    )
+  )
+
+############
+SRC_2011_2040<-BIOMOD_RangeSize(
+  Aspen_bin_proj_current,
+  Aspen_bin_proj_2040
+)
+
+SRC_2011_2040$Compt.By.Models
+
+
+###2011-2070
+SRC_2011_2070<-BIOMOD_RangeSize(
+  Aspen_bin_proj_current,
+  Aspen_bin_proj_2070
+)
+
+SRC_2011_2070$Compt.By.Models
+
+###2011-2100
+SRC_2011_2100<-BIOMOD_RangeSize(
+  Aspen_bin_proj_current,
+  Aspen_bin_proj_2100
+)
+
+SRC_2011_2100$Compt.By.Models
+
+##2040-2070
+SRC_2040_2070<-BIOMOD_RangeSize(
+  Aspen_bin_proj_2040,
+  Aspen_bin_proj_2070
+)
+
+SRC_2040_2070$Compt.By.Models
+###
+AspenSrcMap<-
+  stack(
+    SRC_2011_2040$Diff.By.Pixel,
+    SRC_2011_2070$Diff.By.Pixel,
+    SRC_2011_2100$Diff.By.Pixel
+  )
+names(AspenSrcMap)<-c("ca cur_2040",
+                      "wm cur_2040",
+                      "ca cur-2070",
+                      "wm cur-2070",
+                      "ca cur-2100",
+                      "wm cur-2100"
+                      )
+
+my.at<-seq(-2.5,1.5,1)
+mycolorkey<-
+  list(
+    at=my.at,#where the color change
+    labels=
+      list(
+        labels=c("lost","pres","abs","gain"),
+        at=my.at[-1]-0.5
+      )
+  )
+rasterVis::levelplot(
+  AspenSrcMap,
+  main="Aspen Range Change",
+  colorkey=mycolorkey,
+  col.regions=c("#f03b20","#99d8c9","#f0f0f0","#2ca25f"),
+  layout=c(2,3)
+)
+
+
 ```
 
