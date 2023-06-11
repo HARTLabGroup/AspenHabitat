@@ -799,7 +799,6 @@ BiomodEMProj_2070 <- BIOMOD_EnsembleForecasting(bm.em = myBiomodEM_2070,
 FutureProj_2070 <- get_predictions(BiomodEMProj_2070)
 FutureProj_2070
 
-
 ##2100
 ##Climate Change Scenario SS2_4.5_2071_2100
 #C:/Users/paude/Desktop/BioMod2Try/SS245_biomod2/Ssp4.5_2071_2100
@@ -928,8 +927,8 @@ SRC_Curr2011_2040$Compt.By.Models
 Aspen_bin_proj_current<-
   stack(
     c(
-      ca="D:/BioMod2Try/0_Data_final/current/Aspen/proj_CurrentEM/individual_projections/Aspen_EMcaByTSS_mergedAlgo_mergedRun_mergedData.img",
-      wm="D:/BioMod2Try/0_Data_final/current/Aspen/proj_CurrentEM/individual_projections/Aspen_EMwmeanByTSS_mergedAlgo_mergedRun_mergedData.img"
+      ca="D:/BioMod2Try/0_Data_final/current/clip/Aspen/proj_CurrentEM/individual_projections/Aspen_EMcaByTSS_mergedAlgo_mergedRun_mergedData.img",
+      wm="D:/BioMod2Try/0_Data_final/current/clip/Aspen/proj_CurrentEM/individual_projections/Aspen_EMwmeanByTSS_mergedAlgo_mergedRun_mergedData.img"
     )
   )
 
@@ -938,8 +937,8 @@ Aspen_bin_proj_current<-
 Aspen_bin_proj_2040<-
   stack(
     c(
-      ca="D:/BioMod2Try/0_Data_final/LowEmisSce/2040/Aspen/proj_BiomodEMProj_2040/individual_projections/Aspen_EMcaByTSS_mergedAlgo_mergedRun_mergedData.img",
-      wm="D:/BioMod2Try/0_Data_final/LowEmisSce/2040/Aspen/proj_BiomodEMProj_2040/individual_projections/Aspen_EMwmeanByTSS_mergedAlgo_mergedRun_mergedData.img"
+      ca="D:/BioMod2Try/0_Data_final/LowEmisSce/2040/clip/Aspen/proj_BiomodEMProj_2040/individual_projections/Aspen_EMcaByTSS_mergedAlgo_mergedRun_mergedData.img",
+      wm="D:/BioMod2Try/0_Data_final/LowEmisSce/2040/clip/Aspen/proj_BiomodEMProj_2040/individual_projections/Aspen_EMwmeanByTSS_mergedAlgo_mergedRun_mergedData.img"
     )
   )
 
@@ -947,8 +946,8 @@ Aspen_bin_proj_2040<-
 Aspen_bin_proj_2070<-
   stack(
     c(
-      ca="D:/BioMod2Try/0_Data_final/LowEmisSce/2070/Aspen/proj_BiomodEMProj_2070/individual_projections/Aspen_EMcaByTSS_mergedAlgo_mergedRun_mergedData.img",
-      wm="D:/BioMod2Try/0_Data_final/LowEmisSce/2070/Aspen/proj_BiomodEMProj_2070/individual_projections/Aspen_EMwmeanByTSS_mergedAlgo_mergedRun_mergedData.img"
+      ca="D:/BioMod2Try/0_Data_final/LowEmisSce/2070/clip/Aspen/proj_BiomodEMProj_2070/individual_projections/Aspen_EMcaByTSS_mergedAlgo_mergedRun_mergedData.img",
+      wm="D:/BioMod2Try/0_Data_final/LowEmisSce/2070/clip/Aspen/proj_BiomodEMProj_2070/individual_projections/Aspen_EMwmeanByTSS_mergedAlgo_mergedRun_mergedData.img"
     )
   )
 
@@ -956,8 +955,8 @@ Aspen_bin_proj_2070<-
 Aspen_bin_proj_2100<-
   stack(
     c(
-      ca="D:/BioMod2Try/0_Data_final/LowEmisSce/2100/Aspen/proj_BiomodEMProj_2100/individual_projections/Aspen_EMcaByTSS_mergedAlgo_mergedRun_mergedData.img",
-      wm="D:/BioMod2Try/0_Data_final/LowEmisSce/2100/Aspen/proj_BiomodEMProj_2100/individual_projections/Aspen_EMwmeanByTSS_mergedAlgo_mergedRun_mergedData.img"
+      ca="D:/BioMod2Try/0_Data_final/LowEmisSce/2100/clip/Aspen/proj_BiomodEMProj_2100/individual_projections/Aspen_EMcaByTSS_mergedAlgo_mergedRun_mergedData.img",
+      wm="D:/BioMod2Try/0_Data_final/LowEmisSce/2100/clip/Aspen/proj_BiomodEMProj_2100/individual_projections/Aspen_EMwmeanByTSS_mergedAlgo_mergedRun_mergedData.img"
     )
   )
 
