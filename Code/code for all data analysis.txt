@@ -1,0 +1,676 @@
+### Soils
+
+```{r, eval=F}
+#create new shapefile with wgs_1984 coordinated. Start editing to empty shapefile>draw a polygon masking the SRM, larger than SRM to avoid edge effect>save edit 
+#Arctool>sampling>createfishnet>exent newshapefile>#row&#column 10>add field>name "latitude" for Y>add field again name"longitude" for X, note to set in degree decimal> copy paste te record in csv file here as "soildata1.csv"
+
+
+download.file("https://cran.r-project.org/src/contrib/Archive/XPolaris/")
+install.packages(in R studio packages, change from cran to .gz file and upload the downloaded "XPolaris_1.0.2.tar" and then import XPolaris library)
+library(curl)
+library(sp)
+library(sf)
+library(tidyverse)
+library(terra)
+library(spDataLarge)
+library(spData)
+library(httr)
+library(XPolaris)
+remove.packages("rlang")
+install.packages("rlang")
+
+setwd("C:/Users/aspaudel/OneDrive - Colostate/soildata1")
+srm_csv<-read.csv("C:/Users/aspaudel/OneDrive - Colostate/soildata/soillatlong.csv")
+View(srm_csv)
+xplot(locations = srm_csv[1:2,], localPath = getwd())#try XY coordinate locates in map
+xplot(locations = srm_csv, localPath = getwd()) #XY of study area
+df.loc<-srm_csv
+df.loc
+xplot(locations = df.loc,localPath = getwd())
+#downloading as Polaris output, soil data in various depth in unit of cm
+df.out <- ximages(locations = srm_csv,
+                  variables = c('ph','om','clay','theta_s'), 
+                  statistics = c('mean'), # Only the mean will be 
+```
+
+
+###BioMod2
+
+library(raster)
+library(ggplot2)
+library(sf)
+library(dplyr)
+library(rgdal)
+library(rgeos)
+library(rasterVis)
+library(biomod2)
+
+##Presence data
+DataAspen <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
+head(DataAspen)
+##Env data projection of wgs1984 (uniform to aspen presence data)#current predictor
+try1<-raster("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/xy_wgs1984.tif")
+try2<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_current.tif")
+Env_1980<-projectRaster(try2,crs=crs(try1))
+env<-stack(Env_1980)
+
+##Env data projection of wgs1984 #2040
+try3<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_370_2040.tif")
+Env_2040<-projectRaster(try3,crs=crs(try1))
+env_2040<-stack(Env_2040)
+##Env data projection of wgs1984 #2070
+try4<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_370_2070.tif")
+Env_2070<-projectRaster(try4,crs=crs(try1))
+env_2070<-stack(Env_2070)
+##Env data projection of wgs1984 #2100
+try5<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_370_2100.tif")
+Env_2100<-projectRaster(try5,crs=crs(try1))
+env_2100<-stack(Env_2100)
+##
+DataAspen <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
+head(DataAspen)
+myRespName <- 'Aspen'
+myResp <- as.numeric(DataAspen[,myRespName])
+myRespXY <- DataAspen[,c("longitude","lattitude")]
+
+library(raster)
+
+myExpl<-env
+myBiomodData <- BIOMOD_FormatingData(resp.var = myResp,
+                                     expl.var = myExpl,
+                                     resp.xy = myRespXY,
+                                     resp.name = myRespName,
+                                     PA.nb.rep = 1,
+                                     PA.nb.absences = 1000,
+                                     PA.strategy = 'random')
+
+myBiomodOption <- BIOMOD_ModelingOptions()
+
+
+
+######
+install.packages("biomod2", dependencies = TRUE)
+library(devtools)
+devtools::install_github("biomodhub/biomod2", dependencies = TRUE)
+/!\
+
+112
+DataAspen <- read.csv("C:/Users/aspaudel/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
+head(DataAspen)
+try1<-raster("C:/Users/aspaudel/OneDrive - Colostate/Postdoc_CSU/Data/xy_wgs1984.tif")
+try2<-raster::stack("C:/Users/aspaudel/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_current.tif")
+Env_1980<-projectRaster(try2,crs=crs(try1))
+env<-stack(Env_1980)
+
+myRespName <- 'Aspen'
+myResp <- as.numeric(DataAspen[,myRespName])
+myRespXY <- DataAspen[,c("longitude","lattitude")]
+
+myExpl<-env
+myBiomodData <- BIOMOD_FormatingData(resp.var = myResp,
+                                     expl.var = myExpl,
+                                     resp.xy = myRespXY,
+                                     resp.name = myRespName,
+                                     PA.nb.rep = 1,
+                                     PA.nb.absences = 1000,
+                                     PA.strategy = 'random')
+
+myBiomodOption <- BIOMOD_ModelingOptions()
+
+myBiomodModelOut <- BIOMOD_Modeling(
+  myBiomodData,
+  models = c('SRE','CTA','RF','MARS','FDA'),
+  models.options = myBiomodOption,
+  NbRunEval=3,
+  DataSplit=80,
+  Prevalence=0.5,
+  VarImport=3,
+  models.eval.meth = c('TSS','ROC'),
+  SaveObj = TRUE,
+  rescal.all.models = TRUE,
+  do.full.models = FALSE,
+  modeling.id = paste(myRespName,"FirstModeling",sep=""))
+
+##
+#### Multicollinearity check
+```{r}
+library (raster)
+library(usdm)
+
+myExpl
+v1 = vifstep(myExpl, th=10 ) 
+v2 = vifcor(myExpl, th=0.9)
+v1
+v2
+
+```
+##Stacking Raster layers
+library(raster)
+library(rgdal)
+
+raster1<-brick("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/alldata_clip/clay0_5.tif")
+raster2<-brick("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/alldata_clip/ele30_usgs.tif")
+raster3<-brick("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/alldata_clip/Normal_1981_2010_AHM.tif")
+#resample
+raster4<-resample(raster3,raster1,method=bilinear)
+
+r3<-resample(raster1,raster2, method="bilinear")
+r3<-resample(raster2,raster1, method="bilinear")
+
+
+######---
+title: " "
+author: " "
+email: " "
+date: " "
+output: 
+  bookdown::html_document2:
+    code_folding: hide
+    toc: TRUE
+    toc_depth: 4
+    toc_float: TRUE
+    collapsed: FALSE
+    theme: spacelab
+    fig_caption: TRUE
+    number_sections: FALSE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = F,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 300,
+	progress = FALSE,
+	cache = FALSE,
+	fig.align="center",
+	fig.width=7
+)
+
+
+set.seed(513)
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+options(timeout=60*30) #timeout downloads that last longer than 30 minutes
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  here, # easy file structure
+  tidyverse, # data manipulation
+  tidymodels, 
+  reshape, # old data manipulation pkg
+  ggplot2, # figures
+  patchwork, # multiple figures
+  grid, # multiple figures
+  ggsci, # color palettes
+  colorspace, # color palettes
+  RColorBrewer, # color palettes
+  knitr, # markdown documents
+  kableExtra, # tables in markdown
+  flextable, # other table options
+  bookdown, # figure numbering in markdown
+  sf, # spatial data (new pkg)
+  terra, # raster data
+  raster, # (old pkg)
+  tmap, # easy plotting of maps
+  XPolaris, # access Polaris Soils data
+  terrainr, # elevation data
+  spatialEco, # hli, tpi
+  sdm # species distribution modeling
+) 
+
+cores <- parallel::detectCores() # Set number of cores for parallel processing
+
+# Set custom plotting theme
+theme_new <- function(base_size = 9,base_family = "Helvetica"){
+  theme_classic(base_size = base_size, base_family = base_family) %+replace%
+    theme(
+      axis.line.x = element_line(color="black", size = 0.25),
+      axis.line.y = element_line(color="black", size = 0.25),
+      axis.title = element_text(size = 9),
+      axis.text = element_text(colour="black", size=8),
+      legend.key=element_rect(colour=NA, fill =NA),
+      panel.grid = element_blank(),   
+      plot.background = element_rect(fill = NA, colour = NA),
+      panel.border = element_rect(fill = NA, colour = NA),
+      panel.background = element_rect(fill = "white", colour = "black"), 
+      strip.background = element_rect(fill = "white"),
+      strip.text = element_text(size = 9)
+      
+    )
+}
+theme_set(theme_new())
+
+
+# Set directory structure for project
+dir.create(("../Data"), showWarnings = FALSE)
+dir.create(("../Data/Spatial"), showWarnings = FALSE)
+dir.create(("../Results/"), showWarnings = FALSE)
+dir.create(("../Results/Figures/"), showWarnings = FALSE)
+```
+
+# Objectives:
+
+JFSP Aim 4: Produce maps of current and future aspen habitat suitability
+
+### Proposed methods
+
+To quantify aspen habitat suitability, we will construct statistical models of aspen presence that incorporate historical climate, soil, and topography variables as predictors. We will randomly sample the Sentinel-2 based maps of aspen produced here (Aim 1) to generate 1000 aspen presences and absences within the SRM. To limit the influence of spatial autocorrelation (Veloz 2009), we will filter all the records by a minimum distance of 1 km. For each presence and absence record, we will then characterize the historical climate, topography and soils conditions. We will characterize fine scale variability in incident radiation using the heat load index, which we will calculate from 10 m DEM. To characterize soil characteristics that may influence habitat suitability for aspen, we will use 30 m grids of soil pH and percent clay cover (Chaney et al. 2019). To characterize historical (1981-2015) climate, we will use climate data from gridMet (Abatzoglou 2013). Specifically, we will obtain mean total winter, summer, and annual precipitation and average summer and winter temperatures, which are related to aspen presence (Rehfeldt et al. 2009, Ellenwood et al. 2015). Additionally, we will calculate mean annual actual evapotranspiration (AET) and climatic water deficit (CWD), two integrative measures of the amount of energy and water available for plant growth that are linked to plant species distributions (Stephenson 1990, Lutz et al. 2010). gridMET products are available at a ca. 4 km resolution, a scale that is too coarse to describe topographically controlled climate variation characteristic of mountainous environments (Franklin et al. 2013). To this end, we will downscale climate data to a 250 m resolution using gradient and inverse distance squared (GIDS) interpolation (Nalder and Wein 1998, Flint and Flint 2012), following methods outlined in Rodman et al. (2020)
+
+We will then use an ensemble modeling approach to generate predictions of aspen habit suitability. We will model presence/absence using several machine learning approaches widely used in habitat suitability modeling (e.g. Bayesian Additive Regression Trees Chipman et al. 2010). Individual models will first be tuned using the R package caret (Kuhn 2020) and then we will use cross-validation to estimate the performance of all models and generate ensemble predictions using the R package SuperLearner (Polley et al. 2019). To generate future predictions of aspen habitat suitability, we will incorporate future (2021-2099) climate data generated using the Multivariate Adaptive Constructed Analogs (MACA) method (Abatzoglou and Brown 2012). We will obtain future climate projections under an intermediate pathway (RCP4.5) and a high emissions pathway (RCP8.5) (IPCC 2014). To encompass the variability in global circulation model (GCM) projections, we will select three GCMs that span the range of project change. We will then downscale future climate data to 250 m following the methods described above. Finally, we will use fitted models to make projections of the future of aspen habitat suitability.
+
+
+# Data
+
+### Ecoregions
+```{r download ecoregions, eval=F}
+temp <- here("Data/Spatial/Ecoregions/us_eco_l3.zip")
+download.file("https://gaftp.epa.gov/EPADataCommons/ORD/Ecoregions/us/us_eco_l3.zip", temp)
+unzip(temp, exdir=here("Data/Spatial/Ecoregions"))
+```
+
+## High resolution aspen cover
+Cook and Balch (unpublished)
+- This code will download a 10 m resolution map of aspen cover for the Southern Rocky Mountain Ecoregion, which extends from southern Wyoming to northern New Mexico. The map represents aspen cover in ca. 2019 and was produced from Sentinel imagery (JFSP AIM 1)
+
+```{r, eval=F}
+dir.create(here("Data/Spatial/Aspen"), showWarnings = FALSE)
+temp <- here("Data/Spatial/Aspen/SRM_ASPEN_CLASSIFIED_RF_10M_V1.tif")
+download.file("https://drive.google.com/file/d/1dJZDMMCEss1to9j61LQ_lxmxzWetie10/view?usp=sharing", temp )
+```
+
+### Soils
+
+```{r, eval=F}
+#create new shapefile with wgs_1984 coordinated. Start editing to empty shapefile>draw a polygon masking the SRM, larger than SRM to avoid edge effect>save edit 
+#Arctool>sampling>createfishnet>exent newshapefile>#row&#column 10>add field>name "latitude" for Y>add field again name"longitude" for X, note to set in degree decimal> copy paste te record in csv file here as "soildata1.csv"
+
+
+download.file("https://cran.r-project.org/src/contrib/Archive/XPolaris/")
+install.packages(in R studio packages, change from cran to .gz file and upload the downloaded "XPolaris_1.0.2.tar" and then import XPolaris library)
+library(curl)
+library(sp)
+library(sf)
+library(tidyverse)
+library(terra)
+library(spDataLarge)
+library(spData)
+library(httr)
+library(XPolaris)
+remove.packages("rlang")
+install.packages("rlang")
+
+setwd("C:/Users/aspaudel/OneDrive - Colostate/soildata1")
+srm_csv<-read.csv("C:/Users/aspaudel/OneDrive - Colostate/soildata/soillatlong.csv")
+View(srm_csv)
+xplot(locations = srm_csv[1:2,], localPath = getwd())#try XY coordinate locates in map
+xplot(locations = srm_csv, localPath = getwd()) #XY of study area
+df.loc<-srm_csv
+df.loc
+xplot(locations = df.loc,localPath = getwd())
+#downloading as Polaris output, soil data in various depth in unit of cm
+df.out <- ximages(locations = srm_csv,
+                  variables = c('ph','om','clay','theta_s'), 
+                  statistics = c('mean'), # Only the mean will be 
+```
+
+### DEM
+# source for he climatic data for north america
+https://adaptwest.databasin.org/pages/adaptwest-climatena/
+
+```{r, eval=F}
+SRM <- st_read(here("Data/Spatial/Ecoregions/us_eco_l3/us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=5071)
+dir.create(here("Data/Spatial/DEM"), showWarnings = FALSE)
+dem <- get_tiles(data=SRM, output_prefix = here("Data/Spatial/DEM/DEM30"), services="elevation", resolution=30)
+dem.rast <- lapply(dem[[1]],FUN=rast)
+dem.mosaic <- do.call(mosaic, dem.rast[1:11])
+writeRaster(dem.mosaic, here("Data/Spatial/DEM/DEM30-mosaic.tif"), overwrite=T)
+```
+
+### Climate data
+#### ClimateNA
+# https://adaptwest.databasin.org/pages/adaptwest-climatena/
+
+
+```{r, eval=F}
+dir.create(here("Data/Spatial/Climate/CLimateNA"), showWarnings = FALSE)
+temp <- here("Data/Spatial/Climate/CLimateNA/Normal_1981_2010_bioclim.zip")
+download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp )
+unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+
+
+## 2011-2040 Emission Scenario SSP3-7.0
+temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip")
+download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip", temp )
+unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+
+## 2040-2070 Emission Scenario SSP3-7.0
+temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2041_2070_bioclim.zip")
+download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2041_2070_bioclim.zip", temp )
+unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+
+## 2071-2100 Emission Scenario SSP3-7.0
+temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2071_2100_bioclim.zip")
+download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2071_2100_bioclim.zip", temp )
+unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+
+```
+
+#### WorldClim
+
+## Data processing
+### Calculate heat load index
+
+```{r, eval=F}
+dem.mosaic <- raster(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
+hli.rast <- hli(dem.mosaic, force.hemisphere = "northern")
+writeRaster(hli.rast, here("Data/Spatial/DEM/DEM30-mosaic-HLI.tif"))
+```
+
+### Caculate topographic position index (TPI)
+#### 3 cell neighborhood
+```{r, eval=F}
+dem.mosaic <- raster(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
+tpi.rast <- tpi(dem.mosaic, scale=3)
+writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI3.tif"))
+```
+
+#### 15 cell neighborhood
+```{r, eval=F}
+dem.mosaic <- raster(here("Data/Spatial/DEM/DEM30-mosaic.tif"))
+tpi.rast <- tpi(dem.mosaic, scale=15)
+writeRaster(tpi.rast, here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
+```
+
+### Analyses
+#### Import data
+
+```{r}
+aspen <- rast(here("Data/Spatial/Aspen/SRM_ASPEN_CLASSIFIED_RF_10M_V1_0522.tif"))
+tpi3 <- rast(here("Data/Spatial/DEM/DEM30-mosaic-TPI3.tif"))
+tpi15 <- rast(here("Data/Spatial/DEM/DEM30-mosaic-TPI15.tif"))
+
+climate <- list.files(here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040/ensemble_8GCMs_ssp370_2011_2040_bioclim"), pattern=".tif", full.names=T)
+climate <- rast(climate)
+names(climate) <- sapply(sapply(sapply(sapply(list.files(here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040/ensemble_8GCMs_ssp370_2011_2040_bioclim"), pattern=".tif", full.names=F), strsplit, split="2040_"), "[", 2), strsplit, split=".tif"), "[", 1)
+
+
+```
+
+#### Prepare data
+```{r}
+aspen.points <-  spatSample(aspen, 1000, method="stratified", replace=FALSE, na.rm=TRUE, 
+    as.raster=FALSE, as.df=TRUE, as.points=TRUE, values=TRUE, cells=FALSE, 
+    xy=TRUE, ext=NULL, warn=TRUE, weights=NULL, exp=5)
+aspen.points <- project(aspen.points, climate)
+
+aspen.dat <- extract(climate, aspen.points,method="simple") %>% dplyr::select(-ID)
+aspen.dat$Occurrence <- aspen.points$SRM_ASPEN_CLASSIFIED_RF_10M_V1_0522
+
+```
+
+```{r}
+splitit <- initial_split(aspen.dat, prop=.7, strata=Occurrence) # partition data to create test and training datasets stratified by the response class
+datz.train <- training(splitit) # create object with training data
+datz.test <- testing(splitit) # create object with testing data
+
+d <- sdmData(formula= Occurrence~., train=datz.train)
+m1 <- sdm(Occurrence~., data=d, methods=c('glm','gam'))
+```
+
+
+
+```{r}
+library(biomod2)
+library(raster)
+```
+
+# References
+
+```{r}
+pre_current<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_current.tif")
+
+```
+
+## getting the presece points for the aspen from raser layer
+```{r}
+
+
+aspen_presence <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
+
+
+```
+
+## BioMod2 all code
+```{r}
+
+
+library(sp)
+library(raster)
+library(ggplot2)
+library(sf)
+library(dplyr)
+library(rgdal)
+library(rgeos)
+install.packages("biomod2",dependencies = TRUE)
+devtools::install_github("biomodhub/biomod2",dependencies=TRUE)
+library(devtools)
+library(roxygen2)
+devtools::install_github("biomodhub/biomod2")
+library(stats)
+library(utils)
+library(methods)
+library(reshape)
+library(reshape2)
+library(abind)
+library(data.table)
+library(foreach)
+library(nnet)
+library(gbm)
+library(mda)
+library(randomForest)
+library(maxnet)
+library(rpart)
+library(MASS)
+library(pROC)
+library(PresenceAbsence)
+library(earth)
+library(Formula)
+library(plotmo)
+library(car)
+
+library(caret)
+library(dismo)  
+library(Hmisc)  
+  
+library(gam)
+library(splines)
+library(mgcv)
+library(rasterVis)
+library(iterators)
+library(parallel)
+##suggested Hmisc, gam, mgcv, car, caret, dismo, ENMeval, doParallel,rasterVis, ggpubr, testthat, knitr
+##Presence data
+DataAspen <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
+head(DataAspen)
+##Env data projection of wgs1984 (uniform to aspen presence data)#current predictor
+try1<-raster("C:/Users/paude/Downloads/ele/IND_msk_alt.gri")
+try2<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_current.tif")
+Env_1980 <- projectRaster(try2,crs=crs(try1))
+
+env<-stack(Env_1980)
+
+
+##Env data projection of wgs1984 #2040
+
+try3<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_370_2040.tif")
+Env_2040<-projectRaster(try3,crs=crs(try1))
+env_2040<-stack(Env_2040)
+##Env data projection of wgs1984 #2070
+try4<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_370_2070.tif")
+Env_2070<-projectRaster(try4,crs=crs(try1))
+env_2070<-stack(Env_2070)
+##Env data projection of wgs1984 #2100
+try5<-raster::stack("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/Joshenvdata/predictors_370_2100.tif")
+Env_2100<-projectRaster(try5,crs=crs(try1))
+env_2100<-stack(Env_2100)
+##
+
+DataAspen <- read.csv("C:/Users/paude/OneDrive - Colostate/Postdoc_CSU/Data/aspen_thinned_1t.csv")
+
+head(DataAspen)
+
+myRespName <- "Aspen"
+myResp <- as.numeric(DataAspen[,myRespName])
+myRespXY <- DataAspen[,c("longitude","lattitude")]
+
+myExpl=env
+library(raster)
+library(biomod2)
+
+
+myBiomodData <- BIOMOD_FormatingData(resp.var = myResp,
+                                     expl.var = myExpl,
+                                     resp.xy = myRespXY,
+                                     resp.name = myRespName,
+                                     PA.nb.rep = 1,
+                                     PA.nb.absences = 1000,
+                                     PA.strategy = 'random')
+
+myBiomodOption <- BIOMOD_ModelingOptions()
+
+Aspen_models <-
+  BIOMOD_Modeling(
+    bm.format = myBiomodData,
+    models = c("GLM", "GBM", "RF"),
+    bm.options = myBiomodOption,
+    nb.rep = 2,
+    data.split.perc = 80,
+    var.import = 3,
+    modeling.id = 'demo1'
+  )
+Aspen_models
+get_variables_importance(Aspen_models,as.data.frame=TRUE)
+
+myBiomodModelOut <- BIOMOD_Modeling(bm.format = myBiomodData,
+                                    modeling.id = 'AllModels',
+                                    models = c('RF', 'GLM'),
+                                    bm.options = myBiomodOption,
+                                    nb.rep = 2,
+                                    data.split.perc = 80,
+                                    metric.eval = c('TSS','ROC'),
+                                    var.import = 3,
+                                    do.full.models = FALSE,
+                                    seed.val = 42)
+myBiomodModelOut
+get_variables_importance(myBiomodModelOut,as.data.frame=TRUE)
+
+
+
+myBiomodEM <- BIOMOD_EnsembleModeling(
+modeling.output = myBiomodModelOut,
+chosen.models = 'all',
+em.by='all',
+eval.metric = c('TSS'),
+eval.metric.quality.threshold = c(0.7),
+prob.mean = T,
+prob.cv = T,
+prob.ci = T,
+prob.ci.alpha = 0.05,
+prob.median = T,
+committee.averaging = T,
+prob.mean.weight = T,
+prob.mean.weight.decay = 'proportional' )
+
+myBiomodProj <- BIOMOD_Projection(
+modeling.output = myBiomodModelOut,
+new.env = myExpl,
+proj.name = 'current',
+selected.models = 'all',
+binary.meth = 'TSS',
+compress = 'xz',
+clamping.mask = F,
+output.format = '.grd')
+
+
+myBiomodEF <- BIOMOD_EnsembleForecasting(
+EM.output = myBiomodEM,
+projection.output = myBiomodProj)
+
+
+```
+
+
+```{r}
+myBiomodProjFuture_2040 <- BIOMOD_Projection(
+modeling.output = myBiomodModelOut,
+new.env = env_2040_stack,
+proj.name = 'future',
+selected.models = 'all',
+binary.meth = 'TSS',
+compress = 'xz',
+clamping.mask = T,
+output.format = '.grd')
+
+myBiomodProjFuture_2070 <- BIOMOD_Projection(
+modeling.output = myBiomodModelOut,
+new.env = env_2070_stack,
+proj.name = 'future_2070',
+selected.models = 'all',
+binary.meth = 'TSS',
+compress = 'xz',
+clamping.mask = T,
+output.format = '.grd')
+
+myBiomodProjFuture_2100 <- BIOMOD_Projection(
+modeling.output = myBiomodModelOut,
+new.env = env_2100_stack,
+proj.name = 'future_2100',
+selected.models = 'all',
+binary.meth = 'TSS',
+compress = 'xz',
+clamping.mask = T,
+output.format = '.grd')
+
+###
+myBiomodEF <- BIOMOD_EnsembleForecasting(
+EM.output = myBiomodEM,
+projection.output = myBiomodProjFuture_2040)
+
+myBiomodEF <- BIOMOD_EnsembleForecasting(
+EM.output = myBiomodEM,
+projection.output = myBiomodProjFuture_2070)
+
+myBiomodEF <- BIOMOD_EnsembleForecasting(
+EM.output = myBiomodEM,
+projection.output = myBiomodProjFuture_2100)
+
+
+
+
+
+
+
+
+
+
+```
+
+
+
+#### Multicollinearity check
+```{r}
+library (raster)
+library(usdm)
+
+myExpl
+v1 = vifstep(myExpl, th=10 ) 
+v2 = vifcor(myExpl, th=0.9)
+v1
+v2
+
+```
+##Stacking Raster layers
+library(raster)
+library(rgdal)
+Asha_current<-raster("C:/Users/paude/Desktop/current_projection/Current_projection.grd")
+
