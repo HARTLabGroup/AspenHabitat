@@ -1,0 +1,1058 @@
+---
+title: " "
+author: " "
+email: " "
+date: " "
+output: 
+  bookdown::html_document2:
+    code_folding: hide
+    toc: TRUE
+    toc_depth: 4
+    toc_float: TRUE
+    collapsed: FALSE
+    theme: spacelab
+    fig_caption: TRUE
+    number_sections: FALSE
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = F,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 300,
+	progress = FALSE,
+	cache = FALSE,
+	fig.align="center",
+	fig.width=7
+)
+
+
+set.seed(513)
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+options(timeout=60*30) #timeout downloads that last longer than 30 minutes
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  knitr, # markdown documents
+  flextable, # plot tables
+  bookdown, # figure numbering in markdown
+  here, # easy file structure
+  tidyverse, # data manipulation
+  ggplot2, # figures
+  patchwork, # multiple figures
+  grid, # multiple figures
+  gridExtra,
+  ggsci, # color palettes
+  colorspace, # color palettes
+  RColorBrewer, # color palettes
+  ggcorrplot, # plot correlation between variables
+  sf, # spatial data (new pkg)
+  terra, # raster data
+  rgdal,
+  raster, # (old pkg)
+  rasterVis,
+  tidyterra, #tidyverse extension to spatial data
+  tmap, # easy plotting of maps
+  terrainr, # elevation data
+  spatialEco, # hli, tpi
+  parallel,
+  FNN,
+  maptools,
+  rgeos,
+  elevatr, 
+  spatialRF, # modeling
+  fuzzySim, # variable selection
+) 
+
+cores <- parallel::detectCores() # Set number of cores for parallel processing
+
+# Set custom plotting theme
+theme_new <- function(base_size = 9,base_family = "Helvetica"){
+  theme_classic(base_size = base_size, base_family = base_family) %+replace%
+    theme(
+      axis.line.x = element_line(color="black", size = 0.25),
+      axis.line.y = element_line(color="black", size = 0.25),
+      axis.title = element_text(size = 9),
+      axis.text = element_text(colour="black", size=8),
+      legend.key=element_rect(colour=NA, fill =NA),
+      panel.grid = element_blank(),   
+      plot.background = element_rect(fill = NA, colour = NA),
+      panel.border = element_rect(fill = NA, colour = NA),
+      panel.background = element_rect(fill = "white", colour = "black"), 
+      strip.background = element_rect(fill = "white"),
+      strip.text = element_text(size = 9)
+      
+    )
+}
+theme_set(theme_new())
+
+
+# Set directory structure for project
+dir.create(here("Data"), showWarnings = FALSE)
+dir.create(here("Data", "Spatial"), showWarnings = FALSE)
+dir.create(here("Results"), showWarnings = FALSE)
+dir.create(here("Results", "Figures"), showWarnings = FALSE)
+```
+
+# Introduction
+
+# Methods
+
+## Study area
+
+Our study area consists of the Southern Rocky Mountains Ecoregion (SRME), an area of approximately 204,630 km2 that extends from southern Wyoming to northern New Mexico (FIGURE).  The SRME region consists of mountainous topography with elevation ranging from 1125 m asl to above 4389 m asl.
+
+[Climate]
+
+[Forests]
+
+```{r DL_ecoregions}
+temp <- here("Data", "Spatial", "Ecoregions","us_eco_l3.zip")
+if(!file.exists(temp)){
+download.file("https://gaftp.epa.gov/EPADataCommons/ORD/Ecoregions/us/us_eco_l3.zip", temp, mode="wb")
+unzip(temp, exdir=here("Data", "Spatial", "Ecoregions"))
+}
+```
+
+## Species occurrence data
+
+Our species presence data are derived from Cook et al. (in prep), which is based on high resolution (10 m) imagery analysis collected from Sentinel-2 on and photo interpretation of aspen presence from year 2018. Of the more than 98 million pixels  with aspen present, we randomly selected 1,000 pixels. To minimize the potential effects of spatial autocorrelation all samples were separated by a distance of at least 1 kilometer. We also did the same process to randomly select 1000 aspen absence pixels.
+
+```{r DL_aspen}
+dir.create(here("Data", "Spatial", "Aspen"), showWarnings = FALSE)
+temp <- here("Data", "Spatial", "Aspen", "SRM_ASPEN_CLASSIFIED_RF_10M_V1_0223.tif", mode="wb")
+if(!file.exists(temp)){
+download.file("https://1drv.ms/u/s!Aq4s9rj0qHBilL4B4PH1amvdUoiLyg?e=jHRUWI", temp )
+}
+```
+
+## Predictor variables
+
+#### Soils
+
+We also included soil properties in our models of aspen habitat suitability. Specifically, we obtained 30-m probabilistic maps of soil properties, including soil pH, percentage of clay, and saturated soil water content from the POLARIS database [@chaney2019] . These soil variables were further resampled to match with resolution of climate data upscaling to 250 m. As mentioned in Alban, 1982; Goebes et al., 2019; Ste-Marie et al., 2007;  and Woldeselassie et al., 2012, we considered soil variables from the depth of 5-15 cm that lies within the critical depth range (0-20 cm) in determining the soil edaphic conditions. Therefore, within this range of depth, soil properties are found to influence overstory and understory vegetation including aspen.
+
+```{r DL_soils}
+#SRM %>% st_transform(crs=4326) %>% st_bbox --> lat: 35-43; lon:103-110 
+lons <- c("110-109", "109-108", "108-107", "107-106", "106-105", "105-104", "104-103")
+lats <- c("3536", "3637", "3738", "3839","3940", "4041", "4142", "4243")
+
+if(!file.exists(here("Data","Spatial", "Soils"))){
+  dir.create(here("Data","Spatial", "Soils"), showWarnings = FALSE)
+
+ 
+  # download mean pH of top 5-15 cm
+  for(j in lons){
+    for(k in lats){
+      temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanPh_5_15.tif")
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/ph/mean/5_15/lat",   k, "_lon-", j, ".tif"), temp, mode="wb")
+    }
+  }
+  
+  # Merge mean pH files
+  ph.files <- list.files(path=here("Data","Spatial", "Soils"), pattern="meanPh_5_15.tif", full.names=T)
+  ph.rast <- lapply(ph.files,FUN=rast)
+  ph.rast <- sprc(ph.rast)
+  ph.merge <- merge(ph.rast, first=T)
+  writeRaster(ph.merge, here("Data","Spatial", "Soils", "meanPh_5_15-SRM.tif"))
+  
+  # download mean percent clay of top 5-15 cm
+  for(j in lons){
+    for(k in lats){
+      temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanClay_5_15.tif")
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/clay/mean/5_15/lat"  , k, "_lon-", j, ".tif"), temp, mode="wb")
+    }
+  }
+  
+  # Merge mean clay files
+  clay.files <- list.files(path=here("Data", "Spatial", "Soils"), pattern="meanClay_5_15.tif",   full.names=T)
+  clay.rast <- lapply(clay.files,FUN=rast)
+  clay.rast <- sprc(clay.rast)
+  clay.merge <- merge(clay.rast, first=T)
+  writeRaster(clay.merge, here("Data", "Spatial", "Soils", "meanClay_5_15-SRM.tif"))
+
+### download mean percent theta_s (saturated soil water content) of top 5-15 cm
+  for(j in lons){
+    for(k in lats){
+      temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meantheta_s_5_15.tif")
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/theta_s/mean/5_15/lat"  , k, "_lon-", j, ".tif"), temp, mode="wb")
+    }
+  }
+  
+  # Merge theta_s files
+  theta_s.files <- list.files(path=here("Data", "Spatial", "Soils"), pattern="meantheta_s_5_15.tif",   full.names=T)
+  theta_s.rast <- lapply(theta_s.files,FUN=rast)
+  theta_s.rast <- sprc(theta_s.rast)
+  theta_s.merge <- merge(theta_s.rast, first=T)
+  writeRaster(theta_s.merge, here("Data", "Spatial", "Soils", "meantheta_s_5_15-SRM.tif"),overwrite=T)
+  
+  ##download mean percent om (organic matter) of top 5-15 cm
+  for(j in lons){
+    for(k in lats){
+      temp <- paste0(here("Data","Spatial", "Soils", "lat"), k,"_lon-", j, "_meanom_5_15.tif")
+      download.file(paste0("http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/om/mean/5_15/lat"  , k, "_lon-", j, ".tif"), temp, mode="wb")
+    }
+  }
+  
+ # Merge om files
+  om.files <- list.files(path=here("Data", "Spatial", "Soils"), pattern="meanom_5_15.tif",   full.names=T)
+  om.rast <- lapply(om.files,FUN=rast)
+  om.rast <- sprc(om.rast)
+  om.merge <- merge(om.rast, first=T)
+  writeRaster(om.merge, here("Data", "Spatial", "Soils", "meanom_5_15-SRM.tif"))
+}
+```
+
+#### DEM
+
+We obtained a 30 m resolution digital elevation model (DEM) from the USGS. For a strong prediction of the suitability of the aspen habitat in the SRME, we included the derivative variables, heat load index (HLI) and topographic surface index (THSI) in our model. The R spatialEco package was used to derive the heat load index from dem which is based on McCune, 2007; McCune and Keon, 2002. HLI was calculated in R using the package spatialEco
+
+```{r DL_DEM}
+if(!file.exists(here("Data", "Spatial","DEM"))){
+  
+  dir.create(here("Data", "Spatial","DEM"), showWarnings = FALSE)
+  
+  SRM <- st_read(here("Data", "Spatial", "Ecoregions",
+"us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=5071) %>% st_buffer(20000)
+
+  # 30 m 
+  dem <- get_tiles(data=SRM, output_prefix = here("Data", "Spatial", "DEM", "DEM30"), services="elevation",   resolution=30)
+dem.rast <- lapply(dem$elevation,FUN=rast)
+  for(j in 2:length(dem.rast)){dem.rast[[j]] <-  terra::project(dem.rast[[j]], dem.rast[[1]], align=T)}
+  dem.sprc <- sprc(dem.rast)
+  dem.mosaic <- mosaic(dem.sprc)
+  writeRaster(dem.mosaic, here("Data", "Spatial", "DEM", "DEM30-mosaic.tif"), overwrite=T)
+  
+ # 90 m 
+  dem <- get_tiles(data=SRM, output_prefix = here("Data", "Spatial", "DEM", "DEM90"), services="elevation",   resolution=90)
+dem.rast <- lapply(dem$elevation,FUN=rast)
+  for(j in 2:length(dem.rast)){dem.rast[[j]] <-  terra::project(dem.rast[[j]], dem.rast[[1]], align=T)}
+  dem.sprc <- sprc(dem.rast)
+  dem.mosaic <- mosaic(dem.sprc)
+  writeRaster(dem.mosaic, here("Data", "Spatial", "DEM", "DEM90-mosaic.tif"), overwrite=T)
+   
+  
+  # 250 m 
+  dem <- get_tiles(data=SRM, output_prefix = here("Data", "Spatial", "DEM", "DEM250"), services="elevation",   resolution=250)
+  dem.rast <- lapply(dem$elevation,FUN=rast)
+  writeRaster(dem.rast[[1]], here("Data", "Spatial", "DEM", "DEM250.tif"), overwrite=T)
+}
+```
+
+```{r Calc_HLI, eval=F}
+# Heat load index
+if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-HLI.tif"))){
+  dem.mosaic <- rast(here(here("Data","Spatial", "DEM", "DEM30-mosaic.tif")))
+  hli.rast <- hli(dem.mosaic, force.hemisphere = "northern")
+  writeRaster(hli.rast, here("Data","Spatial", "DEM", "DEM30-mosaic-HLI.tif"))
+}
+```
+
+```{r Calc_TPI3, eval=F}
+# Topographic position index 3 cell neighborhood
+if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-TPI3.tif"))){
+  dem.mosaic <- rast(here(here("Data","Spatial", "DEM", "DEM30-mosaic.tif")))
+  tpi.rast <- tpi(dem.mosaic, scale=3)
+  writeRaster(tpi.rast, here("Data","Spatial", "DEM", "DEM30-mosaic-TPI3.tif"))
+}
+```
+
+```{r Calc_TPI15, eval=F}
+# Topographic position index 15 cell neighborhood
+if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-TPI15.tif"))){
+  dem.mosaic <- rast(here(here("Data","Spatial", "DEM", "DEM30-mosaic.tif")))
+  tpi.rast <- tpi(dem.mosaic, scale=15)
+  writeRaster(tpi.rast, here("Data","Spatial", "DEM", "DEM30-mosaic-TPI15.tif"))
+}
+```
+
+#### Climate data
+
+We obtained gridded climate data from the AdaptWest database, which provides downscaled historical climate data from PRISM and future climate data from WorldClim. Both datasets are downscaled to 1 km using the software ClimateNA. Specifically, to represent historical climate conditions we obtained normals for the 1981-2010 period.
+
+```{r DL_climatedata, eval=F}
+dir.create(here("Data","Spatial", "Climate"))
+if(!file.exists(here("Data","Spatial", "Climate", "ClimateNA"))){
+  dir.create(here("Data","Spatial", "Climate", "ClimateNA"), showWarnings = FALSE)
+  
+  # Climate normals
+  ## Monthly variables
+  temp <- here("Data","Spatial", "Climate", "ClimateNA", "Normal_1981_2010_monthly.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_monthly.zip", temp, mode="wb")
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  
+  ## Bioclimatic variables
+  temp <- here("Data","Spatial", "Climate", "ClimateNA", "Normal_1981_2010_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp, mode="wb")
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  
+  ## 2011-2040 Emission Scenario SSP2-4.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2011_2040_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2011_2040_bioclim.zip", temp, mode="wb")
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  
+  ## 2040-2070 Emission Scenario SSP2-4.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2041_2070_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2041_2070_bioclim.zip", temp, mode="wb")
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  
+  ## 2071-2100 Emission Scenario SSP2-4.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2071_2100_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2071_2100_bioclim.zip", temp, mode="wb")
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+ 
+  ## 2011-2040 Emission Scenario SSP3-7.0
+  temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2011_2040_bioclim.zip", temp )
+  unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+  
+  temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2011_2040_monthly.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2011_2040_monthly.zip", temp )
+  unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+
+  ## 2040-2070 Emission Scenario SSP3-7.0
+  temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2041_2070_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2041_2070_bioclim.zip", temp )
+  unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+  
+   temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2041_2070_monthly.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2041_2070_monthly.zip", temp )
+  unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+
+  ## 2071-2100 Emission Scenario SSP3-7.0
+  temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2071_2100_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2071_2100_bioclim.zip", temp )
+  unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+  
+  temp <- here("Data/Spatial/Climate/CLimateNA/ensemble_8GCMs_ssp370_2071_2100_monthly.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp370_2071_2100_monthly.zip", temp )
+  unzip(temp, exdir=here("Data/Spatial/Climate/CLimateNA"))
+  
+   ##2011-2040 Emission Scenario SSP5-8.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2011_2040_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2011_2040_bioclim.zip", temp, mode="wb")
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+ 
+  ##2041-2070 Emission Scenario SSP5-8.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2041_2070_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2041_2070_bioclim.zip", temp, mode="wb")
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  
+  ##2071-2100 Emission Scenario SSP5-8.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2071_2100_bioclim.zip")
+  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2071_2100_bioclim.zip", temp, mode="wb")
+  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+}
+```
+
+```{r Calc_Derived_Climate_Variables, eval=F}
+dir.create(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"))
+monthly.climate.rasters <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010/Normal_1981_2010_monthly"), full.names=T))
+
+monthly.climate.rasters <- crop(monthly.climate.rasters, SRM)
+names(monthly.climate.rasters) <- do.call(c, strsplit(sapply(strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010/Normal_1981_2010_monthly"), full.names=F), split="Normal_1981_2010_"), "[", 2), split=".tif"))
+
+bioclimate.rasters <- rast(list.files(here("Data/Spatial/Climate/ClimateNA/Normal_1981_2010/Normal_1981_2010_bioclim"), pattern=".tif", full.names=T))
+names(bioclimate.rasters) <- sapply(strsplit(do.call(c, strsplit(list.files(here("Data/Spatial/Climate/ClimateNA/Normal_1981_2010/Normal_1981_2010_bioclim"), pattern=".tif", full.names=F), split=".tif")), split="Normal_1981_2010_"), "[", 2)
+
+SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>%  st_transform(crs(monthly.climate.rasters))
+monthly.climate.rasters <- terra::crop(monthly.climate.rasters, SRM)
+bioclimate.rasters <- terra::crop(bioclimate.rasters, SRM)
+
+#ADI 
+ADI <- (bioclimate.rasters[['DD5']]^0.5)/bioclimate.rasters[['MAP']]
+writeRaster(ADI, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_ADI.tif")))
+
+#GSP
+GSP <- sum(monthly.climate.rasters[[paste0("PPT",c("04", "05", "06", "07","08","09"))]])
+writeRaster(GSP, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_GSP.tif")))
+
+#PRATIO
+PRATIO <- GSP/bioclimate.rasters[["MAP"]]
+writeRaster(PRATIO, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_PRATIO.tif")))
+
+#GSPDD5
+GSPDD5 <- GSP/bioclimate.rasters[["DD5"]]
+writeRaster(GSPDD5, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_GSPDD5.tif")))
+
+#TMAX 
+TMAX <- max(monthly.climate.rasters[[paste0("Tmax",c("04", "05", "06", "07","08","09"))]])
+writeRaster(TMAX, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_TMAX.tif")), overwrite=T)
+
+
+select.scenario <- "ssp370"
+select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
+for(select.year in select.years.all){
+  monthly.climate.rasters <- rast(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_monthly"), full.names=T))
+  names(monthly.climate.rasters) <- sapply(strsplit(do.call(c,strsplit(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_monthly"), full.names=F), split=".tif")),split=paste0("ensemble_8GCMs_", select.scenario, select.year, "_")), "[", 2)
+
+ bioclimate.rasters <- rast(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_bioclim"), full.names=T))
+  names(bioclimate.rasters) <- sapply(strsplit(do.call(c,strsplit(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_bioclim"), full.names=F), split=".tif")),split=paste0("ensemble_8GCMs_", select.scenario, select.year, "_")), "[", 2)
+  
+  SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>%  st_transform(crs(monthly.climate.rasters))
+
+
+  monthly.climate.rasters <- crop(monthly.climate.rasters, SRM)
+  bioclimate.rasters <- crop(bioclimate.rasters, monthly.climate.rasters)
+  
+  #ADI 
+  ADI <- (bioclimate.rasters[['DD5']]^0.5)/bioclimate.rasters[['MAP']]
+  writeRaster(ADI, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_ADI.tif"), overwrite=T)
+
+  
+  #GSP
+  GSP <- sum(monthly.climate.rasters[[paste0("PPT",c("04", "05", "06", "07","08","09"))]])
+  writeRaster(GSP, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_GSP.tif"), overwrite=T)
+
+  #PRATIO
+  PRATIO <- GSP/bioclimate.rasters[["MAP"]]
+  writeRaster(PRATIO, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_PRATIO.tif"), overwrite=T)
+  
+  #GSPDD5
+  GSPDD5 <- GSP/bioclimate.rasters[["DD5"]]
+  writeRaster(GSPDD5, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_GSPDD5.tif"), overwrite=T)
+  
+  #TMAX 
+  TMAX <- max(monthly.climate.rasters[[paste0("Tmax",c("04", "05", "06", "07","08","09"))]])
+  writeRaster(TMAX, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_TMAX.tif"), overwrite=T)
+}
+
+```
+
+## Data processing
+
+### Downscaling
+
+We downscaled all climatic variables from 1 km resolution to 250 m using gradient and inverse distance squared (GIDS) interpolation (Flint and Flint, 2012; Nalder and Wein, 1998), following methods outlined in Rodman et al., 2020.
+
+```{r Downscale, eval=F}
+source(here("Code", "GIDS-Downscaling-SJH.R"))
+
+# Set desired projection
+proj.proj <- "+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+
+# Import study area boundary
+study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(proj.proj)) %>% st_buffer(20000)
+
+# Import template for downscaling
+template <- rast(here("Data", "Spatial", "DEM", "DEM250.tif"))
+template <- template %>% terra::project(proj.proj)
+template<- template %>% crop(study.area)
+ 
+# Warning message happens because number of raster cells is not evenly divisible by number of cores on PC
+dir.create(here("Data", "Spatial", "Downscaled"), showWarnings = FALSE)
+select.climate.variables <-c("TD", "GSP", "MCMT", "PPT_sm", "MAR", "RH")
+
+select.derived.climate.variables <-c( "PRATIO", "GSPDD5", "ADI", "GSP")
+
+### NORMALS
+for(j in select.climate.variables){
+  if(!file.exists(paste0(here("Data", "Spatial", "Downscaled"), "/Normal_1981_2010_", j, "-downscaled.tif"))){
+    ptm <- proc.time()
+    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "Normal_1981_2010", "Normal_1981_2010_bioclim"), "/Normal_1981_2010_", j, ".tif"))
+    clim <- clim %>% terra::project(proj.proj)
+    clim <- clim %>% crop(study.area)
+  
+    if(j ==select.climate.variables[1]){template_coarse <- terra::project(template ,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+    
+    ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim,
+                                        ancillary_list = list(template_coarse, template), 
+                                        clip_dists = c(20000, 5000, 500))
+  
+    writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled"), "/Normal_1981_2010_", j, "-downscaled.tif"), overwrite=T)
+    rm(ds_layer) # remove 
+    gc() # clean up garbage (sometimes this helps)
+    print(j) # print j so we know how far along our code is
+    time <- proc.time() - ptm
+    print(time[3]/60) # print time for each iteration 
+  }
+
+}
+
+
+for(j in select.derived.climate.variables){
+  if(!file.exists(paste0(here("Data", "Spatial", "Downscaled"), "/Normal_1981_2010_", j, "-downscaled.tif"))){
+    ptm <- proc.time()
+    clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "Derived"), "/Normal_1981_2010_", j, ".tif"))
+    clim <- clim %>% terra::project(proj.proj)
+    clim <- clim %>% crop(study.area)
+  
+    if(j ==select.climate.variables[1]){template_coarse <- terra::project(template ,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+    
+    ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim,
+                                        ancillary_list = list(template_coarse, template), 
+                                        clip_dists = c(20000, 5000, 500))
+  
+    writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled"), "/Normal_1981_2010_", j, "-downscaled.tif"), overwrite=T)
+    rm(ds_layer) # remove 
+    gc() # clean up garbage (sometimes this helps)
+    print(j) # print j so we know how far along our code is
+    time <- proc.time() - ptm
+    print(time[3]/60) # print time for each iteration 
+  }
+
+}
+
+
+
+select.scenarios <- "ssp370"
+select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
+for(j in select.climate.variables){
+  for(select.years in select.years.all){
+    if(!file.exists(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenarios, select.years, j, "-downscaled.tif"))){
+      ptm <- proc.time()
+      clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA"), "/ensemble_8GCMs_", select.scenarios, select.years, "/", "ensemble_8GCMs_", select.scenarios, select.years, "_bioclim/", "ensemble_8GCMs_", select.scenarios, select.years,"_", j, ".tif"))
+      clim <- clim %>% terra::project(proj.proj)
+      clim <- clim %>% crop(study.area)
+  
+      if(j ==select.climate.variables[1]){template_coarse <- terra::project(template ,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+    
+      ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim,
+                                        ancillary_list = list(template_coarse, template), 
+                                        clip_dists = c(20000, 5000, 500))
+  
+      writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenarios, select.years, "_", j, "-downscaled.tif"))
+      rm(ds_layer) # remove 
+      gc() # clean up garbage (sometimes this helps)
+      print(j) # print j so we know how far along our code is
+      time <- proc.time() - ptm
+      print(time[3]/60) # print time for each iteration
+    }
+  }
+
+}
+
+select.scenarios <- "ssp370"
+select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
+for(j in select.derived.climate.variables){
+  for(select.years in select.years.all){
+    if(!file.exists(paste0(here("Data", "Spatial", "Downscaled"), "/", select.years, j, "-downscaled.tif"))){
+      ptm <- proc.time()
+      clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "Derived"), "/", select.scenarios, select.years, "_", j,  ".tif"))
+      clim <- clim %>% terra::project(proj.proj)
+      clim <- clim %>% crop(study.area)
+  
+     if(j ==select.climate.variables[1]){template_coarse <- terra::project(template ,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+    
+      ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim, ancillary_list = list(template_coarse, template), clip_dists = c(20000, 5000, 500))
+  
+     writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenarios, select.years,"_", j, "-downscaled.tif"))
+     rm(ds_layer) # remove 
+     gc() # clean up garbage (sometimes this helps)
+     print(j) # print j so we know how far along our code is
+     time <- proc.time() - ptm
+     print(time[3]/60) # print time for each iteration 
+    }
+  }
+}
+
+
+```
+
+### Resample
+
+```{r Resample, eval=F}
+aspen <- rast(here("Data", "Spatial", "Aspen", "srme_skcv_probability_mosaic.tif"))
+aspen90 <- aggregate(aspen, fact=9, fun="mean", cores=cores-1, filename=here("Data", "Spatial", "Aspen", "srme_skcv_probability_mosaic-90.tif"),overwrite=T)
+
+
+#aggregate 
+if(!file.exists(filename=here("Data", "Spatial", "Soils", "Soils90.tif"))){
+  ph <- rast(here("Data", "Spatial", "Soils", "meanPh_5_15-SRM.tif"))  
+  clay <- rast(here("Data", "Spatial", "Soils", "meanClay_5_15-SRM.tif"))
+  om <- rast(here("Data", "Spatial", "Soils", "meanom_5_15-SRM.tif")) 
+  theta_s <- rast(here("Data", "Spatial", "Soils", "meantheta_s_5_15-SRM.tif")) 
+  soil <- c(ph, clay, om, theta_s) %>% terra::project(aspen90) %>% aggregate(soil, fact=3, fun="mean",cores=cores-1)
+  names(soil) <- c("pH", "clay", "om", "thetas")
+  soil.re <- resample(soil, aspen90, method="near", threads=T, filefname=here("Data", "Spatial", "Soils", "Soils90.tif"), overwrite=TRUE)
+}
+
+#topographic data
+if(!file.exists(filename=here("Data", "Spatial", "DEM", "Topo90.tif"))){
+  tpi3 <- rast(here("Data", "Spatial", "DEM", "DEM30-mosaic-TPI3.tif")) 
+  tpi15 <- rast(here("Data", "Spatial", "DEM", "DEM30-mosaic-TPI15.tif"))
+  hli <- rast(here("Data", "Spatial", "DEM", "DEM30-mosaic-HLI.tif"))
+  topo <- c(tpi3, tpi15, hli) %>% terra::project(crs(aspen)) %>% aggregate(soil, fact=3, fun="mean",cores=cores-1)
+  names(topo) <- c("tpi3", "tpi15", "hli")
+  topo.re <- resample(topo, aspen, method="average", threads=T, filename=here("Data", "Spatial", "DEM", "Topo90.tif"),overwrite=TRUE)
+}
+
+# climate data
+if(!file.exists(filename=here("Data", "Spatial", "Downscaled", "Normals90.tif"))){
+  climate <- rast(list.files(here("Data", "Spatial", "Downscaled"), pattern="Normal", full.names=T))
+  names(climate) <- sapply(sapply(sapply(sapply(list.files(here("Data", "Spatial", "Downscaled"), pattern="Normal", full.names=T), strsplit, split="2010_"), "[", 2), strsplit, split="-downscaled.tif"), "[", 1)
+  climate.re <- resample(climate, aspen, method="near", threads=T, filename=here("Data", "Spatial", "Downscaled", "Normals90.tif"),overwrite=TRUE)
+}
+
+# climate 2040 data
+if(!file.exists(filename=here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2011_2040_90.tif"))){
+  climate <- list.files(here("Data", "Spatial", "Downscaled"), pattern="ensemble_8GCMs_ssp370_2011_2040_", full.names=T)
+  climate <- rast(climate) %>% terra::project(crs(aspen90))
+  names(climate) <- sapply(sapply(sapply(sapply(list.files(here("Data", "Spatial", "Downscaled"), pattern="ensemble_8GCMs_ssp370_2011_2040_", full.names=T), strsplit, split="ensemble_8GCMs_ssp370_2011_2040_"), "[", 2), strsplit, split="-downscaled.tif"), "[", 1)
+  climate.re <- resample(climate, aspen90, method="near", threads=T, filename=here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2011_2040_90.tif"),overwrite=TRUE)
+}
+
+# climate 2070 data
+if(!file.exists(filename=here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2041_2070_90.tif"))){
+  climate <- list.files(here("Data", "Spatial", "Downscaled"), pattern="ensemble_8GCMs_ssp370_2041_2070_", full.names=T)
+  climate <- rast(climate) %>% terra::project(crs(aspen90))
+  names(climate) <- sapply(sapply(sapply(sapply(list.files(here("Data", "Spatial", "Downscaled"), pattern="ensemble_8GCMs_ssp370_2041_2070_", full.names=T), strsplit, split="ensemble_8GCMs_ssp370_2041_2070_"), "[", 2), strsplit, split="-downscaled.tif"), "[", 1)
+  climate.re <- resample(climate, aspen90, method="near", threads=T, filename=here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2041_2070_90.tif"),overwrite=TRUE)
+}
+
+# climate 2100 data
+if(!file.exists(filename=here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2071_2100_90.tif"))){
+  climate <- list.files(here("Data", "Spatial", "Downscaled"), pattern="ensemble_8GCMs_ssp370_2071_2100_", full.names=T)
+  climate <- rast(climate) %>% terra::project(crs(aspen90))
+  names(climate) <- sapply(sapply(sapply(sapply(list.files(here("Data", "Spatial", "Downscaled"), pattern="ensemble_8GCMs_ssp370_2071_2100_", full.names=T), strsplit, split="ensemble_8GCMs_ssp370_2071_2100_"), "[", 2), strsplit, split="-downscaled.tif"), "[", 1)
+  climate.re <- resample(climate, aspen90, method="near", threads=T, filename=here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2071_2100_90.tif"),overwrite=TRUE)
+}
+```
+
+### Model
+
+```{r RF}
+# Import response variable
+aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
+names(aspen90.prob) <- "aspen.prob"
+aspen90.prob01 <- aspen90.prob
+aspen90.prob01[aspen90.prob01>0]<-1
+names(aspen90.prob01) <- "aspen.presence"
+
+SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
+aspen90.prob <- terra::mask(aspen90.prob, SRM)
+aspen90.prob01 <-terra::mask(aspen90.prob01, SRM)
+
+# Import predictor variables
+topo90 <- rast(here("Data", "Spatial", "DEM", "Topo90.tif"))
+soil90 <- rast(here("Data", "Spatial", "Soils", "Soils90.tif"))
+normals90 <- rast(here("Data", "Spatial", "Downscaled", "Normals90.tif"))
+
+# Compile data
+aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
+aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
+aspen.pts <- extract(normals90, aspen.pts, bind=T)
+aspen.pts <- extract(topo90, aspen.pts, bind=T)
+aspen.pts <- extract(soil90, aspen.pts, bind=T)
+
+# Spatially thin data
+template <- rast(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_GSPDD5.tif")) %>% as.points(na.rm=T) %>% terra::project(crs(aspen90.prob))
+aspen90.1km <- extract(aspen90.prob,template,cells=T) 
+aspen.sample.pts <- aspen.pts %>% as.data.frame() %>% filter(cell %in% aspen90.1km$cell)
+
+dat <- aspen.sample.pts %>% na.omit() 
+dat$aspen.presence.f <- factor(dat$aspen.presence, levels=0:1, labels=c("absence","presence"))
+dat.train <- dat %>% group_by(aspen.presence) %>% sample_n(5000)
+dat.test <- dat %>% filter(!cell %in% dat.train$cell) %>% group_by(aspen.presence)  %>% sample_n(5000)
+
+
+xydat <- dat.train[,c("x", "y")]  %>% as.data.frame()
+distdat <- dist(xydat, method = "euclidean", diag=T, upper=T) %>% as.matrix()
+distthresh <- c(0, 1000, 2500, 5000)
+
+preference.order <- c("ADI",  "PRATIO", "GSPDD5", "GSP", "MCMT", "PPT_sm", "TD","RH", "MAR")
+pred.vars <- spatialRF::auto_cor(x = dat.train[, c(preference.order, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")],cor.threshold = 0.75,preference.order = preference.order) %>% spatialRF::auto_vif(vif.threshold = 5,preference.order = preference.order)
+pred.vars <- pred.vars$selected.variables
+
+# MODEL PRESENECE
+rf.mod.presence <- rf(data=dat.train, dependent.variable.name ="aspen.presence", predictor.variable.names =pred.vars, xy=xydat, distance.matrix = distdat, distance.thresholds = distthresh, n.cores=cores-1)
+
+rf.mod.presence.train <- rf_tuning(model=rf.mod.presence ,repetitions = 1, num.trees = c(500,1000), mtry = c(3,5), min.node.size = c(50,100))
+
+rf.mod.presence.final <- rf(data=dat.train, dependent.variable.name ="aspen.presence", predictor.variable.names =pred.vars, xy=xydat, distance.matrix = distdat, distance.thresholds = distthresh, n.cores=cores-1, ranger.arguments = list(num.trees=500, mtry=3, min.node.size=200), scaled.importance=T)
+
+spatialRF::plot_residuals_diagnostics(rf.mod.presence.final,verbose = FALSE)
+
+rf.mod.presence.final.pred <- predict(rf.mod.presence.final, data=dat.test, type="response")$predictions
+
+rf.mod.pred <- predict(rf.mod.presence.final, data=dat.test, type="response")
+rf.mod.pred<- ifelse(rf.mod.pred$predictions>0.5,1,0) %>% factor(levels=0:1, ordered=T)
+dat.test$aspen.presence <- dat.test$aspen.presence %>% factor(levels=0:1, ordered=T)
+caret::confusionMatrix(data = rf.mod.pred, reference = dat.test$aspen.presence)
+
+data.frame(observed=dat.test$aspen.presence, predicted=rf.mod.pred) %>%  pROC::roc("predicted", "observed") %>% pROC::auc()
+  
+
+x<- plot_response_curves(rf.mod.presence.final,  show.data=T)
+
+
+```
+
+### Predict
+
+```{r}
+# NORMALS
+aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
+aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
+aspen.pts.df$predicted <- NA
+for(j in unique(aspen.pts.df$cut)){
+  aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- predict(rf.mod.presence.final,aspen.pts.df[aspen.pts.df$cut==j, ], type="response")$predictions*1000 %>% round(0)
+  print(j)
+}
+
+aspen90.pred <- aspen90.prob
+aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
+writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_1981-2010.tif"))
+
+
+# Import predictor variables
+topo90 <- rast(here("Data", "Spatial", "DEM", "Topo90.tif"))
+soil90 <- rast(here("Data", "Spatial", "Soils", "Soils90.tif"))
+climate90 <- rast(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2011_2040_90.tif"))
+
+# Compile data
+aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
+aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
+aspen.pts <- extract(climate90, aspen.pts, bind=T)
+aspen.pts <- extract(topo90, aspen.pts, bind=T)
+aspen.pts <- extract(soil90, aspen.pts, bind=T)
+
+aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
+aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
+aspen.pts.df$predicted <- NA
+for(j in unique(aspen.pts.df$cut)){
+  aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- predict(rf.mod.presence.final,aspen.pts.df[aspen.pts.df$cut==j, ], type="response")$predictions*1000 %>% round(0)
+  print(j)
+}
+
+aspen90.pred <- aspen90.prob
+aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
+writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_2011-2040.tif"))
+
+
+# Import predictor variables
+topo90 <- rast(here("Data", "Spatial", "DEM", "Topo90.tif"))
+soil90 <- rast(here("Data", "Spatial", "Soils", "Soils90.tif"))
+climate90 <- rast(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2041_2070_90.tif"))
+
+# Compile data
+aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
+aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
+aspen.pts <- extract(climate90, aspen.pts, bind=T)
+aspen.pts <- extract(topo90, aspen.pts, bind=T)
+aspen.pts <- extract(soil90, aspen.pts, bind=T)
+
+aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
+aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
+aspen.pts.df$predicted <- NA
+for(j in unique(aspen.pts.df$cut)){
+  aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- predict(rf.mod.presence.final,aspen.pts.df[aspen.pts.df$cut==j, ], type="response")$predictions*1000 %>% round(0)
+  print(j)
+}
+
+aspen90.pred <- aspen90.prob
+aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
+writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_2041-2070.tif"))
+
+# Import predictor variables
+topo90 <- rast(here("Data", "Spatial", "DEM", "Topo90.tif"))
+soil90 <- rast(here("Data", "Spatial", "Soils", "Soils90.tif"))
+climate90 <- rast(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2071_2100_90.tif"))
+
+# Compile data
+aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
+aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
+aspen.pts <- extract(climate90, aspen.pts, bind=T)
+aspen.pts <- extract(topo90, aspen.pts, bind=T)
+aspen.pts <- extract(soil90, aspen.pts, bind=T)
+
+aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
+aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
+aspen.pts.df$predicted <- NA
+for(j in unique(aspen.pts.df$cut)){
+  aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- predict(rf.mod.presence.final,aspen.pts.df[aspen.pts.df$cut==j, ], type="response")$predictions*1000 %>% round(0)
+  print(j)
+}
+
+aspen90.pred <- aspen90.prob
+aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
+writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_2071-2100.tif"))
+
+
+predicted_1981.2010 <-rast(here("Data", "Spatial", "predicted_1981-2010.tif"))
+predicted_1981.2010[predicted_1981.2010<500] <- 0
+predicted_1981.2010[predicted_1981.2010>=500] <- 1
+writeRaster(predicted_1981.2010,here("Data", "Spatial", "predicted_1981-2010-binary.tif"), overwrite=T)
+
+predicted_2011.2040 <-rast(here("Data", "Spatial", "predicted_2011-2040.tif"))
+predicted_2011.2040[predicted_2011.2040<500] <- 0
+predicted_2011.2040[predicted_2011.2040>=500] <- 1
+writeRaster(predicted_2011.2040,here("Data", "Spatial", "predicted_2011-2040-binary.tif"), overwrite=T)
+
+predicted_2041.2070 <-rast(here("Data", "Spatial", "predicted_2041-2070.tif"))
+predicted_2041.2070[predicted_2041.2070<500] <- 0
+predicted_2041.2070[predicted_2041.2070>=500] <- 1
+writeRaster(predicted_2041.2070,here("Data", "Spatial", "predicted_2041-2070-binary.tif"), overwrite=T)
+
+predicted_2071.2100 <-rast(here("Data", "Spatial", "predicted_2071-2100.tif"))
+predicted_2071.2100[predicted_2071.2100<500] <- 0
+predicted_2071.2100[predicted_2071.2100>=500] <- 1
+writeRaster(predicted_2071.2100, here("Data", "Spatial", "predicted_2071-2100-binary.tif"), overwrite=T)
+
+```
+
+# References
+
+::: {#refs}
+:::
+
+\newpage
+
+# Supplemental Analyses
+
+## Screening predictor variables
+
+```{r Screen_Climate_Vars}
+# Import response variable
+aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
+names(aspen90.prob) <- "aspen.prob"
+aspen90.prob01 <- aspen90.prob
+aspen90.prob01[aspen90.prob01<0.5]<-0
+aspen90.prob01[aspen90.prob01>=0.5]<-1
+names(aspen90.prob01) <- "aspen.presence"
+
+SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
+aspen90.prob <- terra::mask(aspen90.prob, SRM)
+aspen90.prob01 <-terra::mask(aspen90.prob01, SRM)
+
+# Import predictor variables
+
+topo90 <- rast(here("Data", "Spatial", "DEM", "Topo90.tif"))
+soil90 <- rast(here("Data", "Spatial", "Soils", "Soils90.tif"))
+
+climate.dat.1981_2010 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010", "Normal_1981_2010_bioclim"), pattern=".tif$", full.names = T))
+names(climate.dat.1981_2010) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010", "Normal_1981_2010_bioclim"), pattern=".tif$", full.names = F), split=".tif")), split="Normal_1981_2010_"), "[", 2)
+
+climate.dat2.1981_2010 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="Normal", full.names = T))
+names(climate.dat2.1981_2010) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="Normal", full.names = F), split=".tif")), split="Normal_1981_2010_"), "[",2)
+
+
+
+climate.dat.2011_2040 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2011_2040","ensemble_8GCMs_ssp370_2011_2040_bioclim"), pattern=".tif$", full.names = T))
+names(climate.dat.2011_2040) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2011_2040","ensemble_8GCMs_ssp370_2011_2040_bioclim"), pattern=".tif$", full.names = F), split=".tif")), split="ensemble_8GCMs_ssp370_2011_2040_"), "[", 2)
+
+climate.dat2.2011_2040 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="ssp370_2011_2040_", full.names = T))
+names(climate.dat2.2011_2040) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="ssp370_2011_2040_", full.names = F), split=".tif")), split="ssp370_2011_2040_"), "[",2)
+
+
+
+climate.dat.2041_2070 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2041_2070","ensemble_8GCMs_ssp370_2041_2070_bioclim"), pattern=".tif$", full.names = T))
+names(climate.dat.2041_2070) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2041_2070","ensemble_8GCMs_ssp370_2041_2070_bioclim"), pattern=".tif$", full.names = F), split=".tif")), split="ensemble_8GCMs_ssp370_2041_2070_"), "[", 2)
+
+climate.dat2.2041_2070 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="ssp370_2041_2070_", full.names = T))
+names(climate.dat2.2041_2070) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="ssp370_2041_2070_", full.names = F), split=".tif")), split="ssp370_2041_2070_"), "[",2)
+
+
+climate.dat.2071_2100 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2071_2100","ensemble_8GCMs_ssp370_2071_2100_bioclim"), pattern=".tif$", full.names = T))
+names(climate.dat.2071_2100) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2071_2100","ensemble_8GCMs_ssp370_2071_2100_bioclim"), pattern=".tif$", full.names = F), split=".tif")), split="ensemble_8GCMs_ssp370_2071_2100_"), "[", 2)
+
+climate.dat2.2071_2100 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="ssp370_2071_2100_", full.names = T))
+names(climate.dat2.2071_2100) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="ssp370_2071_2100_", full.names = F), split=".tif")), split="ssp370_2071_2100_"), "[",2)
+
+
+# Compile data
+aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
+aspen.pts <- aspen.pts[sample(1:nrow(aspen.pts), size=10000),]
+aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
+aspen.pts <- extract(topo90, aspen.pts, bind=T)
+aspen.pts <- extract(soil90, aspen.pts, bind=T)
+aspen.pts <- aspen.pts %>% terra::project(climate.dat.1981_2010 )
+
+aspen.pts.1981_2010 <- aspen.pts
+aspen.pts.1981_2010<- extract(climate.dat.1981_2010, aspen.pts.1981_2010, bind=T)
+aspen.pts.1981_2010 <- extract(climate.dat2.1981_2010, aspen.pts.1981_2010, bind=T)
+aspen.pts.1981_2010$year <- "1981-2010"
+
+aspen.pts.2011_2040 <- aspen.pts
+aspen.pts.2011_2040<- extract(climate.dat.2011_2040, aspen.pts.2011_2040, bind=T)
+aspen.pts.2011_2040 <- extract(climate.dat2.2011_2040, aspen.pts.2011_2040, bind=T)
+aspen.pts.2011_2040$year <- "2011-2040"
+
+aspen.pts.2041_2070 <- aspen.pts
+aspen.pts.2041_2070<- extract(climate.dat.2041_2070, aspen.pts.2041_2070, bind=T)
+aspen.pts.2041_2070 <- extract(climate.dat2.2041_2070, aspen.pts.2041_2070, bind=T)
+aspen.pts.2041_2070$year <- "2041-2070"
+
+aspen.pts.2071_2100 <- aspen.pts
+aspen.pts.2071_2100<- extract(climate.dat.2071_2100, aspen.pts.2071_2100, bind=T)
+aspen.pts.2071_2100 <- extract(climate.dat2.2071_2100, aspen.pts.2071_2100, bind=T)
+aspen.pts.2071_2100$year <- "2071-2100"
+
+dat.1981_2010 <- aspen.pts.1981_2010  %>% as.data.frame() %>% na.omit()
+dat.2011_2040 <- aspen.pts.2011_2040  %>% as.data.frame() %>% na.omit()
+dat.2041_2070 <- aspen.pts.2041_2070 %>% as.data.frame() %>% na.omit()
+dat.2071_2100 <- aspen.pts.2071_2100  %>% as.data.frame() %>% na.omit()
+
+dat <- do.call(rbind, list(dat.1981_2010, dat.2011_2040, dat.2041_2070, dat.2071_2100))
+
+climate.varz <- c("TMAX","ADI","TD","PRATIO","FFP","GSPDD5","Tave_wt","bFFP","CMD","CMI","DD_0","DD_18","DD1040","DD18","DD5","eFFP","EMT","Eref","EXT","GSP","MAP","MAR","MAT","MCMT","MSP","MWMT","NFFD","PAS","PPT_at","PPT_sm","PPT_sp","PPT_wt","RH","SHM","Tave_at","Tave_sm","Tave_sp")
+
+dat2 <- dat[,c(climate.varz,"year", "aspen.presence")]  %>% group_by(year, aspen.presence) %>% summarise(across(everything(),mean), .groups = 'drop') %>% as.data.frame() %>% filter(aspen.presence==1)
+
+dat[,c(climate.varz,"year")] %>% filter(year=="1981-2010") %>% select(-year) %>% cor() %>% round(digits=2) %>% write.csv(here("Results", "climate-var-cor.csv"))
+
+dat.dif <- dat[,c(climate.varz ,"year", "aspen.presence")]  
+dat.dif[,c(climate.varz )] <- dat.dif[,c(climate.varz)] %>% scale()
+dat.dif <- dat.dif %>% group_by(year, aspen.presence) %>% summarise(across(everything(),mean), .groups = 'drop') %>% as.data.frame() %>% filter(year=="1981-2010") %>% select(-year,-aspen.presence)
+dat.dif <- (dat.dif[1,]- dat.dif[2,]) %>% t() %>% as.data.frame()
+dat.dif$abs <- abs(dat.dif[,1] )
+
+dat.dif[order(dat.dif$abs, decreasing = T),]
+dat.dif$var <- row.names(dat.dif)
+
+library(pROC)
+results <- data.frame(var=climate.varz, AUC=NA)
+for(j in climate.varz){
+  modj <- rf(data=dat, dependent.variable.name ="aspen.presence", predictor.variable.names =j, n.cores=cores-1,ranger.arguments = list(num.trees=500, mtry=1, min.node.size=100), verbose=F)
+  rf.mod.pred <- ifelse(predict(modj, data=dat, type="response")$predictions>0.5,1,0)
+  datj <- data.frame(observed=dat$aspen.presence, predicted=rf.mod.pred)
+  results[results$var==j, "AUC"] <- datj %>% roc("predicted", "observed") %>% auc
+  modj <- NULL
+}
+
+results <- left_join(results, dat.dif[,c("var", "abs")], by="var")
+results <-results[order(results$AUC, decreasing=T),]
+write.csv(results, here("Results", "bivariate-RF-AUC.csv"),row.names=F)
+
+c("ADI",  "PRATIO", "GSPDD5", "GSP", "MCMT", "PPT_sm", "TD","RH", "MAR")
+
+p.ADI <- ggplot(dat.1981_2010, aes(x=ADI, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "ADI"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "ADI"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "ADI"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "ADI"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
+
+p.PRATIO <- ggplot(dat.1981_2010, aes(x=PRATIO, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "PRATIO"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "PRATIO"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "PRATIO"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "PRATIO"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
+
+p.GSPDD5 <- ggplot(dat.1981_2010, aes(x=GSPDD5, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "GSPDD5"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "GSPDD5"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "GSPDD5"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "GSPDD5"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
+
+p.GSP <- ggplot(dat.1981_2010, aes(x=GSP, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "GSP"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "GSP"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "GSP"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "GSP"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
+
+p.MCMT <- ggplot(dat.1981_2010, aes(x=MCMT, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "MCMT"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "MCMT"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "MCMT"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "MCMT"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
+
+p.PPT_sm <- ggplot(dat.1981_2010, aes(x=PPT_sm, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "PPT_sm"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "PPT_sm"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "PPT_sm"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "PPT_sm"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
+
+p.TD <- ggplot(dat.1981_2010, aes(x=TD, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "TD"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "TD"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "TD"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "TD"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
+
+p.RH <- ggplot(dat.1981_2010, aes(x=RH, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "RH"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "RH"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "RH"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "RH"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
+
+p.MAR <- ggplot(dat.1981_2010, aes(x=MAR, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "MAR"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "MAR"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "MAR"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "MAR"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
+
+plotz <- p.ADI + p.PRATIO + p.GSPDD5 + p.GSP + p.MCMT + p.PPT_sm + p.TD + p.RH + p.MAR
+```
+
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| Variable   | Description                                       | Trend                                 | Modeling notes                                                                                                |
++============+===================================================+=======================================+===============================================================================================================+
+| ADI        | annual dryness index:                             | increasing; less favorable for aspen  | retain, highest AUC in bivariate RF model; identified by @rehfeldt2009 as an important predictor              |
+|            |                                                   |                                       |                                                                                                               |
+|            | $\frac{MAT+10}{(MAP/1000)}$                       |                                       |                                                                                                               |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| **GSPDD5** | $\frac{GSP*DD5}{1000}$                            | decreasing; less favorable for aspen? | retain, third highest AUC in bivariate RF model; identified by @rehfeldt2009 as an important predictor        |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| FFP        | length of the frost-free period                   | increasing; less favorable for aspen  | remove, strongly correlated with MCMT; identified by @rehfeldt2009 as an important predictor                  |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| **PRATIO** | $\frac{GSP}{MAP}$                                 | relatively stable; no effect on aspen | retain, second highest AUC in bivariate RF model; identified by @rehfeldt2009 as an important predictor       |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| TD         | difference between MCMT and MWMT                  |                                       | retain, identified by as an important predictor by @rehfeldt2015                                              |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| TMAX       | maximum temperature of the warmest month          | increasing                            | remove, highly correlated with ADI; identified by as an important predictor by @rehfeldt2015                  |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| bFFP       | julian date on which the frost free period beings | decreasing                            | remove, strongly correlated with MCMT                                                                         |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| CMD        | Hargreave's moisture index                        | increasing                            | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| CMI        | Hogg's climate moisture index                     | decreasing                            | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| DD_0       | degree-days below 0 C                             | decreasing                            | remove, highly correlated with GSPDD5                                                                         |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| **DD_18**  | degree-days below 18 C                            | decreasing                            | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| DD1040     | degrees-days above 10 C and below 40 C            | increasing                            | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| **DD18**   | degree-days above 18 C                            | increasing                            | remove, strongly correlated with MCMT                                                                         |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| DD5        | degree-days above 5 C                             | increasing                            | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| eFFP       | julian date on which the frost free period ends   | increasing                            | remove, strongly correlated with MCMT                                                                         |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| EMT        | extreme minimum temperature                       | increasing                            | remove, strongly correlated with MCMT                                                                         |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| Eref       | Hargreave's reference evapotranspiration          | increasing                            | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| EXT        | extreme maximum temperature                       | increasing                            | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| GSP        | growing season (Apr - Sep) precipitation          | slight decrease                       | retain, not strongly correlated with ADI, PRATIO, or GSPDD5 (and better performance in bivariate RF than MSP) |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| MAP        | mean annual precipitation                         | no change                             | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| **MAR**    | mean annual solar radiation                       | increase                              | retain, not strongly correlated with any variables                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| MAT        | mean annual temperature                           | increase                              | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| MCMT       | mean temperature of the coldest month             | increase                              | retain, not strongly correlated with ADI, PRATIO, or GSPDD5 (and better performance in bivariate RF than FFP) |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| MSP        | mean summer (May - Sept) precipitation            | slight decrease                       | remove, highly correlated with GSP                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| MWMT       | mean temperature of the warmest month             | increase                              | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| NFFD       | the number of frost free days                     | increase                              | remove, strongly correlated with MCMT                                                                         |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| PAS        | precipitation as snow                             | slight decrease                       | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| PPT_at     | autumn precipitation                              | no change                             | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| **PPT_sm** | summer precipitation                              | no change                             | retain                                                                                                        |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| **PPT_sp** | spring precipitation                              | no change                             | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| PPT_wt     | winter precipitation                              | no change                             | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| **RH**     | relative humidity                                 | no change                             | retain, not highly correlated with any other climate variables                                                |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| SHM        | summer heat moisture index:                       | increase                              | remove, highly correlated with ADI                                                                            |
+|            |                                                   |                                       |                                                                                                               |
+|            | $\frac{MWMT}{MSP/1000}$                           |                                       |                                                                                                               |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| Tave_at    | mean autumn temperature                           | increase                              | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| Tave_sm    | mean summer temperature                           | increase                              | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| Tave_sp    | mean spring temperature                           | increase                              | remove, highly correlated with ADI                                                                            |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| Tave_wt    | mean winter temperature                           | increase                              | remove, highly correlated with MCMT                                                                           |
++------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
+
+```{r}
+
+```
+
+## Modeling building approach
+
+```{r}
+
+# PRES/AB MODEL
+mod01 <- rf(data=dat.train, dependent.variable.name ="aspen.presence", predictor.variable.names =pred.vars, xy=xydat, distance.thresholds = distthresh, n.cores=cores-1)
+
+mod01.train <- rf_tuning(model=mod01,repetitions = 30, num.trees = c(500), mtry = c(3,5), min.node.size = c(50,100))
+
+mod01.final <- rf(data=dat.train, dependent.variable.name ="aspen.presence", predictor.variable.names =pred.vars, xy=xydat, distance.thresholds = distthresh, n.cores=cores-1, ranger.arguments = list(num.trees=mod01.train$num.trees, mtry=mod01.train$mtry, min.node.size=mod01.train$min.node.size))
+
+mod01.pred <- predict(mod.freq.final , data=dat.test, type="response")
+mod01.pred <- ifelse(mod01.pred$predictions>0.5,1,0) %>% as.factor()
+confusionMatrix(data = mod01.pred, reference = dat.train$aspen.presence %>% as.factor())
+
+# FREQ MODEL
+dat.train.sub <- dat.train[dat.train$aspen.presence==1,]
+xydat <-dat.train.sub[,c("x","y")]
+distdat <- dist(xydat, method = "euclidean", diag=T, upper=T) 
+
+mod.freq <- rf(data=dat.train.sub, dependent.variable.name ="aspen.prob", predictor.variable.names =pred.vars, xy=xydat, distance.thresholds = , n.cores=cores-1)
+
+mod.freq.train <- rf_tuning(model=mod.freq,repetitions = 30, num.trees = c(100,500), mtry = c(3,5), min.node.size = c(50,100))
+
+mod.freq.final <- rf(data=dat.train.sub, dependent.variable.name ="aspen.prob", predictor.variable.names =pred.vars, xy=xydat, distance.thresholds = , n.cores=cores-1, ranger.arguments = list(num.trees=mod.freq.train$num.trees, mtry=mod.freq.train$mtry, min.node.size=mod.freq.train$min.node.size))
+
+mod.freq.pred <- predict(mod.freq, data=dat.test, type="response")
+
+postResample(mod.freq.pred$predictions*as.numeric(mod01.pred), dat.test$aspen.prob)
+
+```
