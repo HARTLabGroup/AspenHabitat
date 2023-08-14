@@ -62,10 +62,7 @@ pacman::p_load(
   maptools,
   rgeos,
   elevatr, 
-  spatialRF, # modeling
-  fuzzySim, # variable selection
-  caret,
-  xgboost
+  tidymodels
 ) 
 
 cores <- parallel::detectCores() # Set number of cores for parallel processing
@@ -100,6 +97,9 @@ dir.create(here("Results", "Figures"), showWarnings = FALSE)
 
 # Introduction
 
+Most species distribution modeling relies upon records of observations of species occurrence, which are often spatially biased. 
+
+Species distribution models of tree species often make use of 
 # Methods
 
 ## Study area
@@ -614,6 +614,7 @@ if(!file.exists(filename=here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_s
 ```
 
 ### Model
+#### Data preparation
 ```{r RF}
 # Import response variable
 aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
@@ -643,19 +644,22 @@ template <- rast(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Nor
 aspen90.1km <- extract(aspen90.prob,template,cells=T) 
 aspen.sample.pts <- aspen.pts %>% as.data.frame() %>% filter(cell %in% aspen90.1km$cell)
 
-dat <- aspen.sample.pts %>% na.omit() 
-dat$aspen.presence.f <- factor(dat$aspen.presence, levels=0:1, labels=c("absence","presence"))
-dat.train <- dat %>% group_by(aspen.presence) %>% sample_n(5000)
-dat.test <- dat %>% filter(!cell %in% dat.train$cell) %>% group_by(aspen.presence)  %>% sample_n(5000)
-
-
+# Remove collinear variables
 preference.order <- c("ADI",  "PRATIO", "GSPDD5", "GSP", "MCMT", "PPT_sm", "TD","RH", "MAR")
-pred.vars <- spatialRF::auto_cor(x = dat.train[, c(preference.order, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")],cor.threshold = 0.75,preference.order = preference.order) %>% spatialRF::auto_vif(vif.threshold = 5,preference.order = preference.order)
+dat <- aspen.sample.pts %>% na.omit() %>% group_by(aspen.presence) %>%  sample_n(size=1000)
+dat$aspen.presence <- dat$aspen.presence %>% as.factor()
+pred.vars <- dat[, c(preference.order, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")] %>% spatialRF::auto_cor(,cor.threshold = 0.7,preference.order = preference.order) %>% spatialRF::auto_vif(vif.threshold = 5,preference.order = preference.order)
 pred.vars <- pred.vars$selected.variables
+
+dat_split <- rsample::initial_split(
+  dat <- dat[,c("aspen.presence", pred.vars)], 
+  prop = 0.5, 
+  strata = aspen.presence
+)
 
 # preprocessing "recipe"
 preprocessing_recipe <- 
-  recipes::recipe(dat.train ~ ., data = training(ames_split)) %>%
+  recipes::recipe(aspen.presence ~ ., data = training(dat_split)) %>%
   # convert categorical variables to factors
   recipes::step_string2factor(all_nominal()) %>%
   # combine low frequency factor levels
@@ -663,34 +667,143 @@ preprocessing_recipe <-
   # remove no variance predictors which provide no predictive information 
   recipes::step_nzv(all_nominal()) %>%
   prep()
+
+# split training dataset to tune hyperparameters
+dat_cv_folds <- 
+  recipes::bake(
+    preprocessing_recipe, 
+    new_data = training(dat_split)
+  ) %>%  
+  rsample::vfold_cv(v = 5)
 ```
 
 #### Gradient boosting
 ```{r}
-dat.train.df <- dat.train[,c("aspen.presence", pred.vars)] 
-dat.test.df <- dat.test[,c("aspen.presence", pred.vars)] 
-dat.train.df$aspen.presence <- dat.train.df$aspen.presence %>% factor()
-dat.test.df$aspen.presence <- dat.test.df$aspen.presence %>% factor()
-
-
-
-bt_cls_spec <- 
-    boost_tree(trees = 15) %>% 
-    # This model can be used for classification or regression, so set mode
-    set_mode("classification") %>% 
+xgboost_model <- 
+boost_tree(
+    mode = "regression",
+    trees = 1000,
+    min_n = tune(),
+    tree_depth = tune(),
+    learn_rate = tune(),
+    loss_reduction = tune()
+  ) %>%
     set_engine("xgboost")
-bt_cls_spec
-
-bt_cls_fit <- bt_cls_spec %>% fit(aspen.presence ~ ., data = dat.train.df)
 
 
-bind_cols(
-    predict(bt_cls_fit, dat.train.df),
-    predict(bt_cls_fit, dat.test.df, type = "prob")
+# grid specification
+xgboost_params <- 
+  dials::parameters(
+    min_n(),
+    tree_depth(),
+    learn_rate(),
+    loss_reduction()
   )
 
-gb.mod1 <- xgboost(data = matrix(dat.train), label = dat.train$aspen.presence, max.depth = 2, eta = 1, nthread = 2, nrounds = 2, objective = "binary:logistic")
+xgboost_grid <- 
+  dials::grid_max_entropy(
+    xgboost_params, 
+    size = 60
+  )
 
+xgboost_wf <- 
+  workflows::workflow() %>%
+  add_model(xgboost_model) %>% 
+  add_formula(aspen.presence ~ .)
+
+xgboost_tuned <- tune::tune_grid(
+  object = xgboost_wf,
+  resamples = dat_cv_folds,
+  grid = xgboost_grid,
+  metrics = yardstick::metric_set(roc_auc),
+  control = tune::control_grid(verbose = TRUE)
+)
+xgboost_best_params <- xgboost_tuned %>%
+  tune::select_best("roc_auc")
+xgboost_model_final <- xgboost_model %>% 
+  finalize_model(xgboost_best_params)
+
+# Evaluate model on training data
+train_processed <- bake(preprocessing_recipe,  new_data = training(dat_split))
+train_prediction <- xgboost_model_final %>%
+  # fit the model on all the training data
+  fit(
+    formula = aspen.presence ~ ., 
+    data    = train_processed
+  ) %>%
+  # predict the sale prices for the training data
+  predict(new_data = train_processed) %>%
+  bind_cols(training(dat_split))
+xgboost_score_train <- 
+  train_prediction %>%
+  yardstick::metrics(aspen.presence, .pred_class) %>%
+  mutate(.estimate = format(round(.estimate, 2), big.mark = ","))
+knitr::kable(xgboost_score_train)
+
+# Evaluate model on testing data
+test_processed  <- bake(preprocessing_recipe, new_data = testing(dat_split))
+test_prediction <- xgboost_model_final %>%
+  # fit the model on all the training data
+  fit(
+    formula = aspen.presence ~ ., 
+    data = train_processed
+  ) %>%
+  # use the training model fit to predict the test data
+  predict(new_data = test_processed) %>%
+  bind_cols(testing(dat_split))
+# measure the accuracy of our model using `yardstick`
+xgboost_score <- test_prediction %>% yardstick::conf_mat(truth=aspen.presence,estimate=.pred_class) 
+
+
+# predict on entire dataset
+new.dat <- aspen.sample.pts
+new.dat$aspen.presence <- factor(new.dat$aspen.presence)
+new.data <- bake(preprocessing_recipe,new_data=new.dat)
+
+
+all_prediction <- xgboost_model_final %>%
+  # fit the model on all the training data
+  fit(
+    formula = aspen.presence ~ ., 
+    data    = train_processed
+  ) %>%
+  # predict the sale prices for the training data
+  predict(new_data = new.dat) %>%
+  bind_cols(new.dat)%>% yardstick::roc_auc(aspen.presence,.pred_class) 
+
+
+
+
+aspen90.pred <- aspen90.prob01
+aspen90.pred[all_prediction$cell] <-  all_prediction$'.pred_class' %>% as.numeric() - 1
+writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_1981-2010-xgboos.tif"),overwrite=T)
+
+
+aspen90.preds.dif <- aspen90.prob01
+aspen90.preds.dif[aspen90.preds.dif==1] <- 10
+aspen90.preds.dif <- aspen90.preds.dif - aspen90.pred
+aspen90.preds.dif[aspen90.preds.dif==-1] <- 2 # false positive
+aspen90.preds.dif[aspen90.preds.dif==9] <- 1 # correct
+aspen90.preds.dif[aspen90.preds.dif==10] <- -1 # false negative
+
+plot(aspen90.preds.dif, col=c("#4d4d4d", "gray", "#d53e4f", "#3288bd"))
+
+
+library(vip)
+
+xgboost_model_final.fit <- xgboost_model_final  %>% fit(formula = aspen.presence ~ .,  data    = train_processed)
+xgb.importance(xgboost_model_final.fit$fit) %>% head()
+
+explainer_xgb <- 
+  explain_tidymodels(
+    xgboost_model_final.fit, 
+    data = train_processed, 
+    y = train_processed$aspen.presence,
+    label = "xgboost",
+    verbose = FALSE
+  )
+
+vip_xgb <- model_parts(explainer_xgb)
 ```
 
 #### Random Forest
@@ -723,11 +836,11 @@ data.frame(observed=dat.test$aspen.presence, predicted=rf.mod.pred) %>%  pROC::r
 x<- plot_response_curves(rf.mod.presence.final,  show.data=T)
 
 
+
+
 ```
 
 #### Random forest
-
-### Predict
 
 ```{r}
 # NORMALS
@@ -740,8 +853,8 @@ for(j in unique(aspen.pts.df$cut)){
 }
 
 aspen90.pred <- aspen90.prob
-aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
-writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_1981-2010.tif"))
+aspen90.pred[all_prediction$cell] <-  all_prediction$'.pred_class'
+writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_1981-2010.tif"),overwrite=T)
 
 
 # Import predictor variables
