@@ -62,7 +62,10 @@ pacman::p_load(
   maptools,
   rgeos,
   elevatr, 
-  tidymodels
+  tidymodels,
+  vip,
+  pROC,
+  DALEXtra
 ) 
 
 cores <- parallel::detectCores() # Set number of cores for parallel processing
@@ -97,14 +100,13 @@ dir.create(here("Results", "Figures"), showWarnings = FALSE)
 
 # Introduction
 
-Most species distribution modeling relies upon records of observations of species occurrence, which are often spatially biased. 
+Most species distribution modeling relies upon records of observations of species occurrence, which are often spatially biased.
 
-Species distribution models of tree species often make use of 
-# Methods
+Species distribution models of tree species often make use of \# Methods
 
 ## Study area
 
-Our study area consists of the Southern Rocky Mountains Ecoregion (SRME), an area of approximately 204,630 km2 that extends from southern Wyoming to northern New Mexico (FIGURE).  The SRME region consists of mountainous topography with elevation ranging from 1125 m asl to above 4389 m asl.
+Our study area consists of the Southern Rocky Mountains Ecoregion (SRME), an area of approximately 145,700 km2 that extends from southern Wyoming to northern New Mexico (FIGURE).  The SRME region consists of mountainous topography with elevation ranging from 1125 m asl to above 4389 m asl.
 
 [Climate]
 
@@ -274,6 +276,12 @@ if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-TPI15.tif"))){
 
 We obtained gridded climate data from the AdaptWest database, which provides downscaled historical climate data from PRISM and future climate data from WorldClim. Both datasets are downscaled to 1 km using the software ClimateNA. Specifically, to represent historical climate conditions we obtained normals for the 1981-2010 period.
 
+Future climate projections were based on outputs from the ensemble mean of eight individual atmosphere-ocean models (AOGCMs) under two emissions scenarios (i.e., Shared Socioeconomic Pathways; SSPs) generated under the sixth phase of Coupled Model Intercomparison Project (CMIP6). Specifically here we use data from the SSP2-4.5, a and SSP5-8.5, which assumes very high emissions
+
+RCP 4.5 assumes moderate increases in emissions through 2040, followed by declines, while RCP 8.5 assumes substantial increases in emissions through 2100 (Riahi et al., 2011). Due to computational limitations, we reduced the number of GCMs used in final analyses to three (under two RCPs for a total of six potential trajectories) that span the range of projected changes in climate throughout the 21st century (Supporting Information Appendix S2). We used annual actual ev
+
+We obatined
+
 ```{r DL_climatedata, eval=F}
 dir.create(here("Data","Spatial", "Climate"))
 if(!file.exists(here("Data","Spatial", "Climate", "ClimateNA"))){
@@ -384,41 +392,40 @@ TMAX <- max(monthly.climate.rasters[[paste0("Tmax",c("04", "05", "06", "07","08"
 writeRaster(TMAX, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_TMAX.tif")), overwrite=T)
 
 
-select.scenario <- "ssp370"
+select.scenarios<- c("ssp245", "ssp585")
 select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
-for(select.year in select.years.all){
+for(select.scenario in select.scenarios){
+  
+  for(select.year in select.years.all){
   monthly.climate.rasters <- rast(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_monthly"), full.names=T))
   names(monthly.climate.rasters) <- sapply(strsplit(do.call(c,strsplit(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_monthly"), full.names=F), split=".tif")),split=paste0("ensemble_8GCMs_", select.scenario, select.year, "_")), "[", 2)
 
  bioclimate.rasters <- rast(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_bioclim"), full.names=T))
   names(bioclimate.rasters) <- sapply(strsplit(do.call(c,strsplit(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_bioclim"), full.names=F), split=".tif")),split=paste0("ensemble_8GCMs_", select.scenario, select.year, "_")), "[", 2)
-  
-  SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>%  st_transform(crs(monthly.climate.rasters))
+ 
+ SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>%  st_transform(crs(monthly.climate.rasters))
 
-
-  monthly.climate.rasters <- crop(monthly.climate.rasters, SRM)
-  bioclimate.rasters <- crop(bioclimate.rasters, monthly.climate.rasters)
-  
-  #ADI 
-  ADI <- (bioclimate.rasters[['DD5']]^0.5)/bioclimate.rasters[['MAP']]
-  writeRaster(ADI, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_ADI.tif"), overwrite=T)
-
-  
-  #GSP
-  GSP <- sum(monthly.climate.rasters[[paste0("PPT",c("04", "05", "06", "07","08","09"))]])
-  writeRaster(GSP, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_GSP.tif"), overwrite=T)
-
-  #PRATIO
-  PRATIO <- GSP/bioclimate.rasters[["MAP"]]
-  writeRaster(PRATIO, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_PRATIO.tif"), overwrite=T)
-  
-  #GSPDD5
-  GSPDD5 <- GSP/bioclimate.rasters[["DD5"]]
-  writeRaster(GSPDD5, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_GSPDD5.tif"), overwrite=T)
-  
-  #TMAX 
-  TMAX <- max(monthly.climate.rasters[[paste0("Tmax",c("04", "05", "06", "07","08","09"))]])
-  writeRaster(TMAX, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_TMAX.tif"), overwrite=T)
+ monthly.climate.rasters <- crop(monthly.climate.rasters, SRM)
+ bioclimate.rasters <- crop(bioclimate.rasters, monthly.climate.rasters)
+ 
+ #ADI 
+ ADI <- (bioclimate.rasters[['DD5']]^0.5)/bioclimate.rasters[['MAP']]
+ writeRaster(ADI, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_ADI.tif"), overwrite=T)
+ 
+ #GSP
+ GSP <- sum(monthly.climate.rasters[[paste0("PPT",c("04", "05", "06", "07","08","09"))]])
+ writeRaster(GSP, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_GSP.tif"), overwrite=T)
+ 
+ #PRATIO
+ PRATIO <- GSP/bioclimate.rasters[["MAP"]]
+ writeRaster(PRATIO, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_PRATIO.tif"), overwrite=T)
+ 
+ #GSPDD5
+ GSPDD5 <- GSP/bioclimate.rasters[["DD5"]]
+ writeRaster(GSPDD5, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_GSPDD5.tif"), overwrite=T)
+  print(select.year)
+  }
+  print(select.scenario)
 }
 
 ```
@@ -446,7 +453,6 @@ template<- template %>% crop(study.area)
 # Warning message happens because number of raster cells is not evenly divisible by number of cores on PC
 dir.create(here("Data", "Spatial", "Downscaled"), showWarnings = FALSE)
 select.climate.variables <-c("TD", "GSP", "MCMT", "PPT_sm", "MAR", "RH")
-
 select.derived.climate.variables <-c( "PRATIO", "GSPDD5", "ADI", "GSP")
 
 ### NORMALS
@@ -497,55 +503,60 @@ for(j in select.derived.climate.variables){
 
 }
 
+## FUTURE
 
-
-select.scenarios <- "ssp370"
+select.climate.variables <-c("MCMT", "MAR", "RH")
+select.derived.climate.variables <-c( "PRATIO", "GSPDD5", "ADI")
+select.scenarios<- c("ssp245", "ssp585")
 select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
-for(j in select.climate.variables){
-  for(select.years in select.years.all){
-    if(!file.exists(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenarios, select.years, j, "-downscaled.tif"))){
-      ptm <- proc.time()
-      clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA"), "/ensemble_8GCMs_", select.scenarios, select.years, "/", "ensemble_8GCMs_", select.scenarios, select.years, "_bioclim/", "ensemble_8GCMs_", select.scenarios, select.years,"_", j, ".tif"))
-      clim <- clim %>% terra::project(proj.proj)
-      clim <- clim %>% crop(study.area)
-  
-      if(j ==select.climate.variables[1]){template_coarse <- terra::project(template ,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+
+for(select.scenario in select.scenarios){
+  for(j in select.climate.variables){
+    for(select.years in select.years.all){
+      if(!file.exists(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, select.years, j, "-downscaled.tif"))){
+        ptm <- proc.time()
+        clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA"), "/ensemble_8GCMs_", select.scenario, select.years, "/", "ensemble_8GCMs_", select.scenario, select.years, "_bioclim/", "ensemble_8GCMs_", select.scenario, select.years,"_", j, ".tif"))
+        clim <- clim %>% terra::project(proj.proj)
+        clim <- clim %>% crop(study.area)
     
-      ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim,
-                                        ancillary_list = list(template_coarse, template), 
-                                        clip_dists = c(20000, 5000, 500))
-  
-      writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenarios, select.years, "_", j, "-downscaled.tif"))
-      rm(ds_layer) # remove 
-      gc() # clean up garbage (sometimes this helps)
-      print(j) # print j so we know how far along our code is
-      time <- proc.time() - ptm
-      print(time[3]/60) # print time for each iteration
+        if(j ==select.climate.variables[1]){template_coarse <- terra::project(template ,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+      
+        ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim,
+                                          ancillary_list = list(template_coarse, template), 
+                                          clip_dists = c(20000, 5000, 500))
+    
+        writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, select.years, "_", j, "-downscaled.tif"), overwrite=T)
+        rm(ds_layer) # remove 
+        gc() # clean up garbage (sometimes this helps)
+        print(j) # print j so we know how far along our code is
+        time <- proc.time() - ptm
+        print(time[3]/60) # print time for each iteration
+      }
     }
   }
-
+  print(select.scenario)
 }
 
-select.scenarios <- "ssp370"
-select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
-for(j in select.derived.climate.variables){
-  for(select.years in select.years.all){
-    if(!file.exists(paste0(here("Data", "Spatial", "Downscaled"), "/", select.years, j, "-downscaled.tif"))){
-      ptm <- proc.time()
-      clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "Derived"), "/", select.scenarios, select.years, "_", j,  ".tif"))
-      clim <- clim %>% terra::project(proj.proj)
-      clim <- clim %>% crop(study.area)
-  
-     if(j ==select.climate.variables[1]){template_coarse <- terra::project(template ,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+for(select.scenario in select.scenarios){
+  for(j in select.derived.climate.variables){
+    for(select.years in select.years.all){
+      if(!file.exists(paste0(here("Data", "Spatial", "Downscaled"), "/", select.years, j, "-downscaled.tif"))){
+        ptm <- proc.time()
+        clim <- rast(paste0(here("Data", "Spatial", "Climate", "CLimateNA", "Derived"), "/", select.scenario, select.years, "_", j,  ".tif"))
+        clim <- clim %>% terra::project(proj.proj)
+        clim <- clim %>% crop(study.area)
     
-      ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim, ancillary_list = list(template_coarse, template), clip_dists = c(20000, 5000, 500))
-  
-     writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenarios, select.years,"_", j, "-downscaled.tif"))
-     rm(ds_layer) # remove 
-     gc() # clean up garbage (sometimes this helps)
-     print(j) # print j so we know how far along our code is
-     time <- proc.time() - ptm
-     print(time[3]/60) # print time for each iteration 
+       if(j ==select.climate.variables[1]){template_coarse <- terra::project(template ,clim, method="bilinear")}   ## Creating second DEM at same resolution as climate grid; only do this for the first iteration
+      
+        ds_layer <- multiLevelInterpParrallel(boundary = study.area, ds_layer = clim, ancillary_list = list(template_coarse, template), clip_dists = c(20000, 5000, 500))
+    
+       writeRaster(ds_layer, paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, select.years,"_", j, "-downscaled.tif"), overwrite=T)
+       rm(ds_layer) # remove 
+       gc() # clean up garbage (sometimes this helps)
+       print(j) # print j so we know how far along our code is
+       time <- proc.time() - ptm
+       print(time[3]/60) # print time for each iteration 
+      }
     }
   }
 }
@@ -614,8 +625,10 @@ if(!file.exists(filename=here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_s
 ```
 
 ### Model
+
 #### Data preparation
-```{r RF}
+
+```{r DataPrep}
 # Import response variable
 aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
 names(aspen90.prob) <- "aspen.prob"
@@ -642,143 +655,287 @@ aspen.pts <- extract(soil90, aspen.pts, bind=T)
 # Spatially thin data
 template <- rast(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_GSPDD5.tif")) %>% as.points(na.rm=T) %>% terra::project(crs(aspen90.prob))
 aspen90.1km <- extract(aspen90.prob,template,cells=T) 
-aspen.sample.pts <- aspen.pts %>% as.data.frame() %>% filter(cell %in% aspen90.1km$cell)
+aspen.sample.pts <- aspen.pts %>% as.data.frame() %>% filter(cell %in% aspen90.1km$cell) #
 
 # Remove collinear variables
 preference.order <- c("ADI",  "PRATIO", "GSPDD5", "GSP", "MCMT", "PPT_sm", "TD","RH", "MAR")
-dat <- aspen.sample.pts %>% na.omit() %>% group_by(aspen.presence) %>%  sample_n(size=1000)
+dat <- aspen.sample.pts %>% na.omit() %>% group_by(aspen.presence) %>%  sample_n(size=5000)
 dat$aspen.presence <- dat$aspen.presence %>% as.factor()
-pred.vars <- dat[, c(preference.order, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")] %>% spatialRF::auto_cor(,cor.threshold = 0.7,preference.order = preference.order) %>% spatialRF::auto_vif(vif.threshold = 5,preference.order = preference.order)
+pred.vars <- dat[, c(preference.order, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")] %>% spatialRF::auto_cor(cor.threshold = 0.7,preference.order = preference.order) %>% spatialRF::auto_vif(vif.threshold = 5,preference.order = preference.order)
 pred.vars <- pred.vars$selected.variables
+remove.vars <- c(preference.order, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")[!c(preference.order, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli") %in% pred.vars]
 
-dat_split <- rsample::initial_split(
-  dat <- dat[,c("aspen.presence", pred.vars)], 
+dat_split <- initial_split(
+  dat <- dat, 
   prop = 0.5, 
   strata = aspen.presence
 )
 
 # preprocessing "recipe"
-preprocessing_recipe <- 
-  recipes::recipe(aspen.presence ~ ., data = training(dat_split)) %>%
-  # convert categorical variables to factors
-  recipes::step_string2factor(all_nominal()) %>%
-  # combine low frequency factor levels
-  recipes::step_other(all_nominal(), threshold = 0.01) %>%
-  # remove no variance predictors which provide no predictive information 
-  recipes::step_nzv(all_nominal()) %>%
-  prep()
+presence.recipe<- 
+  recipe(aspen.presence ~ ., data = training(dat_split))  %>%
+  # remove collinear variables
+  step_rm(!!!syms(remove.vars)) %>% 
+  # normalize all numeric variables except the outcome and ID variables
+  step_normalize(all_numeric(), -all_outcomes(), -aspen.prob, -x, -y, -cell) %>%
+  update_role(aspen.prob, x, y,cell, new_role="ID")
 
 # split training dataset to tune hyperparameters
-dat_cv_folds <- 
-  recipes::bake(
-    preprocessing_recipe, 
-    new_data = training(dat_split)
-  ) %>%  
-  rsample::vfold_cv(v = 5)
+cv_folds <- training(dat_split) %>% vfold_cv(v=5, strata=aspen.presence)
+```
+
+#### GLM
+
+```{r}
+# Specify model
+glmnet_spec <- 
+  logistic_reg(penalty = tune(), mixture = 1) %>%
+  set_engine("glmnet") %>% 
+  set_mode("classification")
+
+# Create workflow
+glmnet_wflow <- 
+  workflow() %>% 
+  add_recipe(presence.recipe) %>% 
+  add_model(glmnet_spec)
+
+# Tune model
+### Set parameters to be tuned
+glmnet_params <- 
+  dials::parameters(
+    finalize(penalty())
+)
+
+## Create grid of search values
+glmnet_grid <- tibble(penalty = 10^seq(-4, -1, length.out = 30))
+
+
+### Perform tuning
+glmnet_tuned <- tune::tune_grid(
+  object = glmnet_wflow,
+  resamples = cv_folds,
+  grid = glmnet_grid,
+  metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
+  control = tune::control_grid(verbose = TRUE)
+)
+
+# Finalize workflow
+glmnet_best_params <- glmnet_tuned %>% tune::select_best("roc_auc")
+final_glmnet <- glmnet_wflow %>% finalize_workflow(glmnet_best_params)
+
+# Evaluate model on training dataset
+glmnet_res <- 
+  final_glmnet%>% 
+  fit_resamples(
+    resamples = cv_folds, 
+    metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)
+    ) 
+
+glmnet_res %>%  collect_metrics(summarize = TRUE) %>% mutate(Dataset="Calibration") %>% mutate(Model="GLMNET") %>% write.csv(here("Results", "GLMNET-calibration-stats.csv"))
+
+# Evaluate model on testing dataset
+glmnet_last_fit <- last_fit(final_glmnet,
+                         split=dat_split,
+                         metrics = metric_set(recall, precision, f_meas, accuracy, kap,roc_auc, sens, spec))
+
+glmnet_last_fit %>% collect_metrics() %>% mutate(Dataset="Validation", Model="GLMNET") %>% write.csv(here("Results", "GLMNet-validation-stats.csv"))
+
+# Variable importance
+vi <- glmnet_last_fit%>% 
+  pluck(".workflow", 1) %>%   
+  extract_fit_parsnip() %>% 
+  vip()
+write.csv(vi$data %>% mutate(Model="GLMNET"), here("Results", "vip-glmnet.csv"))
+
+# Partial dependence and accumualted local effects
+explainer_glmnet<- explain_tidymodels(final_glmnet %>% fit(training(dat_split)), 
+                                    data=training(dat_split) %>% as.data.frame() %>% select(-aspen.presence), 
+                                    y=training(dat_split) %>% pull(aspen.presence) %>% as.numeric(),
+                                    type="classification", verbose=F
+)
+
+pdp <- model_profile(explainer_glmnet , N = 500, variables = pred.vars, type="partial")
+pdp$agr_profiles %>% mutate(method="PDP", Model="GLMNET") %>% write.csv(here("Results", "pdp-GLMNET.csv"))
+ale <- model_profile(explainer_glmnet , N = 500, variables = pred.vars, type="accumulated")
+ale$agr_profiles %>% mutate(method="ALE", Model="GLMNET")  %>% write.csv(here("Results", "ale-GLMNET.csv"))
+
+# predict on entire dataset in five separate chunks
+aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
+aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
+aspen.pts.df$predicted <- NA
+for(j in unique(aspen.pts.df$cut)){
+  all_prediction <-final_glmnet %>% 
+    fit(testing(dat_split)) %>% 
+    predict(new_data = aspen.pts.df[aspen.pts.df$cut==j, ], type="prob")
+  aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- all_prediction$`.pred_1`
+  print(j)
+}
+
+aspen90.pred <- aspen90.prob01
+aspen90.pred.cells <- cells(aspen90.pred)
+aspen90.pred[!aspen90.pred.cells] <-  -9999
+aspen90.pred.bak <- aspen90.pred
+
+aspen90.pred <- aspen90.prob01
+aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
+writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_1981-2010-glmnet.tif"),overwrite=T)
+
+aspen90.pred[aspen90.pred>=0.5] <- 1
+aspen90.pred[aspen90.pred<0.5] <- 0
+aspen90.preds.dif <- aspen90.prob01
+aspen90.preds.dif[aspen90.preds.dif==1] <- 10
+aspen90.preds.dif <- aspen90.preds.dif - aspen90.pred
+aspen90.preds.dif[aspen90.preds.dif==-1] <- 2 # false positive
+aspen90.preds.dif[aspen90.preds.dif==9] <- 1 # correct
+aspen90.preds.dif[aspen90.preds.dif==10] <- -1 # false negative
+writeRaster(aspen90.preds.dif, here("Data", "Spatial", "predicted_1981-2010-glmnet-classerror.tif"),overwrite=T)
+
+plot(aspen90.preds.dif, col=c("#4d4d4d", "gray", "#d53e4f", "#3288bd"))
+
+# Predict
+yearz <- c("2011_2040", "2041_2070", "2071_2100")
+for(years in yearz){
+  climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_ssp370_", years, "_90.tif"))
+  # Compile data
+  aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
+  aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
+  aspen.pts <- extract(climate90, aspen.pts, bind=T)
+  aspen.pts <- extract(topo90, aspen.pts, bind=T)
+  aspen.pts <- extract(soil90, aspen.pts, bind=T)
+  
+  # predict on entire dataset in five separate chunks
+  aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
+  aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
+  aspen.pts.df$predicted <- NA
+  for(j in unique(aspen.pts.df$cut)){
+    all_prediction <-final_glmnet %>% 
+      fit(testing(dat_split)) %>% 
+      predict(new_data = aspen.pts.df[aspen.pts.df$cut==j, ], type="prob")
+    aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- all_prediction$`.pred_1`
+    print(j)
+  }
+  
+  aspen90.pred <- aspen90.prob01
+  aspen90.pred.cells <- cells(aspen90.pred)
+  aspen90.pred[!aspen90.pred.cells] <-  -9999
+  aspen90.pred.bak <- aspen90.pred
+  
+  aspen90.pred <- aspen90.prob01
+  aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
+  writeRaster(aspen90.pred, paste0(here("Data", "Spatial"), "/predicted_", years, "-glmnet.tif"),overwrite=T)
+
+}
 ```
 
 #### Gradient boosting
+
 ```{r}
-xgboost_model <- 
-boost_tree(
-    mode = "regression",
-    trees = 1000,
-    min_n = tune(),
-    tree_depth = tune(),
-    learn_rate = tune(),
-    loss_reduction = tune()
+# Specify model
+xgb_spec <- 
+  boost_tree(
+    trees=1000,
+    tree_depth=tune(), min_n=tune(), loss_reduction=tune(), ## model complexity
+    learn_rate=tune() # step size
   ) %>%
-    set_engine("xgboost")
+  set_engine("xgboost", objective = "binary:logistic") %>% 
+  set_mode("classification")
 
+# Create workflow
+xgb_wflow <- 
+  workflow() %>% 
+  add_recipe(presence.recipe) %>% 
+  add_model(xgb_spec)
 
-# grid specification
+# Tune model
+### Set parameters to be tuned
 xgboost_params <- 
   dials::parameters(
-    min_n(),
     tree_depth(),
-    learn_rate(),
-    loss_reduction()
-  )
+    min_n(),
+    loss_reduction(),
+    learn_rate()
+)
 
+## Create grid of search values
 xgboost_grid <- 
-  dials::grid_max_entropy(
+  dials::grid_latin_hypercube(
     xgboost_params, 
-    size = 60
-  )
-
-xgboost_wf <- 
-  workflows::workflow() %>%
-  add_model(xgboost_model) %>% 
-  add_formula(aspen.presence ~ .)
-
-xgboost_tuned <- tune::tune_grid(
-  object = xgboost_wf,
-  resamples = dat_cv_folds,
+    size = 50
+)
+### Perform tuning
+xgb_tuned <- tune::tune_grid(
+  object = xgb_wflow,
+  resamples = cv_folds,
   grid = xgboost_grid,
-  metrics = yardstick::metric_set(roc_auc),
+  metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
   control = tune::control_grid(verbose = TRUE)
 )
-xgboost_best_params <- xgboost_tuned %>%
-  tune::select_best("roc_auc")
-xgboost_model_final <- xgboost_model %>% 
-  finalize_model(xgboost_best_params)
 
-# Evaluate model on training data
-train_processed <- bake(preprocessing_recipe,  new_data = training(dat_split))
-train_prediction <- xgboost_model_final %>%
-  # fit the model on all the training data
-  fit(
-    formula = aspen.presence ~ ., 
-    data    = train_processed
-  ) %>%
-  # predict the sale prices for the training data
-  predict(new_data = train_processed) %>%
-  bind_cols(training(dat_split))
-xgboost_score_train <- 
-  train_prediction %>%
-  yardstick::metrics(aspen.presence, .pred_class) %>%
-  mutate(.estimate = format(round(.estimate, 2), big.mark = ","))
-knitr::kable(xgboost_score_train)
+# Finalize workflow
+xgboost_best_params <- xgb_tuned  %>% tune::select_best("roc_auc") # min_n=18, tree_depth=6, learn_rate=0.00835, loss_reduction=0.00125
+final_xgb <- xgb_wflow %>% finalize_workflow(xgboost_best_params)
 
-# Evaluate model on testing data
-test_processed  <- bake(preprocessing_recipe, new_data = testing(dat_split))
-test_prediction <- xgboost_model_final %>%
-  # fit the model on all the training data
-  fit(
-    formula = aspen.presence ~ ., 
-    data = train_processed
-  ) %>%
-  # use the training model fit to predict the test data
-  predict(new_data = test_processed) %>%
-  bind_cols(testing(dat_split))
-# measure the accuracy of our model using `yardstick`
-xgboost_score <- test_prediction %>% yardstick::conf_mat(truth=aspen.presence,estimate=.pred_class) 
+# Evaluate model on training dataset
+xgb_res <- 
+  final_xgb %>% 
+  fit_resamples(
+    resamples = cv_folds, 
+    metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)
+    ) 
 
+xgb_res %>% collect_metrics(summarize = TRUE) %>% mutate(Dataset="Calibration") %>% mutate(Model="XGB") %>% write.csv(here("Results", "XGB-calibration-stats.csv"))
 
-# predict on entire dataset
-new.dat <- aspen.sample.pts
-new.dat$aspen.presence <- factor(new.dat$aspen.presence)
-new.data <- bake(preprocessing_recipe,new_data=new.dat)
+# Evaluate model on testing dataset
+xgb_last_fit <- last_fit(final_xgb,
+                         split=dat_split,
+                         metrics = metric_set(recall, precision, f_meas, accuracy, kap,roc_auc, sens, spec))
 
+xgb_last_fit %>% collect_metrics() %>% mutate(Model="XGB")%>% mutate(Dataset="Validation") %>% write.csv(here("Results", "XGB-validation-stats.csv"))
 
-all_prediction <- xgboost_model_final %>%
-  # fit the model on all the training data
-  fit(
-    formula = aspen.presence ~ ., 
-    data    = train_processed
-  ) %>%
-  # predict the sale prices for the training data
-  predict(new_data = new.dat) %>%
-  bind_cols(new.dat)%>% yardstick::roc_auc(aspen.presence,.pred_class) 
+# Variable importance
+vi <- xgb_last_fit %>% 
+  pluck(".workflow", 1) %>%   
+  extract_fit_parsnip() %>% 
+  vip()
+write.csv(vi$data %>% mutate(Model="XGB"), here("Results", "vip-xgb.csv"))
 
+# Partial dependence and accumualted local effects
+explainer_xgb <- explain_tidymodels(final_xgb %>% fit(training(dat_split)), 
+                                    data=training(dat_split) %>% as.data.frame() %>% select(-aspen.presence), 
+                                    y=training(dat_split) %>% pull(aspen.presence) %>% as.numeric(),
+                                    type="classification", verbose=F
+)
 
+pdp <- model_profile(explainer_xgb , N = 500, variables = pred.vars, type="partial")
+pdp$agr_profiles %>% mutate(method="PDP", Model="XGB") %>% write.csv(here("Results", "pdp-XGB.csv"))
+ale <- model_profile(explainer_xgb , N = 500, variables = pred.vars, type="accumulated")
+ale$agr_profiles %>% mutate(method="ALE", Model="XGB")  %>% write.csv(here("Results", "ale-XGB.csv"))
 
+# predict on entire dataset in five separate chunks
+aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
+aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
+aspen.pts.df$predicted <- NA
+for(j in unique(aspen.pts.df$cut)){
+  all_prediction <-final_xgb %>% 
+    fit(testing(dat_split)) %>% 
+    predict(new_data = aspen.pts.df[aspen.pts.df$cut==j, ], type="prob")
+  aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- all_prediction$`.pred_1`
+  print(j)
+}
 
 aspen90.pred <- aspen90.prob01
-aspen90.pred[all_prediction$cell] <-  all_prediction$'.pred_class' %>% as.numeric() - 1
-writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_1981-2010-xgboos.tif"),overwrite=T)
+aspen90.pred.cells <- cells(aspen90.pred)
+aspen90.pred[!aspen90.pred.cells] <-  -9999
+aspen90.pred.bak <- aspen90.pred
 
+aspen90.pred <- aspen90.prob01
+aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
+writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_1981-2010-xgb.tif"),overwrite=T)
 
+aspen90.pred[aspen90.pred>=0.5] <- 1
+aspen90.pred[aspen90.pred<0.5] <- 0
 aspen90.preds.dif <- aspen90.prob01
 aspen90.preds.dif[aspen90.preds.dif==1] <- 10
 aspen90.preds.dif <- aspen90.preds.dif - aspen90.pred
@@ -786,172 +943,339 @@ aspen90.preds.dif[aspen90.preds.dif==-1] <- 2 # false positive
 aspen90.preds.dif[aspen90.preds.dif==9] <- 1 # correct
 aspen90.preds.dif[aspen90.preds.dif==10] <- -1 # false negative
 
+
+writeRaster(aspen90.preds.dif, here("Data", "Spatial", "predicted_1981-2010-xgb-classerror.tif"),overwrite=T)
+
 plot(aspen90.preds.dif, col=c("#4d4d4d", "gray", "#d53e4f", "#3288bd"))
 
+# Predict
+yearz <- c("2011_2040", "2041_2070", "2071_2100")
+for(years in yearz){
+  climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_ssp370_", years, "_90.tif"))
+  # Compile data
+  aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
+  aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
+  aspen.pts <- extract(climate90, aspen.pts, bind=T)
+  aspen.pts <- extract(topo90, aspen.pts, bind=T)
+  aspen.pts <- extract(soil90, aspen.pts, bind=T)
+  
+  # predict on entire dataset in five separate chunks
+  aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
+  aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
+  aspen.pts.df$predicted <- NA
+  for(j in unique(aspen.pts.df$cut)){
+    all_prediction <-final_xgb %>% 
+      fit(testing(dat_split)) %>% 
+      predict(new_data = aspen.pts.df[aspen.pts.df$cut==j, ], type="prob")
+    aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- all_prediction$`.pred_1`
+    print(j)
+  }
+  
+  aspen90.pred <- aspen90.prob01
+  aspen90.pred.cells <- cells(aspen90.pred)
+  aspen90.pred[!aspen90.pred.cells] <-  -9999
+  aspen90.pred.bak <- aspen90.pred
+  
+  aspen90.pred <- aspen90.prob01
+  aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
+  writeRaster(aspen90.pred, paste0(here("Data", "Spatial"), "/predicted_", years, "-xgb.tif"),overwrite=T)
 
-library(vip)
+}
 
-xgboost_model_final.fit <- xgboost_model_final  %>% fit(formula = aspen.presence ~ .,  data    = train_processed)
-xgb.importance(xgboost_model_final.fit$fit) %>% head()
 
-explainer_xgb <- 
-  explain_tidymodels(
-    xgboost_model_final.fit, 
-    data = train_processed, 
-    y = train_processed$aspen.presence,
-    label = "xgboost",
-    verbose = FALSE
-  )
-
-vip_xgb <- model_parts(explainer_xgb)
 ```
 
 #### Random Forest
-```{RF}
-
-xydat <- dat.train[,c("x", "y")]  %>% as.data.frame()
-distdat <- dist(xydat, method = "euclidean", diag=T, upper=T) %>% as.matrix()
-distthresh <- c(0, 1000, 2500, 5000)
-
-
-# MODEL PRESENECE
-rf.mod.presence <- rf(data=dat.train, dependent.variable.name ="aspen.presence", predictor.variable.names =pred.vars, xy=xydat, distance.matrix = distdat, distance.thresholds = distthresh, n.cores=cores-1)
-
-rf.mod.presence.train <- rf_tuning(model=rf.mod.presence ,repetitions = 1, num.trees = c(500,1000), mtry = c(3,5), min.node.size = c(50,100))
-
-rf.mod.presence.final <- rf(data=dat.train, dependent.variable.name ="aspen.presence", predictor.variable.names =pred.vars, xy=xydat, distance.matrix = distdat, distance.thresholds = distthresh, n.cores=cores-1, ranger.arguments = list(num.trees=500, mtry=3, min.node.size=200), scaled.importance=T)
-
-spatialRF::plot_residuals_diagnostics(rf.mod.presence.final,verbose = FALSE)
-
-rf.mod.presence.final.pred <- predict(rf.mod.presence.final, data=dat.test, type="response")$predictions
-
-rf.mod.pred <- predict(rf.mod.presence.final, data=dat.test, type="response")
-rf.mod.pred<- ifelse(rf.mod.pred$predictions>0.5,1,0) %>% factor(levels=0:1, ordered=T)
-dat.test$aspen.presence <- dat.test$aspen.presence %>% factor(levels=0:1, ordered=T)
-caret::confusionMatrix(data = rf.mod.pred, reference = dat.test$aspen.presence)
-
-data.frame(observed=dat.test$aspen.presence, predicted=rf.mod.pred) %>%  pROC::roc("predicted", "observed") %>% pROC::auc()
-  
-
-x<- plot_response_curves(rf.mod.presence.final,  show.data=T)
-
-
-
-
-```
-
-#### Random forest
 
 ```{r}
-# NORMALS
+# Specify model
+rf_spec <- 
+  rand_forest(
+    trees=1000,
+    min_n=tune(),
+    mtry=tune()
+  ) %>%
+  set_engine("ranger", importance = "permutation") %>% 
+  set_mode("classification")
+
+# Create workflow
+rf_wflow <- 
+  workflow() %>% 
+  add_recipe(presence.recipe) %>% 
+  add_model(rf_spec)
+
+# Tune model
+### Set parameters to be tuned
+rf_params <- 
+  dials::parameters(
+    finalize(mtry(),select(aspen.sample.pts,all_of(pred.vars))),
+    min_n()
+)
+
+## Create grid of search values
+rf_grid <- 
+  dials::grid_latin_hypercube(
+    rf_params, 
+    size = 50
+)
+
+### Perform tuning
+rf_tuned <- tune::tune_grid(
+  object = rf_wflow,
+  resamples = cv_folds,
+  grid = rf_grid,
+  metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
+  control = tune::control_grid(verbose = TRUE)
+)
+
+# Finalize workflow
+rf_best_params <- rf_tuned %>% tune::select_best("roc_auc")
+final_rf <- rf_wflow %>% finalize_workflow(rf_best_params)
+
+# Evaluate model on training dataset
+rf_res <- 
+  final_rf %>% 
+  fit_resamples(
+    resamples = cv_folds, 
+    metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)
+    ) 
+
+rf_res %>%  collect_metrics(summarize = TRUE) %>% mutate(Dataset="Calibration") %>% mutate(Model="RF") %>% write.csv(here("Results", "RF-calibration-stats.csv"))
+
+# Evaluate model on testing dataset
+rf_last_fit <- last_fit(final_rf,
+                         split=dat_split,
+                         metrics = metric_set(recall, precision, f_meas, accuracy, kap,roc_auc, sens, spec))
+
+rf_last_fit %>% collect_metrics() %>% mutate(Dataset="Validation", Model="RF") %>% write.csv(here("Results", "RF-validation-stats.csv"))
+
+# Variable importance
+vi <- rf_last_fit %>% 
+  pluck(".workflow", 1) %>%   
+  extract_fit_parsnip() %>% 
+  vip()
+write.csv(vi$data %>% mutate(Model="XGB"), here("Results", "vip-rf.csv"))
+
+# Partial dependence and accumualted local effects
+explainer_rf<- explain_tidymodels(final_rf %>% fit(training(dat_split)), 
+                                    data=training(dat_split) %>% as.data.frame() %>% select(-aspen.presence), 
+                                    y=training(dat_split) %>% pull(aspen.presence) %>% as.numeric(),
+                                    type="classification", verbose=F
+)
+
+pdp <- model_profile(explainer_rf , N = 500, variables = pred.vars, type="partial")
+pdp$agr_profiles %>% mutate(method="PDP", Model="RF") %>% write.csv(here("Results", "pdp-XGB.csv"))
+ale <- model_profile(explainer_rf , N = 500, variables = pred.vars, type="accumulated")
+ale$agr_profiles %>% mutate(method="ALE", Model="RF")  %>% write.csv(here("Results", "ale-XGB.csv"))
+
+# predict on entire dataset in five separate chunks
 aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
 aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
 aspen.pts.df$predicted <- NA
 for(j in unique(aspen.pts.df$cut)){
-  aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- predict(rf.mod.presence.final,aspen.pts.df[aspen.pts.df$cut==j, ], type="response")$predictions*1000 %>% round(0)
+  all_prediction <-final_rf %>% 
+    fit(testing(dat_split)) %>% 
+    predict(new_data = aspen.pts.df[aspen.pts.df$cut==j, ], type="prob")
+  aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- all_prediction$`.pred_1`
   print(j)
 }
 
-aspen90.pred <- aspen90.prob
-aspen90.pred[all_prediction$cell] <-  all_prediction$'.pred_class'
-writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_1981-2010.tif"),overwrite=T)
+aspen90.pred <- aspen90.prob01
+aspen90.pred.cells <- cells(aspen90.pred)
+aspen90.pred[!aspen90.pred.cells] <-  -9999
+aspen90.pred.bak <- aspen90.pred
 
-
-# Import predictor variables
-topo90 <- rast(here("Data", "Spatial", "DEM", "Topo90.tif"))
-soil90 <- rast(here("Data", "Spatial", "Soils", "Soils90.tif"))
-climate90 <- rast(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2011_2040_90.tif"))
-
-# Compile data
-aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
-aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
-aspen.pts <- extract(climate90, aspen.pts, bind=T)
-aspen.pts <- extract(topo90, aspen.pts, bind=T)
-aspen.pts <- extract(soil90, aspen.pts, bind=T)
-
-aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
-aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
-aspen.pts.df$predicted <- NA
-for(j in unique(aspen.pts.df$cut)){
-  aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- predict(rf.mod.presence.final,aspen.pts.df[aspen.pts.df$cut==j, ], type="response")$predictions*1000 %>% round(0)
-  print(j)
-}
-
-aspen90.pred <- aspen90.prob
+aspen90.pred <- aspen90.prob01
 aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
-writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_2011-2040.tif"))
+writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_1981-2010-rf.tif"),overwrite=T)
 
+aspen90.pred[aspen90.pred>=0.5] <- 1
+aspen90.pred[aspen90.pred<0.5] <- 0
+aspen90.preds.dif <- aspen90.prob01
+aspen90.preds.dif[aspen90.preds.dif==1] <- 10
+aspen90.preds.dif <- aspen90.preds.dif - aspen90.pred
+aspen90.preds.dif[aspen90.preds.dif==-1] <- 2 # false positive
+aspen90.preds.dif[aspen90.preds.dif==9] <- 1 # correct
+aspen90.preds.dif[aspen90.preds.dif==10] <- -1 # false negative
+writeRaster(aspen90.preds.dif, here("Data", "Spatial", "predicted_1981-2010-rf-classerror.tif"),overwrite=T)
 
-# Import predictor variables
-topo90 <- rast(here("Data", "Spatial", "DEM", "Topo90.tif"))
-soil90 <- rast(here("Data", "Spatial", "Soils", "Soils90.tif"))
-climate90 <- rast(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2041_2070_90.tif"))
+plot(aspen90.preds.dif, col=c("#4d4d4d", "gray", "#d53e4f", "#3288bd"))
 
-# Compile data
-aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
-aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
-aspen.pts <- extract(climate90, aspen.pts, bind=T)
-aspen.pts <- extract(topo90, aspen.pts, bind=T)
-aspen.pts <- extract(soil90, aspen.pts, bind=T)
+# Predict
+yearz <- c("2011_2040", "2041_2070", "2071_2100")
+for(years in yearz){
+  climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_ssp370_", years, "_90.tif"))
+  # Compile data
+  aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
+  aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
+  aspen.pts <- extract(climate90, aspen.pts, bind=T)
+  aspen.pts <- extract(topo90, aspen.pts, bind=T)
+  aspen.pts <- extract(soil90, aspen.pts, bind=T)
+  
+  # predict on entire dataset in five separate chunks
+  aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
+  aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
+  aspen.pts.df$predicted <- NA
+  for(j in unique(aspen.pts.df$cut)){
+    all_prediction <-final_rf %>% 
+      fit(testing(dat_split)) %>% 
+      predict(new_data = aspen.pts.df[aspen.pts.df$cut==j, ], type="prob")
+    aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- all_prediction$`.pred_1`
+    print(j)
+  }
+  
+  aspen90.pred <- aspen90.prob01
+  aspen90.pred.cells <- cells(aspen90.pred)
+  aspen90.pred[!aspen90.pred.cells] <-  -9999
+  aspen90.pred.bak <- aspen90.pred
+  
+  aspen90.pred <- aspen90.prob01
+  aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
+  writeRaster(aspen90.pred, paste0(here("Data", "Spatial"), "/predicted_", years, "-rf.tif"),overwrite=T)
 
-aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
-aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
-aspen.pts.df$predicted <- NA
-for(j in unique(aspen.pts.df$cut)){
-  aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- predict(rf.mod.presence.final,aspen.pts.df[aspen.pts.df$cut==j, ], type="response")$predictions*1000 %>% round(0)
-  print(j)
 }
 
-aspen90.pred <- aspen90.prob
-aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
-writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_2041-2070.tif"))
-
-# Import predictor variables
-topo90 <- rast(here("Data", "Spatial", "DEM", "Topo90.tif"))
-soil90 <- rast(here("Data", "Spatial", "Soils", "Soils90.tif"))
-climate90 <- rast(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp370_2071_2100_90.tif"))
-
-# Compile data
-aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
-aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
-aspen.pts <- extract(climate90, aspen.pts, bind=T)
-aspen.pts <- extract(topo90, aspen.pts, bind=T)
-aspen.pts <- extract(soil90, aspen.pts, bind=T)
-
-aspen.pts.df <- aspen.pts %>% as.data.frame() %>% na.omit()
-aspen.pts.df$cut <- cut(1:nrow(aspen.pts.df), breaks=5)
-aspen.pts.df$predicted <- NA
-for(j in unique(aspen.pts.df$cut)){
-  aspen.pts.df[aspen.pts.df$cut==j, ]$predicted <- predict(rf.mod.presence.final,aspen.pts.df[aspen.pts.df$cut==j, ], type="response")$predictions*1000 %>% round(0)
-  print(j)
-}
-
-aspen90.pred <- aspen90.prob
-aspen90.pred[aspen.pts.df$cell] <-  aspen.pts.df$predicted
-writeRaster(aspen90.pred, here("Data", "Spatial", "predicted_2071-2100.tif"))
-
-
-predicted_1981.2010 <-rast(here("Data", "Spatial", "predicted_1981-2010.tif"))
-predicted_1981.2010[predicted_1981.2010<500] <- 0
-predicted_1981.2010[predicted_1981.2010>=500] <- 1
-writeRaster(predicted_1981.2010,here("Data", "Spatial", "predicted_1981-2010-binary.tif"), overwrite=T)
-
-predicted_2011.2040 <-rast(here("Data", "Spatial", "predicted_2011-2040.tif"))
-predicted_2011.2040[predicted_2011.2040<500] <- 0
-predicted_2011.2040[predicted_2011.2040>=500] <- 1
-writeRaster(predicted_2011.2040,here("Data", "Spatial", "predicted_2011-2040-binary.tif"), overwrite=T)
-
-predicted_2041.2070 <-rast(here("Data", "Spatial", "predicted_2041-2070.tif"))
-predicted_2041.2070[predicted_2041.2070<500] <- 0
-predicted_2041.2070[predicted_2041.2070>=500] <- 1
-writeRaster(predicted_2041.2070,here("Data", "Spatial", "predicted_2041-2070-binary.tif"), overwrite=T)
-
-predicted_2071.2100 <-rast(here("Data", "Spatial", "predicted_2071-2100.tif"))
-predicted_2071.2100[predicted_2071.2100<500] <- 0
-predicted_2071.2100[predicted_2071.2100>=500] <- 1
-writeRaster(predicted_2071.2100, here("Data", "Spatial", "predicted_2071-2100-binary.tif"), overwrite=T)
 
 ```
+
+#### Ensemble
+
+```{r}
+weights.glmnet <- read.csv(here("Results", "GLMNET-validation-stats.csv")) %>% filter(.metric=="roc_auc") %>% select(`.estimate`)
+weights.rf <- read.csv(here("Results", "RF-validation-stats.csv")) %>% filter(.metric=="roc_auc") %>% select(`.estimate`)
+weights.xgb <- read.csv(here("Results", "XGB-validation-stats.csv")) %>% filter(.metric=="roc_auc") %>% select(`.estimate`)
+
+weights <- weights.glmnet + weights.rf + weights.xgb
+weights.glmnet <- weights.glmnet/weights
+weights.rf <- weights.rf/weights
+weights.xgb <- weights.rf/weights
+
+weightj <- list(weights.glmnet, weights.rf , weights.xgb )
+names(weightj) <- c("GLMNET", "RF", "XGB")
+for(k in yearz <- c("1981_2010", "2011_2040", "2041_2070", "2071_2100")){
+   stackk<- NULL
+   for(j in c("GLMNET", "RF", "XGB")){
+    stackk <- c(stackk, rast(paste0(here("Data", "Spatial"), "/predicted_", k, "-", j , ".tif"))* weightj[[j]]$.estimate)
+   }
+   stackj <- (stackk[[1]] +stackk[[2]]+stackk[[3]])/3
+   writeRaster(stackj, paste0(here("Data", "Spatial"), "/predicted_ensemble_", k, ".tif"))
+}
+
+# assess accuracy
+pred <- rast(here("Data", "Spatial", "predicted_ensemble_1981_2010.tif"))
+pred[pred>=0.5] <-1
+pred[pred<0.5] <-0
+
+ensemble.stats <- data.frame(.metric=c("accuracy", "f_meas", "kap", "precision", "recall", "roc_auc", "sens", "spec"), .estimator="binary", mean=NA)
+true <- testing(dat_split) %>% as.data.frame()
+coordinates(true) <- ~x+y
+crs(true) <- crs(aspen90.prob )
+true <- true %>% vect()
+predictor <- extract(pred, true) 
+ ensemble.stats[ensemble.stats$`.metric`=="roc_auc",]$mean <- roc(response =true$aspen.presence , predictor=predictor$aspen.presence) %>% auc() %>% as.vector()
+  x <- table(predictor$aspen.presence, true$aspen.presence) %>% confusionMatrix(mode = "everything", positive="1")
+  ensemble.stats[ensemble.stats$`.metric`=="accuracy",]$mean <- x$overall['Accuracy']
+  ensemble.stats[ensemble.stats$`.metric`=="kap",]$mean <- x$overall['Kappa']
+  ensemble.stats[ensemble.stats$`.metric`=="precision",]$mean <- x$byClass['Precision']
+  ensemble.stats[ensemble.stats$`.metric`=="recall",]$mean <- x$byClass['Recall']
+  ensemble.stats[ensemble.stats$`.metric`=="sens",]$mean <- x$byClass['Sensitivity']
+  ensemble.stats[ensemble.stats$`.metric`=="spec",]$mean <- x$byClass['Specificity']
+  ensemble.stats[ensemble.stats$`.metric`=="f_meas",]$mean <- x$byClass['F1']
+
+write.csv(ensemble.stats, here("Results","Ensemble-validation-stats.csv"))
+```
+
+### Characterize patterns
+
+```{r}
+aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
+names(aspen90.prob) <- "aspen.prob"
+aspen90.prob01 <- aspen90.prob
+aspen90.prob01[aspen90.prob01>0]<-1
+
+pred.1981_2010 <- rast(here("Data", "Spatial", "predicted_ensemble_1981_2010.tif"))
+pred.2011_2040 <- rast(here("Data", "Spatial", "predicted_ensemble_2011_2040.tif"))
+pred.2041_2070 <- rast(here("Data", "Spatial", "predicted_ensemble_2041_2070.tif"))
+pred.2071_2100 <- rast(here("Data", "Spatial", "predicted_ensemble_2071_2100.tif"))
+
+
+pred.1981_2010[pred.1981_2010>=0.5] <- 1
+pred.1981_2010[pred.1981_2010<0.5] <- 0
+aspen90.preds.dif <- aspen90.prob01
+aspen90.preds.dif[aspen90.preds.dif==1] <- 10
+aspen90.preds.dif <- aspen90.preds.dif - pred.1981_2010
+aspen90.preds.dif[aspen90.preds.dif==-1] <- 2 # false positive
+aspen90.preds.dif[aspen90.preds.dif==9] <- 1 # correct
+aspen90.preds.dif[aspen90.preds.dif==10] <- -1 # false negative
+writeRaster(aspen90.preds.dif, here("Data", "Spatial", "predicted_1981-2010-ensemble-classerror.tif"),overwrite=T)
+
+pred.2011_2040[pred.2011_2040>=0.5] <- 1
+pred.2011_2040[pred.2011_2040<0.5] <- 0
+
+change <- pred.1981_2010
+change[change==1] <- 10
+change <- change- pred.2011_2040
+change[change==-1] <- 2 # gain
+change[change==10] <- -1 # loss
+change[change==9] <- 1 # stable
+writeRaster(change, here("Data", "Spatial", "change_2011-2040-ensemble.tif"), overwrite=T)
+
+pred.2041_2070[pred.2041_2070>=0.5] <- 1
+pred.2041_2070[pred.2041_2070<0.5] <- 0
+
+change <- pred.1981_2010
+change[change==1] <- 10
+change <- change- pred.2041_2070
+change[change==-1] <- 2 # gain
+change[change==10] <- -1 # loss
+change[change==9] <- 1 # stable
+writeRaster(change, here("Data", "Spatial", "change_2041-2070-ensemble.tif"), overwrite=T)
+
+
+pred.2071_2100[pred.2071_2100>=0.5] <- 1
+pred.2071_2100[pred.2071_2100<0.5] <- 0
+
+change <- pred.1981_2010
+change[change==1] <- 10
+change <- change- pred.2071_2100
+change[change==-1] <- 2 # gain
+change[change==10] <- -1 # loss
+change[change==9] <- 1 # stable
+writeRaster(change, here("Data", "Spatial", "change_2071-2100-ensemble.tif"), overwrite=T)
+
+change2011.2040 <- rast(here("Data", "Spatial", "change_2011-2040-ensemble.tif"))
+change2041.2070 <- rast(here("Data", "Spatial", "change_2041-2070-ensemble.tif"))
+change2071.2100 <- rast(here("Data", "Spatial", "change_2071-2100-ensemble.tif"))
+
+
+change2011.2040.f <- freq(change2011.2040) %>% mutate(year="2011-2040")
+change2041.2070.f <- freq(change2041.2070) %>% mutate(year="2041-2070")
+change2071.2100.f <- freq(change2071.2100) %>% mutate(year="2071-2100")
+change.f <- do.call(rbind, list(change2011.2040.f, change2041.2070.f, change2071.2100.f)) %>% filter(!value==0)
+change.f$var <- factor(change.f$value, levels=c(-1,1,2),labels=c("loss", "stable", "gain"))
+change.f$area <- change.f$count*90*90*10^-6
+ggplot(change.f, aes(x=year, y=area,fill=var))+geom_bar(stat="identity", position="dodge")+theme(legend.title=element_blank())+ylab("area (sq. km)")+scale_fill_manual(values=c("#d95f02", "#1b9e77", "#7570b3"))
+
+area.1981.2010 <- freq(pred.1981_2010) %>% filter(value==1) %>% pull(count)
+area.2011.2040 <- freq(pred.2011_2040) %>% filter(value==1) %>% pull(count)
+area.2041.2070 <- freq(pred.2041_2070) %>% filter(value==1) %>% pull(count)
+area.2071.2100 <- freq(pred.2071_2100) %>% filter(value==1) %>% pull(count)
+area.df <- data.frame( year=c("1985-2010","2011-2040", "2041-2070", "2071-2100"), area=c(area.1981.2010, area.2011.2040, area.2041.2070, area.2071.2100))
+area.df$area <- 90*90 * area.df$area *10^-6
+ggplot(area.df, aes(x=year, y=area))+geom_point()+ylab("area (sq. km)")
+
+```
+
+# Results
+
+```{r}
+
+
+
+```
+
+# Discussion
 
 # References
 
@@ -989,29 +1313,6 @@ climate.dat2.1981_2010 <- rast(list.files(here("Data", "Spatial", "Climate", "Cl
 names(climate.dat2.1981_2010) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="Normal", full.names = F), split=".tif")), split="Normal_1981_2010_"), "[",2)
 
 
-
-climate.dat.2011_2040 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2011_2040","ensemble_8GCMs_ssp370_2011_2040_bioclim"), pattern=".tif$", full.names = T))
-names(climate.dat.2011_2040) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2011_2040","ensemble_8GCMs_ssp370_2011_2040_bioclim"), pattern=".tif$", full.names = F), split=".tif")), split="ensemble_8GCMs_ssp370_2011_2040_"), "[", 2)
-
-climate.dat2.2011_2040 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="ssp370_2011_2040_", full.names = T))
-names(climate.dat2.2011_2040) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="ssp370_2011_2040_", full.names = F), split=".tif")), split="ssp370_2011_2040_"), "[",2)
-
-
-
-climate.dat.2041_2070 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2041_2070","ensemble_8GCMs_ssp370_2041_2070_bioclim"), pattern=".tif$", full.names = T))
-names(climate.dat.2041_2070) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2041_2070","ensemble_8GCMs_ssp370_2041_2070_bioclim"), pattern=".tif$", full.names = F), split=".tif")), split="ensemble_8GCMs_ssp370_2041_2070_"), "[", 2)
-
-climate.dat2.2041_2070 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="ssp370_2041_2070_", full.names = T))
-names(climate.dat2.2041_2070) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="ssp370_2041_2070_", full.names = F), split=".tif")), split="ssp370_2041_2070_"), "[",2)
-
-
-climate.dat.2071_2100 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2071_2100","ensemble_8GCMs_ssp370_2071_2100_bioclim"), pattern=".tif$", full.names = T))
-names(climate.dat.2071_2100) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp370_2071_2100","ensemble_8GCMs_ssp370_2071_2100_bioclim"), pattern=".tif$", full.names = F), split=".tif")), split="ensemble_8GCMs_ssp370_2071_2100_"), "[", 2)
-
-climate.dat2.2071_2100 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="ssp370_2071_2100_", full.names = T))
-names(climate.dat2.2071_2100) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="ssp370_2071_2100_", full.names = F), split=".tif")), split="ssp370_2071_2100_"), "[",2)
-
-
 # Compile data
 aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
 aspen.pts <- aspen.pts[sample(1:nrow(aspen.pts), size=10000),]
@@ -1025,31 +1326,13 @@ aspen.pts.1981_2010<- extract(climate.dat.1981_2010, aspen.pts.1981_2010, bind=T
 aspen.pts.1981_2010 <- extract(climate.dat2.1981_2010, aspen.pts.1981_2010, bind=T)
 aspen.pts.1981_2010$year <- "1981-2010"
 
-aspen.pts.2011_2040 <- aspen.pts
-aspen.pts.2011_2040<- extract(climate.dat.2011_2040, aspen.pts.2011_2040, bind=T)
-aspen.pts.2011_2040 <- extract(climate.dat2.2011_2040, aspen.pts.2011_2040, bind=T)
-aspen.pts.2011_2040$year <- "2011-2040"
 
-aspen.pts.2041_2070 <- aspen.pts
-aspen.pts.2041_2070<- extract(climate.dat.2041_2070, aspen.pts.2041_2070, bind=T)
-aspen.pts.2041_2070 <- extract(climate.dat2.2041_2070, aspen.pts.2041_2070, bind=T)
-aspen.pts.2041_2070$year <- "2041-2070"
-
-aspen.pts.2071_2100 <- aspen.pts
-aspen.pts.2071_2100<- extract(climate.dat.2071_2100, aspen.pts.2071_2100, bind=T)
-aspen.pts.2071_2100 <- extract(climate.dat2.2071_2100, aspen.pts.2071_2100, bind=T)
-aspen.pts.2071_2100$year <- "2071-2100"
-
-dat.1981_2010 <- aspen.pts.1981_2010  %>% as.data.frame() %>% na.omit()
+dat <- aspen.pts.1981_2010  %>% as.data.frame() %>% na.omit()
 dat.2011_2040 <- aspen.pts.2011_2040  %>% as.data.frame() %>% na.omit()
 dat.2041_2070 <- aspen.pts.2041_2070 %>% as.data.frame() %>% na.omit()
 dat.2071_2100 <- aspen.pts.2071_2100  %>% as.data.frame() %>% na.omit()
 
-dat <- do.call(rbind, list(dat.1981_2010, dat.2011_2040, dat.2041_2070, dat.2071_2100))
-
 climate.varz <- c("TMAX","ADI","TD","PRATIO","FFP","GSPDD5","Tave_wt","bFFP","CMD","CMI","DD_0","DD_18","DD1040","DD18","DD5","eFFP","EMT","Eref","EXT","GSP","MAP","MAR","MAT","MCMT","MSP","MWMT","NFFD","PAS","PPT_at","PPT_sm","PPT_sp","PPT_wt","RH","SHM","Tave_at","Tave_sm","Tave_sp")
-
-dat2 <- dat[,c(climate.varz,"year", "aspen.presence")]  %>% group_by(year, aspen.presence) %>% summarise(across(everything(),mean), .groups = 'drop') %>% as.data.frame() %>% filter(aspen.presence==1)
 
 dat[,c(climate.varz,"year")] %>% filter(year=="1981-2010") %>% select(-year) %>% cor() %>% round(digits=2) %>% write.csv(here("Results", "climate-var-cor.csv"))
 
@@ -1062,7 +1345,6 @@ dat.dif$abs <- abs(dat.dif[,1] )
 dat.dif[order(dat.dif$abs, decreasing = T),]
 dat.dif$var <- row.names(dat.dif)
 
-library(pROC)
 results <- data.frame(var=climate.varz, AUC=NA)
 for(j in climate.varz){
   modj <- rf(data=dat, dependent.variable.name ="aspen.presence", predictor.variable.names =j, n.cores=cores-1,ranger.arguments = list(num.trees=500, mtry=1, min.node.size=100), verbose=F)
@@ -1078,25 +1360,7 @@ write.csv(results, here("Results", "bivariate-RF-AUC.csv"),row.names=F)
 
 c("ADI",  "PRATIO", "GSPDD5", "GSP", "MCMT", "PPT_sm", "TD","RH", "MAR")
 
-p.ADI <- ggplot(dat.1981_2010, aes(x=ADI, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "ADI"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "ADI"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "ADI"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "ADI"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
 
-p.PRATIO <- ggplot(dat.1981_2010, aes(x=PRATIO, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "PRATIO"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "PRATIO"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "PRATIO"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "PRATIO"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
-
-p.GSPDD5 <- ggplot(dat.1981_2010, aes(x=GSPDD5, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "GSPDD5"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "GSPDD5"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "GSPDD5"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "GSPDD5"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
-
-p.GSP <- ggplot(dat.1981_2010, aes(x=GSP, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "GSP"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "GSP"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "GSP"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "GSP"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
-
-p.MCMT <- ggplot(dat.1981_2010, aes(x=MCMT, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "MCMT"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "MCMT"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "MCMT"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "MCMT"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
-
-p.PPT_sm <- ggplot(dat.1981_2010, aes(x=PPT_sm, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "PPT_sm"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "PPT_sm"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "PPT_sm"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "PPT_sm"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
-
-p.TD <- ggplot(dat.1981_2010, aes(x=TD, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "TD"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "TD"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "TD"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "TD"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
-
-p.RH <- ggplot(dat.1981_2010, aes(x=RH, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "RH"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "RH"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "RH"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "RH"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
-
-p.MAR <- ggplot(dat.1981_2010, aes(x=MAR, y=aspen.presence))+geom_point()+geom_smooth()+geom_vline(aes(xintercept=dat2[dat2$year=="1981-2010", "MAR"]), col="#404040")+geom_vline(aes(xintercept=dat2[dat2$year=="2011-2040", "MAR"]),col="#bababa")+geom_vline(aes(xintercept=dat2[dat2$year=="2041-2070", "MAR"]), col="#f4a582")+geom_vline(aes(xintercept=dat2[dat2$year=="2071-2100", "MAR"]), col="#ca0020")+ylim(0,1) + ylab("aspen presence")
-
-plotz <- p.ADI + p.PRATIO + p.GSPDD5 + p.GSP + p.MCMT + p.PPT_sm + p.TD + p.RH + p.MAR
 ```
 
 +------------+---------------------------------------------------+---------------------------------------+---------------------------------------------------------------------------------------------------------------+
