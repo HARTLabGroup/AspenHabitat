@@ -1,9 +1,0 @@
-"",".metric",".estimator","mean"
-"1","accuracy","binary",0.8982
-"2","f_meas","binary",0.894856434620946
-"3","kap","binary",0.7964
-"4","precision","binary",0.925245621529261
-"5","recall","binary",0.8664
-"6","roc_auc","binary",0.8982
-"7","sens","binary",0.8664
-"8","spec","binary",0.93
