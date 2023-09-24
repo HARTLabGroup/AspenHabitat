@@ -729,7 +729,7 @@ cv_folds <- dat.training %>% st_as_sf(coords=c("x", "y"), remove=F) %>%  st_set_
 
 #### Generalized linear models
 
-GLMs use parametric functions to model the relationship between species presence and predictor variables. Here we used a GLM with a logit link function and a binomial error distribution to account for the structure of presence-absence data and included both linear and quadratic effects for all variables. We did not explore any interaction terms. We fit the GLM using Lasso regularization approach, which allows for model coefficients to be reduced to zero and thus can improve the accuracy of model predictions [@hastie2009ElementsStatisticalLearning]. Using spatial-cross validation, we tuned to the lasso penalty term prior to constructing the final model. GLMs were fit using the *glmnet* package [@glmnet].
+GLMs are extensions of parametric linear regression adapted to distributions other than the normal distribution. Here we used GLMs with a logit link function and a binomial error distribution to account for the structure of presence-absence data. We included both linear and quadratic effects for all variables, but did not explore any interaction terms. We fit the GLM using a Lasso regularization approach, which allows for model coefficients to be reduced to zero, thereby controlling for model complexity and improving tradeoffs between bias (i.e., the difference between the mean prediction from a model and the true value) and variance (i.e., the variability surrounding a prediciton) [@hastie2009ElementsStatisticalLearning]. Using spatial cross-validation, we tuned to the lasso penalty term prior to constructing the final model on the testing dataset. GLMs were fit using the *glmnet* package [@glmnet].
 
 ```{r GLM, eval=F}
 # Specify model
@@ -877,7 +877,7 @@ for(select.scenario in select.scenarios){
 
 #### Random Forests
 
-RF models are an extension of classification and regression trees (CART). RFs are useful for modeling nonlinear relationships and complex interactions, which often characterize ecological relationships [@cutler2007RandomForestsClassification]. Several hyperparamaters can be tuned in RF models. Here we usedFor the RF model, we tuned the minimum number of data points in a node that is required for the node to be split further (min_n) and the number of variables to try at each split (mtry). RF models were fit using the *ranger* package [@ranger].
+RF models are an extension of classification and regression trees (CART), a nonparametric approach useful for modeling the nonlinear relationships and complex interactions that characterize ecological relationships [@cutler2007RandomForestsClassification]. In RF models, many trees are fit and combined using a bagging approach, XXX. Using spatial cross-validation, we tuned the number of variables to try at each split (mtry) and the minimum number of data points in a node that is required for the node to be split further (min_n), while holding the number of trees constant at 1000. RF models were fit using the tidymodels implementation of the *ranger* package [@ranger].
 
 ```{r RF, eval=F}
 # Specify model
@@ -1033,19 +1033,24 @@ for(select.scenario in select.scenarios){
 }
 ```
 
-#### Gradient boosting trees
+#### Regularized gradient boosting trees
 
-GBTs are also For the GBT model, we tuned the minimum number of data points in a node that is required for the node to be split further (min_n), the reduction in the loss function required to split further (loss_reduction), the learning rate (learn_rate) and the maximum depth of the tree (tree_depth). Based on highest AUC, min_n = XXX, loss_reduction = XXX , learn_rate = XXX , and tree_depth = XXX. GBTs were fit using the package xgboost [@xgboost].
+RGBTs are also an ensemble-based extension of CART. In traditional gradient boosting (GB) approaches, decision trees are constructed interatively, which each successive tree using the residuals of the previous model to fit the next model. The final prediction is then a weighted sum of all of the tree predictions. Many traditional GB methods are prone to overfitting due to the emphasis placed upon learning the While RGBTs use advanced regularized approaches to limit overfitting and improve model predictive performance. We used spatial cross-validation to min_n, mtry, the reduction in the loss function required to split further (loss_reduction), the learning rate (learn_rate) and the maximum depth of the tree (tree_depth), . RGBTs were fit using the package xgboost [@xgboost]. The XGBoost algorithm does parallelization within a single tree, th
 
 ```{r XGB, eval=F}
 # Specify model
 xgb_spec <- 
   boost_tree(
     trees=1000,
-    tree_depth=tune(), min_n=tune(), loss_reduction=tune(), ## model complexity
-    learn_rate=tune() # step size
+    tree_depth=tune(), #the maximum depth of the tree (i.e. number of splits).
+    min_n=tune(), #the minimum number of data points in a node that are required for the node to be split further
+    loss_reduction=tune(), # The reduction in the loss function required to split further
+    sample_size=tune(), # The amount of data exposed to the fitting routine
+    mtry=tune(), #The number of predictors that will be randomly sampled at each split when creating the tree models
+    learn_rate=tune(), # The rate at which the boosting algorithm adapts from iteration-to-iteration.
+    stop_iter = tune() # The number of iterations without an improvement in the objective function occur before training should be halted
   ) %>%
-  set_engine("xgboost", objective = "binary:logistic") %>% 
+  set_engine("xgboost", objective = "binary:logistic", validation = 0.2) %>% 
   set_mode("classification")
 
 # Create workflow
@@ -1055,20 +1060,17 @@ xgb_wflow <-
   add_model(xgb_spec)
 
 # Tune model
-### Set parameters to be tuned
-xgboost_params <- 
-  dials::parameters(
-    tree_depth(),
-    min_n(),
-    loss_reduction(),
-    learn_rate()
-)
-
 ## Create grid of search values
 xgboost_grid <- 
   dials::grid_latin_hypercube(
-    xgboost_params, 
-    size = 50
+      tree_depth(),
+      min_n(),
+      loss_reduction(),
+      sample_size = sample_prop(), # needs to be a proportion
+      finalize(mtry(), training_data), 
+      learn_rate(),
+      stop_iter(),
+      size = 50
 )
 
 ### Perform tuning
@@ -1200,53 +1202,55 @@ We calculated a weighted probability of occurrence from all three presence-absen
 
 ```{r WeightedEnsemble}
 ensemble.set <- c("GLM", "RF", "XGB")
-if(!file.exists(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))){
-  weights <- NULL 
-  for(j in ensemble.set){
+weights <- NULL 
+for(j in ensemble.set){
     weights<- c(weights, read.csv(here("Results", paste0(j, "-testing-stats.csv"))) %>% filter(.metric=="roc_auc") %>% select(`.estimate`))
-  }
-  names(weights) <- ensemble.set 
-  weights <- do.call(c, weights)
-  weights <- weights/sum(weights)
+}
+names(weights) <- ensemble.set 
+weights <- do.call(c, weights)
+weights <- weights/sum(weights)
 
-  # Normals
-  stackk<- NULL
-  if(!file.exists(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))){
-    for(j in ensemble.set){
-      stackk <- c(stackk, rast(paste0(here("Data", "Spatial", "Predictions"), "/predicted_1981-2010", "-", j , ".tif"))* weights[j])
+#Normals
+stackk<- NULL
+if(!file.exists(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))){
+  for(j in ensemble.set){
+    stackk <- c(stackk, rast(paste0(here("Data", "Spatial", "Predictions"), "/predicted_1981-2010", "-", j , ".tif"))* weights[j])
   }
   stackj <- sum(do.call(c,stackk))
   writeRaster(stackj, here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"), overwrite=T)
-  }
-  stackj <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))
+}
   
+if(!file.exists(here("Results", "Ensemble-prediction-threshold.csv"))){
+  stackj <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))
+  dat.testing <- read.csv(here("Data", "dat_testing.csv"))[,-1]
   x <-  vect(dat.testing, geom=c("x", "y"), crs=crs(stackj))
   x <- extract(stackj, x, bind=T) %>% as.data.frame()
   colnames(x)[1] <- "truth"
   colnames(x)[ncol(x)] <- "estimate"
-  
+  x$truth <- factor(x$truth)
+    
   # Best threshold
-  x %>%
-    threshold_perf(truth="truth", estimate="estimate", threshold=seq(0,1, by=0.0025), event_level="second") %>%
-    write.csv(here("Results", "Ensemble-prediction-threshold.csv"))
+  x %>% threshold_perf(truth="truth", estimate="estimate", threshold=seq(0,1, by=0.0025), event_level="second") %>% write.csv(here("Results", "Ensemble-prediction-threshold.csv"))
+}
   
-  read.csv(here("Results", "Ensemble-prediction-threshold.csv")) %>% 
-    filter(.metric == "j_index") %>%
-    filter(.estimate == max(.estimate)) %>%
-    pull(.threshold) -> threshold.ensemble
+read.csv(here("Results", "Ensemble-prediction-threshold.csv")) %>% 
+  filter(.metric == "j_index") %>%
+  filter(.estimate == max(.estimate)) %>%
+  pull(.threshold) -> threshold.ensemble
   
-  # Forecast
-  select.scenarios<- c("ssp245", "ssp585")
-  select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
-  for(select.scenario in select.scenarios){
+# Forecast
+select.scenarios<- c("ssp245", "ssp585")
+select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
+for(select.scenario in select.scenarios){
     for(years in select.years.all){
-      stackk<- NULL
-      for(j in ensemble.set){
-      stackk <- c(stackk, (rast(paste0(here("Data", "Spatial", "Predictions"), "/predicted_ensemble_8GCMs_", select.scenario, years, "-", j , ".tif"))* weightj[[j]]$.estimate))
-      }
-     stackj <- stackk[[1]] +stackk[[2]]+stackk[[3]]
-     writeRaster(stackj, paste0(here("Data", "Spatial", "Predictions"), "/predicted_ensemble_8GCMs_", select.scenario, years, "-ensemble.tif"), overwrite=T)
-     stackj <- NULL
+      if(!file.exists(paste0(here("Data", "Spatial", "Predictions"), "/predicted_ensemble_8GCMs_", select.scenario, years, "-ensemble.tif"))){
+         stackk<- NULL
+        for(j in ensemble.set){
+        stackk <- c(stackk, (rast(paste0(here("Data", "Spatial", "Predictions"), "/predicted_ensemble_8GCMs_", select.scenario, years, "-", j , ".tif"))* weights[j]))
+        }
+       stackj <- stackk[[1]] +stackk[[2]]+stackk[[3]]
+       writeRaster(stackj, paste0(here("Data", "Spatial", "Predictions"), "/predicted_ensemble_8GCMs_", select.scenario, years, "-ensemble.tif"), overwrite=T)
+       stackj <- NULL
     }
   }
 }
@@ -1569,10 +1573,8 @@ ggsave(p1, filename=here("Results", "Figures", "area-timeseries.jpg"), width=90,
 ```
 
 ```{r GenFutureMap}
-
-if(!file.exists(here("Results", "Figures", "FigMaps-Change.jpg"))){
-  pred19812010 <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))
-  pred19812010[pred19812010>1] <- 1
+pred19812010 <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))  
+pred19812010[pred19812010>1] <- 1
   pred20112040 <- rast(here("Data", "Spatial", "Predictions","predicted_ensemble_8GCMs_ssp585_2011_2040-ensemble.tif"))
   pred20412070 <- rast(here("Data", "Spatial", "Predictions","predicted_ensemble_8GCMs_ssp585_2041_2070-ensemble.tif"))
   pred20712100 <- rast(here("Data", "Spatial", "Predictions","predicted_ensemble_8GCMs_ssp585_2041_2070-ensemble.tif"))
@@ -1591,7 +1593,7 @@ if(!file.exists(here("Results", "Figures", "FigMaps-Change.jpg"))){
   jpeg(Fig.file, width=7, height=3.25, units="in", res=300)
   tmap_arrange(tm.19812010, tm.20112040, tm.20412070, tm.20712100, nrow=1)
   whatever <- dev.off()
-}
+
 
 ```
 
@@ -1650,7 +1652,6 @@ if(!file.exists(here("Data", "Spatial", "Predictions", "lossgain-ssp585.tif"))){
   writeRaster(ssp585.pred.cat, here("Data", "Spatial", "Predictions", "lossgain-ssp585.tif"), overwrite=T)
 }
 
-if(!file.exists(here("Results", "Figures", "FigMaps-LossGain.jpg"))){
 ssp245<- rast(here("Data", "Spatial", "Predictions", "lossgain-ssp245.tif"))
 ssp245 <- subst(ssp245, 0, NA)
 ssp585<- rast(here("Data", "Spatial", "Predictions", "lossgain-ssp585.tif"))
@@ -1662,44 +1663,44 @@ tm.ssp585<- tm_shape(study.area)+tm_fill(col="grey25")+tm_shape(ssp585[[3]])+tm_
 Fig.file <- here("Results", "Figures", "FigMaps-LossGain.jpg")
   jpeg(Fig.file, width=3.5, height=3.25, units="in", res=300)
   tmap_arrange(tm.ssp245, tm.ssp585, nrow=1)
-  whatever <- dev.off()
+whatever <- dev.off()
   
 ##  Spatial patterns
+if(!file.exists(here("Results", "Figures", "gainloss-geography.jpg"))){
+  elev <- rast(here("Data", "Spatial", "DEM", "DEM250.tif"))
+  aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
+  pts <- ssp245 %>%  spatSample(size=5000,na.rm=T, method="stratified", as.points=T, exhaustive=T)
+  pts <- extract(ssp245, pts, bind=T)
+  pts <- extract(ssp585, pts, bind=T) 
+  pts <- extract(aspen90.prob, pts, bind=T) %>% terra::project(crs(elev))
+  pts <- extract(elev, pts, bind=T, spatial=T)
+  pts.coords <- crds(pts %>% terra::project('EPSG:4326') , df=T)
   
-elev <- rast(here("Data", "Spatial", "DEM", "DEM250.tif"))
-aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
-pts <- ssp245 %>%  spatSample(size=5000,na.rm=T, method="stratified", as.points=T, exhaustive=T)
-pts <- extract(ssp245, pts, bind=T)
-pts <- extract(ssp585, pts, bind=T) 
-pts <- extract(aspen90.prob, pts, bind=T) %>% terra::project(crs(elev))
-pts <- extract(elev, pts, bind=T, spatial=T)
-pts.coords <- crds(pts %>% terra::project('EPSG:4326') , df=T)
-
-dat <- cbind(as.data.frame(pts)[,-1], pts.coords)
-colnames(dat) <- c(paste("SSP2-4.5", c("2011-2040", "2041-2070","2071-2100"), sep=":"), paste("SSP5-8.5", c("2011-2040", "2041-2070","2071-2100"), sep=":"), "Percent aspen", "Elevation (m)", "Longitude (°)","Latitude (°)")
-dat$`Percent aspen` <- dat$`Percent aspen`*100
-
-
-dat <- pivot_longer(dat,
-    cols = 'SSP2-4.5:2011-2040':'SSP5-8.5:2071-2100', 
-    names_to = "time period",
-    values_to = "value"
-)
-
-dat$scenario <- sapply(strsplit(dat$`time period`, split=":"), "[", 1)
-dat$`time period` <- sapply(strsplit(dat$`time period`, split=":"), "[", 2)
-dat$value <- factor(dat$value, levels=c(1,11,10), labels=c("loss", "stable", "gain"))
-
-datx <- pivot_longer(dat,
-    cols = `Percent aspen`:`Latitude (°)`, 
-    names_to = "variable",
-    values_to = "val"
-)
-datx$`time period` <- factor(datx$`time period`, levels=c("2011-2040", "2041-2070","2071-2100"), labels=c("2011-\n2040", "2041-\n2070","2071-\n2100"))
-datx <- datx %>% na.omit()
-p1<-ggplot(datx, aes(x=`time period`, y=val,fill=value))+geom_boxplot(outlier.size = 0.5)+facet_grid(variable~scenario, scales="free")+theme(legend.position="bottom", legend.title=element_blank())+ylab("value")+scale_fill_manual(values=c("#fdc086","#386cb0", "#7fc97f"))
-
-ggsave(p1, filename=here("Results", "Figures", "gainloss-geography.jpg"), width=90, height=150, units="mm")  
+  dat <- cbind(as.data.frame(pts)[,-1], pts.coords)
+  colnames(dat) <- c(paste("SSP2-4.5", c("2011-2040", "2041-2070","2071-2100"), sep=":"), paste("SSP5-8.5", c("2011-2040", "2041-2070","2071-2100"), sep=":"), "Percent aspen", "Elevation (m)", "Longitude (°)","Latitude (°)")
+  dat$`Percent aspen` <- dat$`Percent aspen`*100
+  
+  
+  dat <- pivot_longer(dat,
+      cols = 'SSP2-4.5:2011-2040':'SSP5-8.5:2071-2100', 
+      names_to = "time period",
+      values_to = "value"
+  )
+  
+  dat$scenario <- sapply(strsplit(dat$`time period`, split=":"), "[", 1)
+  dat$`time period` <- sapply(strsplit(dat$`time period`, split=":"), "[", 2)
+  dat$value <- factor(dat$value, levels=c(1,11,10), labels=c("loss", "stable", "gain"))
+  
+  datx <- pivot_longer(dat,
+      cols = `Percent aspen`:`Latitude (°)`, 
+      names_to = "variable",
+      values_to = "val"
+  )
+  datx$`time period` <- factor(datx$`time period`, levels=c("2011-2040", "2041-2070","2071-2100"), labels=c("2011-\n2040", "2041-\n2070","2071-\n2100"))
+  datx <- datx %>% na.omit()
+  p1<-ggplot(datx, aes(x=`time period`, y=val,fill=value))+geom_boxplot(outlier.size = 0.5)+facet_grid(variable~scenario, scales="free")+theme(legend.position="bottom", legend.title=element_blank())+ylab("value")+scale_fill_manual(values=c("#fdc086","#386cb0", "#7fc97f"))
+  
+  ggsave(p1, filename=here("Results", "Figures", "gainloss-geography.jpg"), width=90, height=150, units="mm")  
 }
 ```
 
@@ -1721,22 +1722,24 @@ if(!dir.exists(here("Data", "Spatial", "Aspen", "Focal"))){
 
 focal.sum <- rast(here("Data", "Spatial", "Aspen", "Focal","Aspen-sum.tif"))
 focal.sum[focal.sum==0] <- -1
- read.csv(here("Results", "Ensemble-prediction-threshold.csv")) %>% 
-    filter(.metric == "j_index") %>%
-    filter(.estimate == max(.estimate)) %>%
-    pull(.threshold) -> threshold.ensemble
 
- ssp245<- rast(here("Data", "Spatial", "Predictions", "lossgain-ssp245.tif"))
+read.csv(here("Results", "Ensemble-prediction-threshold.csv")) %>% 
+  filter(.metric == "j_index") %>%
+  filter(.estimate == max(.estimate)) %>%
+  pull(.threshold) -> threshold.ensemble
+
+ssp245<- rast(here("Data", "Spatial", "Predictions", "lossgain-ssp245.tif"))
 ssp245 <- subst(ssp245, c(0,1,11), NA)
 ssp585<- rast(here("Data", "Spatial", "Predictions", "lossgain-ssp585.tif"))
 ssp585 <- subst(ssp585, c(0,1,11), NA)
  
-  ssp245.dist <-  ssp245 * focal.sum 
-  ssp585.dist <-  ssp585* focal.sum 
-  writeRaster(ssp245.pred.dist, here(here("Data", "Spatial", "Predictions", "ssp245-gain-distance.tif")), overwrite=T)
+ssp245.dist <-  ssp245 * focal.sum 
+ssp585.dist <-  ssp585* focal.sum 
+writeRaster(ssp245.dist, here(here("Data", "Spatial", "Predictions", "ssp245-gain-distance.tif")), overwrite=T)
+writeRaster(ssp585.dist, here(here("Data", "Spatial", "Predictions", "ssp585-gain-distance.tif")), overwrite=T)
   
-  ssp245dat <- ssp245.dist %>% freq() %>% filter(!value==0) %>% group_by(layer) %>% mutate(prop=count/sum(count), scenario="SSP2-4.5")
-  ssp585dat <- ssp585.dist %>% freq() %>% filter(!value==0) %>% group_by(layer) %>%  mutate(prop=count/sum(count), scenario="SSP5-8.5")
+ssp245dat <- ssp245.dist %>% freq() %>% filter(!value==0) %>% group_by(layer) %>% mutate(prop=count/sum(count), scenario="SSP2-4.5")
+ssp585dat <- ssp585.dist %>% freq() %>% filter(!value==0) %>% group_by(layer) %>% mutate(prop=count/sum(count), scenario="SSP5-8.5")
   
   dist.dat <- rbind(ssp245dat, ssp585dat) %>% mutate(years = factor(layer, levels=1:3, labels=c("2011-2040", "2041-2070", "2071-2100")), distance=factor(value/10, levels=c(1:6, -1), labels=c("90", "180", "270", "540", "1080", "2070", ">2070")) )
   
@@ -1760,11 +1763,11 @@ Fig.file <- here("Results", "Figures", "FigMaps-Gain-Distance.jpg")
 
 ## Model performance
 
-The ensemble model correctly predicted the presence of aspen for `r results.photo %>% filter(model=='Ensemble') %>% pull(percent)`% of points identification points (n=`r results.photo %>% filter(model=='Ensemble') %>% pull(n)`.
+The ensemble model correctly predicted the presence of aspen for `r results.photo %>% filter(model=='Ensemble') %>% pull(percent)`% of points identification points (n=`r results.photo %>% filter(model=='Ensemble') %>% pull(n)`).
 
 (Table \@ref(tab:PerformanceTab)).
 
-(Table \@ref(tab:TrainingPerformance)).
+(Table \@ref(tab:TrainingPerformanceTab)).
 
 ```{r PerformanceTab}
 results <- read.csv(here("results", "training-accuracy-stats-combined.csv")) %>% mutate(.estimate=round(.estimate, 2)) %>% select(-X, -.estimator) %>% spread(.metric, .estimate)
@@ -1772,7 +1775,7 @@ colnames(results) <- c("Model", "Accuracy", "F measure", "kappa", "Precision", "
 results <- results %>% filter(Model %in% c(ensemble.set, "Ensemble"))
 results[results$Model=="XGB"]$Model <-  "GBT"
 
-results %>%  flextable() %>% set_caption(caption="Model performance statistics. Observed values are from independent testing data and predicted value assume a modeled probabilty of aspen occurrence of at least 0.5") %>% autofit() %>% set_table_properties(layout = "autofit")
+results %>%  flextable() %>% set_caption(caption="Model performance statistics. Observed values are from independent testing data.") %>% autofit() %>% set_table_properties(layout = "autofit")
 ```
 
 ### Variable importance
@@ -1992,7 +1995,7 @@ knitr::include_graphics(here("Results/Figures/CorrelationMatrix.jpg"), dpi = NA)
 knitr::include_graphics(here("Results/Figures/climatevarselection-bar.jpg"), dpi = NA)
 ```
 
-```{r FigClimate, fig.cap="Paired violin plots illustrating the ", out.width = "90mm"}
+```{r FigClimate, fig.cap="Paired violin plots illustrating the ", out.width = "180mm", out.height="180mm"}
 knitr::include_graphics(here("Results/Figures/climate-violin.jpg"), dpi = NA)
 ```
 
@@ -2027,7 +2030,7 @@ gam_params <-
 gam_grid <- 
   dials::grid_latin_hypercube(
     gam_params, 
-    size = 10
+    size = 50
 )
 
 
@@ -2154,11 +2157,83 @@ for(select.scenario in select.scenarios){
 
 ```
 
+```{r VIPGAM, out.width="180mm", out.height="110mm"}
+ensemble.set <- c("GLM", "GAM", "RF", "XBG")
+
+pred.vars = c("ADI", "PRATIO", "DD_0", "RH", "om", "tpi3", "thetas", "clay", "hli")
+if(!file.exists(here("Results", "Figures", "vip-ale-withGAM.jpg"))){
+  
+  normals90 <- rast(here("Data", "Spatial", "Downscaled", "Normals90.tif"))[[c("ADI",   "PRATIO", "DD_0", "RH")]]
+  
+  aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
+  names(aspen90.prob) <- "aspen.prob"
+  aspen90.prob01 <- aspen90.prob
+  aspen90.prob01[aspen90.prob01>0]<-1
+
+  aspen90.prob01.sample <- aspen90.prob01%>% spatSample(size=10000, as.points=T, method="stratified", na.rm=T, exhaustive=T, exp=10) %>% filter(aspen.prob==1)
+
+  normals90.df <- terra::extract(normals90,  aspen90.prob01.sample) %>% as.data.frame() %>% mutate(Years="1981-2010", scenario="historical")
+  results <-normals90.df 
+  select.scenarios<- c( "ssp245", "ssp585")
+  select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
+  for(select.scenario in select.scenarios){
+    for(years in select.years.all){
+      climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, years, "_90.tif"))[[c("ADI",   "PRATIO", "DD_0","RH")]] 
+       climate90 <- extract(climate90,  aspen90.prob01.sample)  %>% mutate(Years=years, scenario=select.scenario)
+       results <- rbind(results, climate90)
+    }
+  }
+    
+  results <- results %>% pivot_longer(cols=ADI:RH)
+  results$Years <- factor(results$Years, levels=c("1981-2010", "_2011_2040", "_2041_2070", "_2071_2100"), labels=c("1981-2010", "2011-2040", "2041-2070", "2071-2100"), ordered=T)
+  results$scenario <- factor(results$scenario, levels=c("historical", "ssp245", "ssp585"), labels=c("historical", "SSP2-4.5", "SSP5-8.5"))
+  results <- results %>% group_by(Years, scenario, name) %>% summarise(mean=mean(value, na.rm=T)) %>% filter(scenario %in% c("SSP5-8.5", "historical")) %>% filter(name %in%c("ADI", "PRATIO", "DD_0", "OM"))
+  results$X_vname_ <- results$name
+  
+
+  vip.glm <- read.csv(here("Results", "vip-glm.csv"))
+  vip.glm$dropout_loss <- vip.glm$dropout_loss / max(vip.glm$dropout_loss)
+  vip.rf <- read.csv(here("Results", "vip-rf.csv"))
+  vip.rf$dropout_loss <- vip.rf$dropout_loss / max(vip.rf$dropout_loss)
+  vip.xgb <- read.csv(here("Results", "vip-xgb.csv"))
+  vip.xgb$dropout_loss <- vip.xgb$dropout_loss / max(vip.xgb$dropout_loss)
+  vip.gam <- read.csv(here("Results", "vip-gam.csv"))
+  vip.gam$dropout_loss <- vip.gam$dropout_loss / max(vip.gam$dropout_loss)
+
+  vip.dat <- rbind(vip.glm, vip.rf, vip.xgb, vip.gam)  %>% filter(!variable %in% c("_full_model_", "_baseline_", "aspen.prob", "x", "y", "cell")) 
+  var.order <- vip.dat %>% group_by(variable) %>% summarise(mean=mean(dropout_loss)) %>% arrange(mean) %>% pull(variable)
+  var.order.labs <- var.order
+  var.order.labs[var.order.labs=="tpi3"] <- "TPI3"
+  var.order.labs[var.order.labs=="hli"] <- "HLI"
+  var.order.labs[var.order.labs=="clay"] <- "Clay"
+  var.order.labs[var.order.labs=="thetas"] <- "SWC"
+  vip.dat$variable <- factor(vip.dat$variable, levels=var.order, labels=var.order.labs, ordered=T)
+  vip.dat[vip.dat$Model=="XGB",]$Model<- "GBT"
+  
+  p1 <- vip.dat %>% filter(variable %in% pred.vars) %>%ggplot(aes(x=variable, y=dropout_loss, col=Model))+geom_boxplot()+coord_flip()+theme(legend.position="bottom")+theme(axis.title.y=element_blank())+ylab("relative variable importance")+scale_color_cosmic()
+
+  ale.glm <- read.csv(here("Results", "pdp-GLM.csv"))
+  ale.xgb <- read.csv(here("Results", "pdp-xgb.csv"))
+  ale.rf <- read.csv(here("Results", "pdp-RF.csv"))
+  ale.gam <- read.csv(here("Results", "pdp-gam.csv"))
+  ale.dat <- rbind(ale.glm, ale.xgb, ale.rf, ale.gam)
+  ale.dat[ale.dat$X_vname_=="om", "X_vname_"] <- "OM"
+  
+  
+  
+  p2 <-  ale.dat %>% filter(X_vname_ %in% c("ADI", "PRATIO", "DD_0", "OM")) %>% filter(Model %in% c("XGB", "RF", "GLM", "GAM")) %>% ggplot( aes(x=X_x_,y=X_yhat_, col=Model)) +geom_line(show.legend = FALSE)+theme(legend.position="bottom")+ylab("probability of aspen presence")+xlab("value")+scale_color_cosmic()+facet_wrap(~X_vname_, scales="free_x",nrow=2)+geom_vline(data=results, aes(xintercept=mean, lty=Years),linewidth=0.5)
+  p12 <- p1+theme(legend.position = "none")+ p2 +plot_layout(nrow=1)+plot_annotation(tag_levels="A")+ plot_layout(guides = "collect") & theme(legend.position = 'bottom')
+   ggsave(p12, filename=here("Results", "Figures", "vip-ale-withGAM.jpg"), width=180, height=110, units="mm")
+}
+knitr::include_graphics(here("Results/Figures/vip-ale-withGAM.jpg"), dpi = NA)
+```
+
+
 \newpage
 
 # Appendix D: Model Performance
 
-```{r TrainingPerformance}
+```{r TrainingPerformanceTab}
 glm.train.perfom <- read.csv(here("Results", "glm-training-stats.csv"))
 xgb.train.perfom <- read.csv(here("Results", "xgb-training-stats.csv"))
 rf.train.perfom <- read.csv(here("Results", "RF-training-stats.csv"))
@@ -2170,10 +2245,10 @@ train.perform$.estimate <- do.call(paste0, train.perform[,c("mean", "std_err")])
 results <- train.perform %>%  select(-X, -.estimator, -std_err, -.config, -Dataset, -n, -mean)  %>% spread(.metric, .estimate)
 colnames(results) <- c("Model", "Accuracy", "F measure", "kappa", "Precision", "Recall", "AUC ROC", "Sensitivity", "Specificity")
 results$Model <- factor(results$Model, levels=c("GLM", "GAM", "RF", "XGB"), labels=c("GLM", "GAM", "RF", "GBT"))
-results %>% flextable() %>%  set_caption(caption="Model performance statistics from spatial cross-validation. Values show the mean ± one standard error.") %>% autofit() %>% set_table_properties(layout = "autofit")
+results %>% filter(Model %in% c("GLM", "RF", "GBT")) %>% flextable() %>%  set_caption(caption="Model performance statistics from spatial cross-validation. Values show the mean ± one standard error.") %>% autofit() %>% set_table_properties(layout = "autofit")
 ```
 
-```{r ErrorPattern, fig.cap="The relationship between geographic position and model performance.",  out.width="180mm", out.height="60mm"}
+```{r ErrorPatternFig, fig.cap="The relationship between geographic position and model performance.",  out.width="180mm", out.height="60mm"}
 knitr::include_graphics(here("Results", "Figures", "ensemeble-error-pattern.jpg"), dpi=NA)
 ```
 
