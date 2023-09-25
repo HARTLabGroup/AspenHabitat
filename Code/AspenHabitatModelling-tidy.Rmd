@@ -461,7 +461,7 @@ for(select.scenario in select.scenarios){
 ```{r Downscale}
 source(here("Code", "GIDS-Downscaling-SJH.R"))
 if(!dir.exists(here("Data", "Spatial", "Downscaled"))){
-    # Set desired projection
+  # Set desired projection
   proj.proj <- "+proj=utm +zone=13 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
   
   # Import study area boundary
@@ -529,7 +529,8 @@ if(!dir.exists(here("Data", "Spatial", "Downscaled"))){
   ## FUTURE
   select.scenarios<- c("ssp245", "ssp585")
   select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
-  select.climate.variables <-c( "DD_0", "MAR", "RH")
+  select.climate.variables <-c( "DD_0", "MAR", "TD")
+  select.climate.variables <-"TD"
   select.derived.climate.variables <-c( "ADI", "PRATIO")
  
   
@@ -602,7 +603,7 @@ if(!file.exists(here("Data", "Spatial", "Aspen", "srme_skcv_probability_mosaic-9
 }
 
 
-#aggregate 
+# soils
 if(!file.exists(filename=here("Data", "Spatial", "Soils", "Soils90.tif"))){
   aspen90 <- rast(here("Data", "Spatial", "Aspen", "srme_skcv_probability_mosaic-90.tif"))
   ph <- rast(here("Data", "Spatial", "Soils", "meanPh_5_15-SRM.tif"))  
@@ -698,14 +699,13 @@ aspen.sample.pts <- aspen.pts %>% as.data.frame() %>% filter(cell %in% aspen90.1
 # Remove collinear variables
 dat <- aspen.sample.pts %>% na.omit()
 dat$aspen.presence <- dat$aspen.presence %>% as.factor()
-pred.vars <- dat[, c(select.variables, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")] %>% spatialRF::auto_vif(vif.threshold = 5, preference.order = select.variables) %>% spatialRF::auto_cor(cor.threshold = 0.75)
+pred.vars <- dat[, c(select.variables, "om", "tpi3", "pH", "thetas", "clay", "hli")] %>% spatialRF::auto_vif(vif.threshold = 5, preference.order = select.variables)
 
 pred.vars <- pred.vars$selected.variables
 remove.vars <- c(select.variables, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")[!c(select.variables, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli") %in% pred.vars]
 
-
 dat_split <- initial_split(
-  dat <- dat, 
+  dat <- dat %>% group_by(aspen.presence) %>% sample_n(size=10000),
   prop = 0.5, 
   strata = aspen.presence
 )
@@ -744,7 +744,7 @@ glm_spec <-
 glm_wflow <- 
   workflow() %>% 
   add_recipe(presence.recipe) %>% 
-  add_model(glm_spec, formula=aspen.presence~ poly(ADI, 2, raw = TRUE) + poly(PRATIO,2, raw = TRUE) + poly(GSPDD5, 2, raw = TRUE) + poly(TD, 2, raw = TRUE) + poly(tpi3, 2, raw = TRUE)  + poly(clay, 2, raw = TRUE))
+  add_model(glm_spec, formula=aspen.presence~ poly(ADI, 2, raw = TRUE) + poly(PRATIO,2, raw = TRUE) + poly(TD, 2, raw = TRUE) + poly(tpi3, 2, raw = TRUE)  + poly(clay, 2, raw = TRUE))
 
 # Tune model
 ### Set parameters to be tuned
@@ -847,12 +847,11 @@ select.scenarios<- c( "ssp245", "ssp585")
 select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
 for(select.scenario in select.scenarios){
   for(years in select.years.all){
-      climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, years, "_90.tif"))[[c("ADI",   "PRATIO", "DD_0", "MAR", "RH")]]
+      climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, years, "_90.tif"))[[c("ADI",   "PRATIO", "GSPDD5", "TD", "DD_0", "RH")]]
     # Compile data
     aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
     aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
     aspen.pts <- extract(climate90, aspen.pts, bind=T)
-    aspen.pts$TD <- -9999
     aspen.pts$GSP <- -9999
     aspen.pts <- extract(topo90, aspen.pts, bind=T)
     aspen.pts <- extract(soil90, aspen.pts, bind=T)
@@ -1001,12 +1000,11 @@ select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
 for(select.scenario in select.scenarios){
   for(years in select.years.all){
     if(!file.exists(paste0(here("Data", "Spatial", "Predictions"), "/predicted_ensemble_8GCMs_", select.scenario, years, "-rf.tif"))){
-      climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, years, "_90.tif"))[[c("ADI",   "PRATIO", "GSPDD5",  "TD")]]
+      climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, years, "_90.tif"))[[c("ADI",   "PRATIO", "GSPDD5", "TD", "DD_0", "RH")]]
     # Compile data
     aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
     aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
     aspen.pts <- extract(climate90, aspen.pts, bind=T)
-    aspen.pts$TD <- -9999
     aspen.pts$GSP <- -9999
     aspen.pts <- extract(topo90, aspen.pts, bind=T)
     aspen.pts <- extract(soil90, aspen.pts, bind=T)
