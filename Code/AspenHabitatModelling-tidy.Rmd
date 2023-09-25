@@ -119,10 +119,15 @@ dir.create(here("Results", "Figures"), showWarnings = FALSE)
 
 # Highlights
 
--   Across the Southern Rocky Mountains, aspen occupies a wide climatic niche.
+-   
+
 -   
 
 # Introduction
+
+Climate change is altering species distributions. Understanding how range shifts and population persistence is essential for adaptive management.
+
+Refugia
 
 Specifically our objectives are to: (1) better understand the relationships between aspen presence and climate, topographic, and edaphic factors and (2) map the area suitable for aspen under current climate conditions, and (3) project areas where aspen may expand, contract, or remain stable.
 
@@ -130,7 +135,7 @@ Specifically our objectives are to: (1) better understand the relationships betw
 
 ## Study area
 
-The study area consists of the Southern Rocky Mountains Ecoregion (SRME), an area of approximately 145,700 km^2^ that extends from southern Wyoming to northern New Mexico (Fig. \@ref(fig:StudyArea). The SRME consists of rugged, topography with elevation ranging from 1450 m to above 4400 m, seven mountain ranges that largely trend north-south, and four Intermontane basins [@drummond2012SouthernRockiesEcoregion]. The climate of the SRME is characterized by a continental climate, with hot summers (mean July maximum temperature of 24.5°C) and cool winters (mean January minimum temperatures of -12.3°C), and moderate precipitation (mean annual precipitation of 625 mm), most of which falls as snow [@lukas2014ClimateChangeColorado; @rodman2021EffectsBarkBeetle]. At local scales, the climate is driven by elevation gradients, the prevailing westerly winds, and the north-south orientation of the mountains. Temperature is generally greatest at low elevations, while total annual precipitation is generally greatest at higher elevations, particularly on the windward side of the Rockies [@lukas2014ClimateChangeColorado]. Summer precipitation patterns exhibit a distinct latitudinal gradient, where more southern locations often recieve more precipitation due to the North American Monsoon system [@lukas2014ClimateChangeColorado].
+The study area consists of the Southern Rocky Mountains Ecoregion (SRME), an area of approximately 145,700 km^2^ that extends from southern Wyoming to northern New Mexico (Fig. \@ref(fig:StudyArea). The SRME consists of rugged, topography with elevation ranging from 1450 m to above 4400 m, seven mountain ranges that largely trend north-south, and four Intermontane basins [@drummond2012SouthernRockiesEcoregion]. The climate of the SRME is characterized by a continental climate, with hot summers (mean July maximum temperature of 24.5°C) and cool winters (mean January minimum temperatures of -12.3°C), and moderate precipitation (mean annual precipitation of 625 mm), most of which falls as snow [@lukas2014ClimateChangeColorado; @rodman2021EffectsBarkBeetle]. At local scales, the climate is driven by elevation gradients, the prevailing westerly winds, and the north-south orientation of the mountains. Temperature is generally greatest at low elevations, while total annual precipitation is generally greatest at higher elevations, particularly on the windward side of the Rockies [@lukas2014ClimateChangeColorado]. Summer precipitation patterns exhibit a distinct latitudinal gradient, where more southern locations often receive more precipitation due to the North American Monsoon system [@lukas2014ClimateChangeColorado].
 
 Ecosystems of the SRME correspond with topoclimatic patterns; low elevation valleys and intermountain basins are dominated by grasslands and shrublands, forest occupy intermediate elevations, while grasses, sedges, cushion plants, forbs, mosses, and lichens dominate cold, alpine elevations [@comer2001SouthernRockyMountains]. Within the ca. 55% of the SRME that is forested [@drummond2012SouthernRockiesEcoregion], topoclimatic variation drives tree species composition. Lower Montane forests (\< 2,300 m) are generally composed of ponderosa pine (*Pinus ponderosae*) woodlands, piñon (*Pinus edulis*) and juniper (*Juniperus* spp.) woodlands, and gambel oak (*Quercus gambelii*) shrublands. Forests of the Upper Montane zone (ca. 2,300 - 2,800 m) are dominated by ponderosa pine-Douglas fir mixed conifer systems, quaking aspen, and lodgepole pine (*Pinus contorta*). Forests of the subalpine zone (ca. 2,800 m - 3,200 m) are dominated by Engelmann spruce, subalpine fir, and to a lesser limber pine (*Pinus flexilis)* and Rocky Mountain bristlecone pine (*P. aristata).* Forests dynamics across the SRME are strongly shaped by climate-sensitive disturbances, notably wildfires, outbreaks of native bark beetles, and windstorms [@peet1981ForestVegetationColorado; @baker1990; @veblen1994DisturbanceRegimeDisturbance; @veblen2000ClimaticHumanInfluences].
 
@@ -160,9 +165,7 @@ download.file("https://1drv.ms/u/s!Aq4s9rj0qHBilL4B4PH1amvdUoiLyg?e=jHRUWI", tem
 
 ### Predictor variables
 
-To understand and project the relationship between aspen and climate under historical and future conditions, we obtained gridded climate data from the AdaptWest Project [-@adaptwestproject2022GriddedCurrentProjected], which provides both current and future climate data that are downscaled to 1 x 1km resolution using the ClimateNA software (version 7.3) [@wang2016LocallyDownscaledSpatially] . Current conditions, defined here as climatalogical norms for the 1981-2010 period, were generated from 4 x 4 km climate data provided by the PRISM Climate Group [-@prismclimategroup2021]. Future climate conditions were generated from data included in the sixth phase of Coupled Model Intercomparison Project (CMIP6). Here we used projections of future climate for the periods 2011-2040, 2041-2070, and 2071-2100. Given considerable uncertainty about future emissions, we compared two scenarios (i.e., Shared Socioeconomic Pathways; SSPs) generated under CMIP6, SSP2-4.5 and SSP5-8.5. The SSP2-4.5 scenario describes an intermediate scenario characterized by moderate increases in emission through 2040 followed by a decline, while the SSP5-8.5 scenario describes a more extreme situation where emissions increase through 2100 [@riahi2017SharedSocioeconomicPathways]. I
-
-In addition to uncertainty about societal decisions about greenhouse gas emissions represented in the SSPs, considerable variation exists among the more than 50 atmosphere-ocean general circulation models (AOGCMs) included in CMIP6 due differences in complexity, assumptions, and parameterization. Thus not all AOGCMS are equally useful for regional planning purposes. For instance predictions made by some AOGCMs are believed to overestimate future warming [@hausfather2022ClimateSimulationsRecognize]. Further AOCGMs differ in the number of simulations for the historical period, amount of bias, and spatial grain [@mahony2022GlobalClimateModel]. Here we make use of an ensemble data constructed from eight AOCGMs identified by Mahony et al. [-@mahony2022GlobalClimateModel] as being appropriate for regional applications in North America, such as species distribution modeling.
+To understand and project the relationship between aspen and climate under historical and future conditions, we obtained gridded climate data from the AdaptWest Project [-@adaptwestproject2022GriddedCurrentProjected], which provides both current and future climate data that are downscaled to 1 x 1 km resolution using the ClimateNA software (version 7.3) [@wang2016LocallyDownscaledSpatially] . Current conditions, defined here as climatalogical norms for the 1981-2010 period, were generated from 4 x 4 km climate data provided by the PRISM Climate Group [-@prismclimategroup2021]. Future climate conditions were generated from data included in the sixth phase of Coupled Model Intercomparison Project (CMIP6). Here we used projections of future climate for the periods 2011-2040, 2041-2070, and 2071-2100. Given considerable uncertainty about future emissions, we compared two scenarios (i.e., Shared Socioeconomic Pathways; SSPs) generated under CMIP6, SSP2-4.5 and SSP5-8.5. The SSP2-4.5 scenario describes an intermediate scenario characterized by moderate increases in emission through 2040 followed by a decline, while the SSP5-8.5 scenario describes a more extreme situation where emissions increase through 2100 [@riahi2017SharedSocioeconomicPathways]. In addition to uncertainty about societal decisions about greenhouse gas emissions represented in the SSPs, variation exists among the more than 50 atmosphere-ocean general circulation models (AOGCMs) included in CMIP6 due differences in complexity, assumptions, and parameterization. Thus not all AOGCMS are equally useful for regional planning purposes. For instance predictions made by some AOGCMs are believed to overestimate future warming [@hausfather2022ClimateSimulationsRecognize]. Further AOCGMs differ in the number of simulations for the historical period, amount of bias, and spatial grain [@mahony2022GlobalClimateModel]. Here we make use of an ensemble data constructed from eight AOCGMs identified by Mahony et al. [-@mahony2022GlobalClimateModel] as being appropriate for regional applications in North America, such as species distribution modeling.
 
 The AdaptWest Project [-@adaptwestproject2022GriddedCurrentProjected] provides data for 33 different biologically relevant climate variables (Table \@ref(tab:predictorTab). In addition to these variables, we calculated five other variables that have been identified as important predictors of aspen habitat [@rehfeldt2006EmpiricalAnalysesPlantclimate; @rehfeldt2009AspenClimateSuddena], an annual dryness index (ADI), the total growing season (April - August) precipitation (GSP), the ratio of GSP to annual precipitation (PRATIO), the mean maximum temperature in warmest month (TMAX), and a growing season precipitation to degree day ratio (GSPDD5) (Table \@ref(tab:predictorTab). To avoid collinearity between climate predictors, we calculated pairwise correlation coefficients. When \|r\|\>0.75, we removed variables based on the strength of evidence for they hypothesized mechanistic relationship (Table \@ref(tab:predictorTab). Where evidence was similar, we used univariate random forest (RF) models to evaluate the potential explanatory power of each predictor and congruence with hypothesized relationships (for more details see Appendix \@ref(appendix-b). The resulting dataset consisted of X variables, (Table \@ref(tab:predictorTab)).
 
@@ -415,7 +418,6 @@ writeRaster(GSPDD5, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "D
 TMAX <- max(monthly.climate.rasters[[paste0("Tmax",c("04", "05", "06", "07","08","09"))]])
 writeRaster(TMAX, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_TMAX.tif")), overwrite=T)
 
-
 select.scenarios<- c("ssp245", "ssp585")
 select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
 for(select.scenario in select.scenarios){
@@ -661,8 +663,8 @@ To build and evaluate models, we then split our dataset into equally-sized testi
 
 For each model we determined variable importance using a model-agnostic permutation-based approach, where each variable is randomized and then the ROC AUC statistic is compared with ROC AUC for the full model (where data has not been randomized). We evaluated the relationship between aspen presence and each predictor variable using accumulated local effects (ALE) profiles. Both variable importance and ALE were calculated in R using the DALEX package [@DALEX].
 
-```{r DataPrep, eval=F}
-
+```{r DataPrep}
+select.variables <- c("ADI",   "PRATIO", "GSPDD5",  "GSP","TD","DD_0", "RH")
 # Import response variable
 aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
 names(aspen90.prob) <- "aspen.prob"
@@ -679,7 +681,7 @@ topo90 <- rast(here("Data", "Spatial", "DEM", "Topo90.tif"))
 elev <- rast(here("Data", "Spatial", "DEM", "DEM250.tif"))
 soil90 <- rast(here("Data", "Spatial", "Soils", "Soils90.tif"))
 normals90 <- rast(here("Data", "Spatial", "Downscaled", "Normals90.tif"))
-normals90 <- normals90[[c("ADI",   "PRATIO", "DD_0", "GSP","TD", "RH")]]
+normals90 <- normals90[[select.variables]]
 
 # Compile data
 aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
@@ -694,12 +696,12 @@ aspen90.1km <- extract(aspen90.prob,template,cells=T)
 aspen.sample.pts <- aspen.pts %>% as.data.frame() %>% filter(cell %in% aspen90.1km$cell) 
 
 # Remove collinear variables
-preference.order <- c("ADI",   "PRATIO", "DD_0", "GSP","TD", "RH")
-dat <- aspen.sample.pts %>% na.omit() %>% group_by(aspen.presence) %>%  sample_n(size=10000)
+dat <- aspen.sample.pts %>% na.omit()
 dat$aspen.presence <- dat$aspen.presence %>% as.factor()
-pred.vars <- dat[, c(preference.order, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")] %>% spatialRF::auto_vif(vif.threshold = 5, preference.order = preference.order) %>% spatialRF::auto_cor(cor.threshold = 0.7, preference.order = preference.order)
+pred.vars <- dat[, c(select.variables, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")] %>% spatialRF::auto_vif(vif.threshold = 5, preference.order = select.variables) %>% spatialRF::auto_cor(cor.threshold = 0.75)
+
 pred.vars <- pred.vars$selected.variables
-remove.vars <- c(preference.order, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")[!c(preference.order, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli") %in% pred.vars]
+remove.vars <- c(select.variables, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")[!c(select.variables, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli") %in% pred.vars]
 
 
 dat_split <- initial_split(
@@ -731,7 +733,7 @@ cv_folds <- dat.training %>% st_as_sf(coords=c("x", "y"), remove=F) %>%  st_set_
 
 GLMs are extensions of parametric linear regression adapted to distributions other than the normal distribution. Here we used GLMs with a logit link function and a binomial error distribution to account for the structure of presence-absence data. We included both linear and quadratic effects for all variables, but did not explore any interaction terms. We fit the GLM using a Lasso regularization approach, which allows for model coefficients to be reduced to zero, thereby controlling for model complexity and improving tradeoffs between bias (i.e., the difference between the mean prediction from a model and the true value) and variance (i.e., the variability surrounding a prediciton) [@hastie2009ElementsStatisticalLearning]. Using spatial cross-validation, we tuned to the lasso penalty term prior to constructing the final model on the testing dataset. GLMs were fit using the *glmnet* package [@glmnet].
 
-```{r GLM, eval=F}
+```{r GLM}
 # Specify model
 glm_spec <- 
   logistic_reg(penalty = tune(),mixture = 1) %>%
@@ -742,7 +744,7 @@ glm_spec <-
 glm_wflow <- 
   workflow() %>% 
   add_recipe(presence.recipe) %>% 
-  add_model(glm_spec, formula=aspen.presence~ poly(ADI, 2, raw = TRUE) + poly(PRATIO,2, raw = TRUE) + poly(DD_0, 2, raw = TRUE) + poly(RH, 2, raw = TRUE) + poly(tpi3, 2, raw = TRUE) + poly(thetas, 2, raw = TRUE)  + poly(clay, 2, raw = TRUE) + poly(hli, 2, raw = TRUE) + poly(tpi15, 2, raw = TRUE))
+  add_model(glm_spec, formula=aspen.presence~ poly(ADI, 2, raw = TRUE) + poly(PRATIO,2, raw = TRUE) + poly(GSPDD5, 2, raw = TRUE) + poly(TD, 2, raw = TRUE) + poly(tpi3, 2, raw = TRUE)  + poly(clay, 2, raw = TRUE))
 
 # Tune model
 ### Set parameters to be tuned
@@ -879,7 +881,7 @@ for(select.scenario in select.scenarios){
 
 RF models are an extension of classification and regression trees (CART), a nonparametric approach useful for modeling the nonlinear relationships and complex interactions that characterize ecological relationships [@cutler2007RandomForestsClassification]. In RF models, many trees are fit and combined using a bagging approach, XXX. Using spatial cross-validation, we tuned the number of variables to try at each split (mtry) and the minimum number of data points in a node that is required for the node to be split further (min_n), while holding the number of trees constant at 1000. RF models were fit using the tidymodels implementation of the *ranger* package [@ranger].
 
-```{r RF, eval=F}
+```{r RF}
 # Specify model
 rf_spec <- 
   rand_forest(
@@ -999,7 +1001,7 @@ select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
 for(select.scenario in select.scenarios){
   for(years in select.years.all){
     if(!file.exists(paste0(here("Data", "Spatial", "Predictions"), "/predicted_ensemble_8GCMs_", select.scenario, years, "-rf.tif"))){
-      climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, years, "_90.tif"))[[c("ADI",   "PRATIO", "DD_0",  "RH")]]
+      climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, years, "_90.tif"))[[c("ADI",   "PRATIO", "GSPDD5",  "TD")]]
     # Compile data
     aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
     aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
@@ -1037,7 +1039,7 @@ for(select.scenario in select.scenarios){
 
 RGBTs are also an ensemble-based extension of CART. In traditional gradient boosting (GB) approaches, decision trees are constructed interatively, which each successive tree using the residuals of the previous model to fit the next model. The final prediction is then a weighted sum of all of the tree predictions. Many traditional GB methods are prone to overfitting due to the emphasis placed upon learning the While RGBTs use advanced regularized approaches to limit overfitting and improve model predictive performance. We used spatial cross-validation to min_n, mtry, the reduction in the loss function required to split further (loss_reduction), the learning rate (learn_rate) and the maximum depth of the tree (tree_depth), . RGBTs were fit using the package xgboost [@xgboost]. The XGBoost algorithm does parallelization within a single tree, th
 
-```{r XGB, eval=F}
+```{r XGB}
 # Specify model
 xgb_spec <- 
   boost_tree(
@@ -1887,9 +1889,21 @@ aspen.pts.1981_2010$year <- "1981-2010"
 dat <- aspen.pts.1981_2010  %>% as.data.frame() %>% na.omit()
 climate.varz <- c("ADI", "bFFP", "CMD", "CMI", "DD_0", "DD_18", "DD1040", "DD18", "DD5", "eFFP", "EMT", "Eref", "EXT", "FFP", "GSP", "GSPDD5", "MAP", "MAR", "MAT","MCMT", "MWMT", "NFFD", "PAS", "PPT_at", "PPT_sm", "PPT_sp", "PPT_wt", "PRATIO", "RH", "Tave_at", "Tave_sm", "Tave_sp", "Tave_wt", "TD", "TMAX")
 
-dat[,c(climate.varz,"year")] %>% filter(year=="1981-2010") %>% select(-year) %>% cor(method="spearman") %>% round(digits=2) %>% write.csv(here("Results", "climate-var-cor.csv"))
+dat[,c(climate.varz,"year")] %>% filter(year=="1981-2010") %>% select(-year) %>% cor() %>% round(digits=2) %>% write.csv(here("Results", "climate-var-cor.csv"))
 
-dat[,c(sort(climate.varz))] %>% cor(method="spearman") %>% round(digits=2) %>% ggcorrplot(lab=TRUE,type="lower",lab_size=2) %>% ggsave(filename=here("Results", "Figures", "CorrelationMatrix.jpg"), width=210, heigh=210, units="mm")
+dat[,c(sort(climate.varz))] %>% cor() %>% round(digits=2) %>% ggcorrplot(lab=TRUE,type="lower",lab_size=2) %>% ggsave(filename=here("Results", "Figures", "CorrelationMatrix.jpg"), width=210, heigh=210, units="mm")
+
+interactions <- spatialRF::the_feature_engineer(
+  data=dat, 
+  dependent.variable.name="aspen.presence",
+  predictor.variable.names = climate.varz,
+  xy=dat[,c("x", "y")],
+  importance.threshold = 0.50, #uses 50% best predictors
+  cor.threshold = 0.70, #max corr between interactions and predictors
+  seed = 123,
+  repetitions = 100,
+  verbose = FALSE
+)
 
 dat.aspen50 <- dat %>% mutate(threshold=">50%")
 dat.aspen50$aspen.presence <- factor(ifelse(dat.aspen50$aspen.prob>0.5,"present", "absent"))
@@ -1903,20 +1917,10 @@ dat.aspen0$aspen.presence <- factor(ifelse(dat.aspen50$aspen.prob>0,"present", "
 
 dat.aspen050 <- rbind(dat.aspen75, dat.aspen50, dat.aspen0)
 
-
 dat.aspen050 %>% select(all_of(c("aspen.presence", climate.varz, "threshold"))) %>% filter(threshold==">0%") %>% 
   pivot_longer(cols=bFFP:TMAX) %>%
   ggplot(aes(x=threshold, y=value, fill=factor(aspen.presence)))+geom_split_violin()+facet_wrap(~name, scales="free", ncol=6)+theme(legend.position = "bottom", legend.title=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank())+scale_fill_manual(values=c("gray", "orange")) -> p1
 ggsave(p1, filename=here("Results", "Figures", "climate-violin.jpg"), width=180, height=210, units="mm")
-
-dat.dif <- dat[,c(climate.varz ,"year", "aspen.presence")]  
-dat.dif[,c(climate.varz )] <- dat.dif[,c(climate.varz)] %>% scale()
-dat.dif <- dat.dif %>% group_by(year, aspen.presence) %>% summarise(across(everything(),mean), .groups = 'drop') %>% as.data.frame() %>% filter(year=="1981-2010") %>% select(-year,-aspen.presence)
-dat.dif <- (dat.dif[1,]- dat.dif[2,]) %>% t() %>% as.data.frame()
-dat.dif$abs <- abs(dat.dif[,1] )
-
-dat.dif<- dat.dif[order(dat.dif$abs, decreasing = F),]
-dat.dif$var <- row.names(dat.dif)
 
 rf.dat <- dat
 dat_split <- initial_split(
@@ -2227,7 +2231,6 @@ if(!file.exists(here("Results", "Figures", "vip-ale-withGAM.jpg"))){
 }
 knitr::include_graphics(here("Results/Figures/vip-ale-withGAM.jpg"), dpi = NA)
 ```
-
 
 \newpage
 
