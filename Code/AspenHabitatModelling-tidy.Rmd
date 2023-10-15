@@ -1,6 +1,6 @@
 ---
 title: "Title"
-author: "Sarah J. Hart, Asha Paudel, Josh Carrell, Maxwell Cook"
+author: "Sarah J. Hart, Asha Paudel..."
 email: "Hart: Sarah.Hart@colostate.edu"
 date: "Sept 20, 2023"
 output: 
@@ -145,9 +145,9 @@ dir.create(here("Results", "Figures"), showWarnings = FALSE)
 
 ## Study area
 
-The study area consists of the Southern Rocky Mountains Ecoregion (SRME), an area of approximately 145,700 km^2^ that extends from southern Wyoming to northern New Mexico (Fig. \@ref(fig:StudyArea). The SRME consists of rugged, topography with elevation ranging from 1450 m to above 4400 m, seven mountain ranges that largely trend north-south, and four Intermontane basins [@drummond2012SouthernRockiesEcoregion]. The climate of the SRME is characterized by a continental climate, with hot summers (mean July maximum temperature of 24.5°C) and cool winters (mean January minimum temperatures of -12.3°C), and moderate precipitation (mean annual precipitation of 625 mm), most of which falls as snow [@lukas2014ClimateChangeColorado; @rodman2021EffectsBarkBeetle]. At local scales, the climate is driven by elevation gradients, the prevailing westerly winds, and the north-south orientation of the mountains. Temperature is generally greatest at low elevations, while total annual precipitation is generally greatest at higher elevations, particularly on the windward side of the Rockies [@lukas2014ClimateChangeColorado]. Summer precipitation patterns exhibit a distinct latitudinal gradient, where more southern locations often receive more precipitation due to the North American Monsoon system [@lukas2014ClimateChangeColorado].
+The study area consists of the Southern Rocky Mountains Ecoregion (SRME), an area of approximately 145,700 km^2^ that extends from southern Wyoming to northern New Mexico (Fig. \@ref(fig:StudyArea). The SRME consists of rugged, topography with elevation ranging from 1450 m to above 4400 m, seven mountain ranges that largely trend north-south, and four Intermontane basins [@drummond2012SouthernRockiesEcoregion]. The climate of the SRME is characterized by a continental climate, with hot summers (mean July maximum temperature of 24.5°C) and cool winters (mean January minimum temperatures of -12.3°C), and moderate precipitation (mean annual precipitation of 625 mm), most of which falls as snow [@lukas2014ClimateChangeColorado; @rodman2021EffectsBarkBeetle]. At local scales, the climate is driven by elevation gradients, the prevailing westerly winds, and the north-south orientation of the mountains. Temperatures are warmer at lowerr elevations, while more precipitation falls at higher elevations, particularly on the windward side of the Rockies [@lukas2014ClimateChangeColorado]. Summer precipitation patterns exhibit a distinct latitudinal gradient, where more southern locations often receive more precipitation due to the North American Monsoon system [@lukas2014ClimateChangeColorado].
 
-Ecosystems of the SRME correspond with topoclimatic patterns; low elevation valleys and intermountain basins are dominated by grasslands and shrublands, forest occupy intermediate elevations, while grasses, sedges, cushion plants, forbs, mosses, and lichens dominate cold, alpine elevations [@comer2001SouthernRockyMountains]. Within the ca. 55% of the SRME that is forested [@drummond2012SouthernRockiesEcoregion], topoclimatic variation drives tree species composition. Lower Montane forests (\< 2,300 m) are generally composed of ponderosa pine (*Pinus ponderosae*) woodlands, piñon (*Pinus edulis*) and juniper (*Juniperus* spp.) woodlands, and gambel oak (*Quercus gambelii*) shrublands. Forests of the Upper Montane zone (ca. 2,300 - 2,800 m) are dominated by ponderosa pine-Douglas fir mixed conifer systems, quaking aspen, and lodgepole pine (*Pinus contorta*). Forests of the subalpine zone (ca. 2,800 m - 3,200 m) are dominated by Engelmann spruce, subalpine fir, and to a lesser limber pine (*Pinus flexilis)* and Rocky Mountain bristlecone pine (*P. aristata).* Forests dynamics across the SRME are strongly shaped by climate-sensitive disturbances, notably wildfires, outbreaks of native bark beetles, and windstorms [@peet1981ForestVegetationColorado; @baker1990; @veblen1994DisturbanceRegimeDisturbance; @veblen2000ClimaticHumanInfluences].
+Ecosystems of the SRME correspond with topoclimatic patterns; low elevation valleys and intermountain basins are dominated by grasslands and shrublands, forest occupy intermediate elevations, while grasses, sedges, cushion plants, forbs, mosses, and lichens dominate cold, alpine elevations [@comer2001SouthernRockyMountains]. Within the ca. 55% of the SRME that is forested [@drummond2012SouthernRockiesEcoregion], topoclimatic variation drives tree species composition. Lower montane forests (\< 2,300 m) are generally composed of ponderosa pine (*Pinus ponderosae*) woodlands, piñon (*Pinus edulis*) and juniper (*Juniperus* spp.) woodlands, and gambel oak (*Quercus gambelii*) shrublands. Forests of the upper montane zone (ca. 2,300 - 2,800 m) are dominated by ponderosa pine-Douglas fir mixed conifer systems, quaking aspen, and lodgepole pine (*Pinus contorta*). Forests of the subalpine zone (ca. 2,800 m - 3,200 m) are dominated by Engelmann spruce, subalpine fir, and to a lesser limber pine (*Pinus flexilis)* and Rocky Mountain bristlecone pine (*P. aristata*). Forests dynamics across the SRME are strongly shaped by climate-sensitive disturbances, notably wildfires, outbreaks of native bark beetles, and windstorms [@peet1981ForestVegetationColorado; @baker1990; @veblen1994DisturbanceRegimeDisturbance; @veblen2000ClimaticHumanInfluences; @chapman2012SpatiotemporalPatternsMountain; @hart2014DroughtInducesSpruce).
 
 ```{r StudyArea, fig.cap="The Southern Rocky Mountain Ecoregion and current distribution of aspen."}
 knitr::include_graphics(here("Results", "Figures", "StudyArea.jpg"), dpi=NA)
@@ -165,9 +165,7 @@ unzip(temp, exdir=here("Data", "Spatial", "Ecoregions"))
 
 ### Species occurrence data
 
-To build SDMs, we used a 10-m gridded map of aspen presence/absence produced by Cook et al. [in review]. Briefly, this dataset was produced by xyz. The map is characterized by an overall accuracy of XX and
-
-We aggregated the data from 10-m to 90-m, a scale relevant to management [@rehfeldt2015].
+To build SDMs, we used a 10-m gridded map of aspen presence/absence produced by Cook et al. [in review]. Briefly, this dataset was produced by xyz. The map is characterized by an overall accuracy of XX and represents the distribution of aspen in ca. XXXX. To generate our SDMs, we aggregated the data from 10-m to 90-m, a scale relevant to management [@rehfeldt2015].
 
 ```{r DL_aspen}
 dir.create(here("Data", "Spatial", "Aspen"), showWarnings = FALSE)
@@ -179,13 +177,13 @@ download.file("https://1drv.ms/u/s!Aq4s9rj0qHBilL4B4PH1amvdUoiLyg?e=jHRUWI", tem
 
 ### Predictor variables
 
-To understand and project the relationship between aspen and climate under historical and future conditions, we obtained gridded climate data from the AdaptWest Project [-@adaptwestproject2022GriddedCurrentProjected], which provides both current and future climate data that are downscaled to 1 x 1 km resolution using the ClimateNA software (version 7.3) [@wang2016LocallyDownscaledSpatially] . Current conditions, defined here as climatalogical norms for the 1981-2010 period, were generated from 4 x 4 km climate data provided by the PRISM Climate Group [-@prismclimategroup2021]. Future climate conditions were generated from data included in the sixth phase of Coupled Model Intercomparison Project (CMIP6). Here we used projections of future climate for the periods 2011-2040, 2041-2070, and 2071-2100. Given considerable uncertainty about future emissions, we compared two scenarios (i.e., Shared Socioeconomic Pathways; SSPs) generated under CMIP6, SSP2-4.5 and SSP5-8.5. The SSP2-4.5 scenario describes an intermediate scenario characterized by moderate increases in emission through 2040 followed by a decline, while the SSP5-8.5 scenario describes a more extreme situation where emissions increase through 2100 [@riahi2017SharedSocioeconomicPathways]. In addition to uncertainty about societal decisions about greenhouse gas emissions represented in the SSPs, variation exists among the more than 50 atmosphere-ocean general circulation models (AOGCMs) included in CMIP6 due differences in complexity, assumptions, and parameterization. Thus not all AOGCMS are equally useful for regional planning purposes. For instance predictions made by some AOGCMs are believed to overestimate future warming [@hausfather2022ClimateSimulationsRecognize]. Further AOCGMs differ in the number of simulations for the historical period, amount of bias, and spatial grain [@mahony2022GlobalClimateModel]. Here we make use of an ensemble data constructed from eight AOCGMs identified by Mahony et al. [-@mahony2022GlobalClimateModel] as being appropriate for regional applications in North America, such as species distribution modeling.
+To understand how climate is related to the contemporary distribution of aspen and the potential for future climate change to drive range shifts, we obtained gridded climate data from the AdaptWest Project [-@adaptwestproject2022GriddedCurrentProjected]. This dataset consists of both current and future climate data that are downscaled to 1 x 1 km resolution using the ClimateNA software (version 7.3) [@wang2016LocallyDownscaledSpatially] . Contemporary climate conditions, defined here as climatalogical norms for the 1981-2010 period, were generated from 4 x 4 km climate data provided by the PRISM Climate Group [-@prismclimategroup2021]. Future climate conditions were generated from data included in the sixth phase of Coupled Model Intercomparison Project (CMIP6). Here we used projections of future climate for the periods 2011-2040, 2041-2070, and 2071-2100. Given considerable uncertainty about future emissions, we compared two scenarios (i.e., Shared Socioeconomic Pathways; SSPs) generated under CMIP6, SSP2-4.5 and SSP5-8.5. The SSP2-4.5 scenario describes an intermediate scenario characterized by moderate increases in emissions through 2040 followed by a decline, while the SSP5-8.5 scenario describes a more extreme situation where emissions increase through 2100 [@riahi2017SharedSocioeconomicPathways]. In addition to uncertainty about societal decisions about greenhouse gas emissions represented in the SSPs, variation exists among the more than 50 atmosphere-ocean general circulation models (AOGCMs) included in CMIP6. Because of differences in complexity, assumptions, and parameterization of AOGCMS, not all forecasts are equally useful for regional planning purposes. Here we make use of an ensemble dataset constructed from eight AOCGMs identified by Mahony et al. [-@mahony2022GlobalClimateModel] as being appropriate for regional applications in North America, such as species distribution modeling.
 
-To characterize the climate space that aspen occupies, we examined 34 biologically relevant climate variables commonly used in species distribution models (Table \@ref(tab:TabClimateScreen)). Broadly, these variables characterize the temperature, precipitation, seasonality, and interactions between precipitation and temperature. To avoid collinearity between climate predictors, we calculated pairwise correlation coefficients. When \|r\|\>0.75, we removed variables based on existing research (Table \@ref(tab:TabClimateScreen)). Where evidence was similar, we used univariate random forest (RF) models to evaluate the potential explanatory power of each predictor and congruence with hypothesized relationships (for more details see Appendix \@ref(appendix-b-collinearity). The resulting dataset consisted of six climate variables: (1) an annual dryness index (ADI), (2) growing season precipitation (GSP), (3) the ratio of GSP to degree days above 5 °C (GSPDD5), (4) the ratio of GSP to mean annual precipitation (PRATIO), (5) mean annual relative humidity (RH), and (6) the difference between the mean coldest month temperature and the mean warmest month temperature (TD) (Table \@ref(tab:TabClimateScreen)).
+To characterize the climate space that aspen currently occupies, we examined 34 biologically-relevant climate variables commonly used in species distribution models (Table \@ref(tab:TabClimateScreen)). Broadly, these variables characterize the temperature, precipitation, seasonality, and interactions between precipitation and temperature. To avoid collinearity between climate predictors, we calculated pairwise correlation coefficients. When \|r\|\>0.75, we removed variables based on existing research (Table \@ref(tab:TabClimateScreen)). Where evidence was similar, we used univariate random forest (RF) models to evaluate the potential explanatory power of each predictor. The resulting dataset consisted of six climate variables: (1) an annual dryness index (ADI), (2) growing season precipitation (GSP), (3) the ratio of GSP to degree days above 5 °C (GSPDD5), (4) the ratio of GSP to mean annual precipitation (PRATIO), (5) mean annual relative humidity (RH), and (6) the difference between the mean coldest month temperature and the mean warmest month temperature (TD) (Table \@ref(tab:TabClimateScreen)).
 
-Given mountainous areas such as the Southern Rocky Mountains are characterized high topoclimatic variation [@franklin2013ModelingPlantSpecies], we further downscaled our selected climate variables from a 1 km resolution to a 250 m resolution using gradient and inverse distance squared (GIDS) interpolation [@nalder1998SpatialInterpolationClimatic; @flint2012DownscalingFutureClimate], following methods outlined in Rodman et al. [-@rodman2020ChangingClimateSnuffing]. As ancillary data in the downscaling, we used a digital elevation model (DEM) from the USGS [-@u.s.geologicalsurvey2023USGS3DElevation].
+Given mountainous areas such as the SRME are characterized high topoclimatic variation [@franklin2013ModelingPlantSpecies], we further downscaled our selected climate variables from a 1 km resolution to a 250 m resolution using gradient and inverse distance squared (GIDS) interpolation [@nalder1998SpatialInterpolationClimatic; @flint2012DownscalingFutureClimate], following methods outlined in Rodman et al. [-@rodman2020ChangingClimateSnuffing]. As ancillary data in the downscaling, we used a digital elevation model (DEM) from the USGS [-@u.s.geologicalsurvey2023USGS3DElevation].
 
-In addition to climate variables, we also included data describing terrain and soils as predictors in our models. To account for the potential effects of local topographic variation on soil transport and water balance, we used a 30-m DEM from the USGS [-@u.s.geologicalsurvey2023USGS3DElevation] to calculate the topographic position index [TPI; @weiss2001]. We calculated TPI for a 3-cell neighborhood (TPI3) to characterize fine scale topographic patterns [@rodman2020ChangingClimateSnuffing]. To account for the effects of aspect and slope on local climate, we calculated the Heat Load Index [HLI; @mccune2002EquationsPotentialAnnual; @mccune2007ImprovedEstimatesIncident]. Both HLI and TPI3 were calculated in R using the *spatialeco* package [@spatialEco]. Given soil properties may influence aspen demographic processes [@jones1985Soils], we obtained 30-m probabilistic maps of soil pH, the percentage of organic material, the percentage of clay, and saturated soil water content from the POLARIS database [@chaney2019POLARISSoilProperties]. We did not include elevation, latitude, and longitude as predictors in our modeling because we assumed these relationships were only correlative [@araujo2019StandardsDistributionModels]. We re-sampled soil and topographic predictors to a 90-m resolution by calculating the mean and projected the data to Universal Transmercator (UTM) Zone 13N to match the maps of aspen occurrence.
+In addition to climate variables, we also included data describing terrain and soils as predictors in our models. To account for the potential effects of local topographic variation on soil transport and water balance [@jones1985Soils], we used a 30-m DEM from the USGS [-@u.s.geologicalsurvey2023USGS3DElevation] to calculate the topographic position index [TPI; @weiss2001]. We calculated TPI for a 3-cell neighborhood (TPI3) to characterize fine scale topographic patterns [@rodman2020ChangingClimateSnuffing]. To account for the effects of aspect and slope on local climate, we calculated the Heat Load Index [HLI; @mccune2002EquationsPotentialAnnual; @mccune2007ImprovedEstimatesIncident]. Both HLI and TPI3 were calculated in R using the *spatialeco* package [@spatialEco]. Given soil properties may influence aspen demographic processes [@jones1985Soils], we obtained 30-m probabilistic maps of soil pH, the percentage of organic material, the percentage of clay, and saturated soil water content from the POLARIS database [@chaney2019POLARISSoilProperties]. We did not include elevation, latitude, and longitude as predictors in our modeling because we assumed these relationships were only correlative [@araujo2019StandardsDistributionModels]. We re-sampled soil and topographic predictors to a 90-m resolution by calculating the mean and projected the data to Universal Transmercator (UTM) Zone 13N to match the maps of aspen occurrence.
 
 ```{r TabSelectedPredictors}
 pred.var.tab <- read_excel(here("Documents", "PredictorScreeningTable.xlsx"), sheet=2)
@@ -1493,7 +1491,7 @@ if(!file.exists(here("results", "training-accuracy-stats-combined.csv"))){
 ```
 
 ```{r MissClassPatterns}
-if(!file.exists(here("Results", "Figures", "ensemble-error-map.jpg"))){
+if(!file.exists(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble-classerror.tif"))){
   # Import response variable
   aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
   names(aspen90.prob) <- "aspen.prob"
@@ -1534,7 +1532,7 @@ miss.class.fun(predicted= predictions.gam, model="gam", true=aspen90.prob01)
 miss.class.fun(predicted= predictions.rf, model="rf", true=aspen90.prob01)
 miss.class.fun(predicted= predictions.xgb, model="xgb", true=aspen90.prob01)
 miss.class.fun(predicted= predictions.ensemble, model="ensemble", true=aspen90.prob01)
-
+}
 ensemble.error<- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble-classerror.tif"))
 
   study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(ensemble.error)) 
@@ -1544,10 +1542,10 @@ Fig.file <- here("Results", "Figures", "ensemble-error-map.jpg")
   jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
   tm.error
 whatever <- dev.off()
-}
+
 
 ##  Spatial patterns
-if(!file.exists(here("Results", "Figures", "ensemble-error-geography.jpg"))){
+if(!file.exists(here("Results", "Figures","missclass-geography.jpg"))){
   elev <- rast(here("Data", "Spatial", "DEM", "DEM250.tif"))
   aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
   predictions.ensemble <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble-classerror.tif"))
@@ -1571,7 +1569,7 @@ if(!file.exists(here("Results", "Figures", "ensemble-error-geography.jpg"))){
   dat <- dat %>% as.data.frame()
   p1<-ggplot(dat, aes(x=Class, y=value,fill=Class))+geom_boxplot(outlier.size = 0.5)+facet_wrap(~variable, scales="free_y", ncol=1)+theme(legend.position="none", legend.title=element_blank())+ylab("value")+scale_fill_manual(values=c("#e78ac3", "grey25", "#a6d854", "#377eb8"))
   
-    ggsave(p1, filename=here("Results", "Figures", "missclass-geography-combo.jpg"), width=3.5, height=4, units="in")
+    ggsave(p1, filename=here("Results", "Figures", "missclass-geography.jpg"), width=3.5, height=4, units="in")
     
     missclass.dat <- dat %>% group_by(Class, variable) %>% summarise(median=median(value)) %>% write.csv(here("Results", "misclass-dat.csv"), row.names=F)
   
@@ -1940,7 +1938,7 @@ if(!file.exists(here("Results", "Figures", "gainloss-geography.jpg"))){
 }
 ```
 
-```{r GainDistance, eval=F}
+```{r GainDistance}
 aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
 names(aspen90.prob) <- "aspen.prob"
 aspen90.prob01 <- aspen90.prob
@@ -1997,7 +1995,8 @@ tm.ssp585<- tm_shape(study.area)+tm_fill(col="grey95")+tm_shape(ssp585.dist[[3]]
 Fig.file <- here("Results", "Figures", "FigMaps-Gain-Distance.jpg")
   jpeg(Fig.file, width=3.5, height=3.25, units="in", res=300)
   tmap_arrange(tm.ssp245, tm.ssp585, nrow=1)
-  whatever <- dev.off()
+whatever <- dev.off()
+
 ```
 
 # Results
@@ -2027,7 +2026,7 @@ missclass.dat <- read.csv(here("Results", "misclass-dat.csv"))
 
 ```
 
-Spatial cross-validation revealed all models accurately predicted to new areas; across the five folds the mean AUC statistic (± standard error of the mean) was `r train.results %>% filter(Model=="GLM") %>% pull(AUC)`, `r train.results %>% filter(Model=="GAM") %>% pull(AUC)`, `r  train.results %>% filter(Model=="RF") %>% pull(AUC)` `r train.results %>% filter(Model=="GBT") %>% pull(AUC)`, for the GLM, GAM, RF, and RGBT, respectively. When compared with the testing data, all models achieved an AUC greater than 0.8, indicating a good model fit (Table \@ref(tab:PerformanceTab)). Tree-based approaches were generally better than the GLM or GAM at predicting aspen presence (i.e., higher sensitivity), however the GLM or GAM were more balanced in their capacity to predict both aspen presence and absence. Based on AUC, the ensemble model outperformed each individual model, however the improvement was minimal (Table \@ref(tab:PerformanceTab)). The ensemble model also correctly predicted `r photo.results %>% filter(model=='Ensemble') %>% pull(percent)`% of points that aerial imagery interpreters identified as occupied by aspen (n=`r photo.results %>% filter(model=='Ensemble') %>% pull(n)`).
+Spatial cross-validation revealed all models accurately predicted to new areas; across the five folds the mean AUC statistic (± standard error of the mean) was `r train.results %>% filter(Model=="GLM") %>% pull(AUC)`, `r train.results %>% filter(Model=="GAM") %>% pull(AUC)`, `r  train.results %>% filter(Model=="RF") %>% pull(AUC)` `r train.results %>% filter(Model=="GBT") %>% pull(AUC)`, for the GLM, GAM, RF, and RGBT, respectively. When compared with the testing data, all models achieved an AUC greater than 0.8, indicating a good model fit (Table \@ref(tab:PerformanceTab)). Tree-based approaches were generally better than the GLM or GAM at predicting aspen presence (i.e., higher sensitivity), but were worse at predicting aspen absence (i.e. lower specif. Based on AUC, the ensemble model outperformed each individual model, however the improvement was minimal (Table \@ref(tab:PerformanceTab)). The ensemble model also correctly predicted `r photo.results %>% filter(model=='Ensemble') %>% pull(percent)`% of points that aerial imagery interpreters identified as occupied by aspen (n=`r photo.results %>% filter(model=='Ensemble') %>% pull(n)`).
 
 ```{r PerformanceTab}
 test.results %>%  flextable() %>% set_caption(caption="Model performance statistics. Observed values are from independent testing data.") %>% autofit() %>% set_table_properties(layout = "autofit")
@@ -2045,7 +2044,7 @@ knitr::include_graphics(here("Results", "Figures", "missclass-geography.jpg"), d
 
 ## Effects of predictor variables on aspen habitat suitability
 
-Variable importance scores revealed that climate variables generally contributed more to model fit than soil or topographic factors (Fig. \@ref(fig:VIPFig)A). The regularization approaches we included in the GLM and GAM allowed for coefficient estimates to shrink to zero, leading to fewer variables driving the probability of aspen in these models. As a result, ADI and GSPDD5 contributed strongly to fit of the GAM, while ADI and PRATIO were key contributors to the fit of the GLM.
+Variable importance scores revealed that climate variables generally contributed more to model fit than soil or topographic factors (Fig. \@ref(fig:VIPFig)A)). The regularization approaches we included in the GLM and GAM allowed for coefficient estimates to shrink to zero, leading to fewer variables driving the probability of aspen in these models. As a result, ADI and GSPDD5 contributed strongly to fit of the GAM, while ADI and PRATIO were key contributors to the fit of the GLM.
 
 Across all models, ADI was on average the most important predictor of aspen presence (Fig. \@ref(fig:VIPFig)A). Across the area of the SRM currently occupied by aspen, ADI is forecasted to increase (i.e., become drier) over the next century (Fig. \@ref(fig:VIPFig)B). Most SDMs agreed that this shift would generally lead to a decrease in mean aspen habitat suitability. However, the GLM suggested that future increases in ADI may initially lead to an increase in mean aspen habitat suitability, followed by a decrease by 2071-2100.
 
@@ -2075,10 +2074,6 @@ read.csv(here("Results", "ensemble-prediction-threshold.csv")) %>%
 Our ensemble SDM forecasts notable decreases in future aspen habit suitability with particularly dramatic decreases within the first half of the 21st century. Under the SSP2-4.5 scenario, the ensemble model suggests a percent change in the mean probability of aspen of `r pchange.dat %>% filter(years=="2011-2040" & scenario =="SSP2-4.5") %>% pull(percent.change)`% by 2040 and `r pchange.dat %>% filter(years=="2071-2100" & scenario =="SSP2-4.5") %>% pull(percent.change)`% by 2100. Under the SSP5-8.5 scenario, our model forecasts similar reductions the probability fo aspen ( `r pchange.dat %>% filter(years=="2011-2040" & scenario =="SSP5-8.5") %>% pull(percent.change)`% by 2040 and `r pchange.dat %>% filter(years=="2071-2100" & scenario =="SSP5-8.5") %>% pull(percent.change)`% by 2100).
 
 Based on the `r threshold.ensemble` probability threshold for classifying aspen occurrence, which was selected based on Youden's J statistic, our SDM suggests that these decreases in the aspen habitat suitability may result in the loss of aspen may across `r lg.freq %>% filter(status=="loss" & years == "2071-2100" & scenario=="SSP2-4.5") %>% pull(area)` km^2^ under the SSP2-4.5 scenario and `r lg.freq %>% filter(status=="loss" & years == "2071-2100" & scenario=="SSP5-8.5") %>% pull(area)` km^2^ under the SSP5-8.5 scenario by 2100 (Fig. \@ref(fig:LossGainMaps)). However, the decrease in the area suitable for aspen may be offset by increases in the area suitable for aspen. By 2100, the ensemble model suggests an increase in the area suitable for aspen of `r lg.freq %>% filter(status=="gain" & years == "2071-2100" & scenario=="SSP2-4.5") %>% pull(area)` and `r lg.freq %>% filter(status=="gain" & years == "2071-2100" & scenario=="SSP5-8.5") %>% pull(area)` km^2^ under the SSP2-4.5 and SSP5-8.5 scenarios, respectively. Across both scenarios and all time periods, losses in the area suitable for aspen are forecasted to occur at lower elevations and eastern latitudes, where aspen is already limited (Figs. \@ref(fig:LossGainMaps)- @ref(fig:LossGainBox)). Increases in the area suitable for aspen are forecasted to occur at higher elevations.
-
-```{r LossGainMaps, fig.cap="The distribution of pixels where the ensemble SDM forecasts aspen may be lost, gained, or stable by 2100 under the SSP2-4.5 scenario.", out.width="3.5in", out.height="5in"}
-knitr::include_graphics(here("Results", "Figures", "FigMaps-LossGain1.jpg"), dpi = NA)
-```
 
 ```{r LossGainBox, fig.cap="Boxplots illustrating the distribution of geographic", out.width="90mm", out.height="110mm"}
 knitr::include_graphics(here("Results", "Figures", "gainloss-geography.jpg"), dpi = NA)
@@ -2289,17 +2284,8 @@ knitr::include_graphics(here("Results/Figures/climate-violin.jpg"), dpi = NA)
 
 # Appendix C: Supplemental figures
 
-```{r FutureChange, fig.cap="The ensemble projection of aspen habitat suitability under current conditions and projections for future periods based on the projected climate for the SSP5-8.5 scenario."}
-knitr::include_graphics(here("Results", "Figures", "FigMaps-Change.jpg"), dpi=NA)
-```
-
-```{r GainDistanceMaps, fig.cap="GainDistanceMaps", out.width="3.5in", out.height="3.25in"}
-knitr::include_graphics(here("Results", "Figures", "FigMaps-Gain-Distance.jpg"), dpi = NA)
-```
-
 ```{r PercentMap, fig.cap="Percent cover", out.width="3.5in", out.height="5in"}
 
-if(!file.exists(here("Results", "Figures", "aspenpercent-map.jpg"))){
   aspen90 <-rast(here("Data", "Spatial", "Aspen", "srme_skcv_probability_mosaic-90.tif"))
   aspen90 <- aspen90/10
   
@@ -2311,6 +2297,18 @@ if(!file.exists(here("Results", "Figures", "aspenpercent-map.jpg"))){
   jpeg(Fig.file, width=3.5, height=5, units="in", res=300) 
   tm.percent
   whatever <- dev.off()
-}
+
 knitr::include_graphics(here("Results", "Figures", "aspenpercent-map.jpg"), dpi=NA) 
+```
+
+```{r FutureChange, fig.cap="The ensemble projection of aspen habitat suitability under current conditions and projections for future periods based on the projected climate for the SSP5-8.5 scenario."}
+knitr::include_graphics(here("Results", "Figures", "FigMaps-Change.jpg"), dpi=NA)
+```
+
+```{r GainDistanceMaps, fig.cap="GainDistanceMaps", out.width="3.5in", out.height="3.25in"}
+knitr::include_graphics(here("Results", "Figures", "FigMaps-Gain-Distance.jpg"), dpi = NA)
+```
+
+```{r LossGainMaps, fig.cap="The distribution of pixels where the ensemble SDM forecasts aspen may be lost, gained, or stable by 2100 under the SSP2-4.5 scenario.", out.width="3.5in", out.height="5in"}
+knitr::include_graphics(here("Results", "Figures", "FigMaps-LossGain1.jpg"), dpi = NA)
 ```
