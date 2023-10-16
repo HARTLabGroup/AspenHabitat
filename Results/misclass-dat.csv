@@ -1,33 +1,33 @@
 "Class","variable","median"
 "false
-negative","Elevation (m)",2611.77685546875
+negative","Elevation (m)",2620.212890625
 "false
-negative","Latitude (°N)",38.5218976782208
+negative","Latitude (°N)",38.5180869404067
 "false
-negative","Longitude (°W)",-105.919180942011
+negative","Longitude (°W)",-105.906079277912
 "false
 negative","Percent aspen",11.1111111938953
 "true
-negative","Elevation (m)",2497.44116210938
+negative","Elevation (m)",2507.21850585938
 "true
-negative","Latitude (°N)",38.4600151655654
+negative","Latitude (°N)",38.4337365830046
 "true
-negative","Longitude (°W)",-105.882824048893
+negative","Longitude (°W)",-105.860698863877
 "true
 negative","Percent aspen",0
 "true
-positive","Elevation (m)",2766.59167480469
+positive","Elevation (m)",2754.30041503906
 "true
-positive","Latitude (°N)",39.1325897124135
+positive","Latitude (°N)",39.1559963897134
 "true
-positive","Longitude (°W)",-107.195409002026
+positive","Longitude (°W)",-107.199611289164
 "true
-positive","Percent aspen",30.8641970157623
+positive","Percent aspen",32.0987641811371
 "false
-positive","Elevation (m)",2928.70446777344
+positive","Elevation (m)",2928.818359375
 "false
-positive","Latitude (°N)",39.0653930476188
+positive","Latitude (°N)",39.0411667058173
 "false
-positive","Longitude (°W)",-106.832481433262
+positive","Longitude (°W)",-106.813605747255
 "false
 positive","Percent aspen",0
