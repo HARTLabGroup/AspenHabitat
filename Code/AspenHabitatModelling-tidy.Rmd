@@ -1571,7 +1571,7 @@ if(!file.exists(here("Results", "Figures","missclass-geography.jpg"))){
   
     ggsave(p1, filename=here("Results", "Figures", "missclass-geography.jpg"), width=3.5, height=4, units="in")
     
-    missclass.dat <- dat %>% group_by(Class, variable) %>% summarise(median=median(value)) %>% write.csv(here("Results", "misclass-dat.csv"), row.names=F)
+    dat %>% group_by(Class, variable) %>% summarise(median=median(value, na.rm=T)) %>% write.csv(here("Results", "misclass-dat.csv"), row.names=F)
   
 }
 ```
@@ -2029,14 +2029,9 @@ test.results <- test.results %>% filter(Model %in% c(ensemble.set, "Ensemble"))
 photo.results <- read.csv(here("results", "photo-accuracy-combined.csv")) %>% mutate(percent=round(percent*100,0))
 
 missclass.dat <- read.csv(here("Results", "misclass-dat.csv"))
-
 ```
 
-<<<<<<< HEAD
-Spatial cross-validation revealed all models accurately predicted to new areas; across the five folds the mean AUC statistic (± standard error of the mean) was `r train.results %>% filter(Model=="GLM") %>% pull(AUC)`, `r train.results %>% filter(Model=="GAM") %>% pull(AUC)`, `r  train.results %>% filter(Model=="RF") %>% pull(AUC)` `r train.results %>% filter(Model=="GBT") %>% pull(AUC)`, for the GLM, GAM, RF, and RGBT, respectively. When compared with the testing data, all models achieved an AUC greater than 0.8, indicating a good model fit (Table \@ref(tab:PerformanceTab)). Tree-based approaches were generally better than the GLM or GAM at predicting aspen presence (i.e., higher sensitivity), but were worse at predicting aspen absence (i.e. lower specificity). Based on AUC, the ensemble model outperformed each individual model, however the improvement was minimal (Table \@ref(tab:PerformanceTab)). When compared aspen with an independent dataset of aspen presence derived from aerial photo interpretation, the ensemble model correctly predicted `r photo.results %>% filter(model=='Ensemble') %>% pull(percent)`% of points (n=\`r photo.results `%>% filter(model=='Ensemble') %>% pull(n)).`
-=======
-Spatial cross-validation revealed all models accurately predicted to new areas; across the five folds the mean AUC statistic (± standard error of the mean) was `r train.results %>% filter(Model=="GLM") %>% pull(AUC)`, `r train.results %>% filter(Model=="GAM") %>% pull(AUC)`, `r  train.results %>% filter(Model=="RF") %>% pull(AUC)` `r train.results %>% filter(Model=="GBT") %>% pull(AUC)`, for the GLM, GAM, RF, and RGBT, respectively. When compared with the testing data, all models achieved an AUC greater than 0.8, indicating a good model fit (Table \@ref(tab:PerformanceTab)). Tree-based approaches were generally better than the GLM or GAM at predicting aspen presence (i.e., higher sensitivity), but were worse at predicting aspen absence (i.e., lower specificity). Based on AUC, the ensemble model outperformed each individual model, however the improvement was minor (Table \@ref(tab:PerformanceTab)). When compared aspen with an independent dataset of aspen presence derived from aerial photo interpretation, the ensemble model correctly predicted `r photo.results %>% filter(model=='Ensemble') %>% pull(percent)`% of points (n=`r photo.results %>% filter(model=='Ensemble') %>% pull(n)`).
->>>>>>> master
+Spatial cross-validation revealed all models accurately predicted to new areas; across the five folds the mean AUC statistic (± standard error of the mean) was `r train.results %>% filter(Model=="GLM") %>% pull(AUC)`, `r train.results %>% filter(Model=="GAM") %>% pull(AUC)`, `r  train.results %>% filter(Model=="RF") %>% pull(AUC)`, `r train.results %>% filter(Model=="GBT") %>% pull(AUC)`, for the GLM, GAM, RF, and RGBT, respectively. When compared with the testing data, all models achieved an AUC greater than 0.8, indicating a good model fit (Table \@ref(tab:PerformanceTab)). Tree-based approaches were generally better than the GLM or GAM at predicting aspen presence (i.e., higher sensitivity), but were worse at predicting aspen absence (i.e. lower specificity). Based on AUC, the ensemble model outperformed each individual model, however the improvement was minimal (Table \@ref(tab:PerformanceTab)). When compared aspen with an independent dataset of aspen presence derived from aerial photo interpretation, the ensemble model correctly predicted `r photo.results %>% filter(model=='Ensemble') %>% pull(percent)`% of points (n=`r photo.results %>% filter(model=='Ensemble') %>% pull(n)`).
 
 ```{r PerformanceTab}
 test.results %>%  flextable() %>% set_caption(caption="Model performance statistics. Observed values are from independent testing data.") %>% autofit() %>% set_table_properties(layout = "autofit")
@@ -2050,11 +2045,7 @@ knitr::include_graphics(here("Results", "Figures", "missclass-geography.jpg"), d
 
 ## Effects of predictor variables on aspen habitat suitability
 
-<<<<<<< HEAD
 Variable importance scores illustrated the effects of regularization, which were included in the GLM and GAM and allowed for coefficient estimates to shrink to zero. In these models fewer variables contributed to the predicting aspen presence (Fig. \@ref(fig:VIPFig)A)). Across all models, variable importance scores revealed that climate variables generally contributed more to model fit than soil or topographic factors (Fig. \@ref(fig:VIPFig)A)). ADI was on average the most important predictor (Fig. \@ref(fig:VIPFig)A). Future increases in ADI over the next century, will likely lead to a decrease in mean aspen habitat suitability Fig. \@ref(fig:VIPFig)B). However, the GLM suggested that future increases in ADI may initially lead to an increase in mean aspen habitat suitability, followed by a decrease by 2071-2100. PRATIO was the second most important predictor on average (Fig. \@ref(fig:VIPFig)A). Decreases in PRATIO over the next 100 years (Fig. \@ref(fig:VIPFig)B), will likely lead to an increase in aspen habitat suitability across the SRM. However, for locations where PRATIO is already low, the GAM, RF, and RGBT models suggest this may decrease aspen habitat suitability. GSPDD5 was identified as a particularly important predictor variable in the GAM (Fig. \@ref(fig:VIPFig)A). Across the study area GSPDD5 is expected to decrease over the next century, largely due to increases in temperature (Fig. \@ref(fig:VIPFig)B). Our SDMs suggest this may lead to a decrease, increase, or no change in mean aspen habitat suitability across the SRM. In the GAM GSPDD5 is negatively associated with aspen presence, while GSPDD5 had no effect in the GLM, and the relationship was more hump-shaped in RF and RGBT models. All models suggested that aspen habitat suitability was higher in valley bottoms (low TPI3) than steep slopes (high TPI3), although RF and RGBT models suggested benches (moderate TPI3) may be equally suitable as steep slopes (Fig. \@ref(fig:VIPFig)B).
-=======
-Variable importance scores illustrated the effects of regularization, which allowed coefficient estimates in the GLM and GAM to shrink to zero. In these models fewer variables contributed to the predicting aspen presence (Fig. \@ref(fig:VIPFig)A). Nonetheless, we found that for all models climate variables generally contributed more to model fit than soil or topographic factors (Fig. \@ref(fig:VIPFig)A). On average, ADI was on average the most important predictor, according to variable importance scores (Fig. \@ref(fig:VIPFig)A). Future increases in ADI over the next century, will likely lead to a decrease in mean aspen habitat suitability (Fig. \@ref(fig:VIPFig)B). However, the GLM suggested that future increases in ADI may initially lead to an increase in mean aspen habitat suitability, followed by a decrease by 2071-2100. PRATIO was the second most important predictor on average (Fig. \@ref(fig:VIPFig)A). Decreases in PRATIO over the next 100 years (Fig. \@ref(fig:VIPFig)B), will likely lead to an increase in aspen habitat suitability across the SRM. However, for locations where PRATIO is already low, the GAM, RF, and RGBT models suggest this may decrease aspen habitat suitability. Across the study area GSPDD5 is expected to decrease over the next century, largely due to increases in temperature (Fig. \@ref(fig:VIPFig)B). Our SDMs suggest this may lead to a decrease, increase, or no change in mean aspen habitat suitability across the SRM. In the GAM, GSPDD5 is negatively associated with aspen presence, while GSPDD5 had no effect in the GLM, and the relationship was more hump-shaped in RF and RGBT models. All models suggested that aspen habitat suitability was higher in valley bottoms (low TPI3) than steep slopes (high TPI3), although RF and RGBT models suggested benches (moderate TPI3) may be equally suitable as steep slopes (Fig. \@ref(fig:VIPFig)B).
->>>>>>> master
 
 ```{r VIPFig, fig.cap="Variable importance scores (A) and accumulate local effects (B) for models of aspen habitat suitability by modeling approach. In A, boxes illustrate the loss in model performance (1-AUC) when the predcitor variable was been randomized for 10 different permutations. In B, vertical lines illustrate the mean climate conditions for areas with existing aspen for the historical period (1981-2010) and projections for the 2011-2040, 2041-2070, and 2071-2100 periods under the SPP4-8.5 scenario. For variable definitions and descriptions see Table 1.", out.width="180mm", out.height="110mm"}
 knitr::include_graphics(here("Results", "Figures", "vip-ale.jpg"), dpi = NA)
@@ -2081,7 +2072,7 @@ Based on the `r threshold.ensemble` probability threshold for classifying aspen 
 knitr::include_graphics(here("Results", "Figures", "gainloss-geography.jpg"), dpi = NA)
 ```
 
-While the area suitable for aspen is expected to increases substantially, only a fraction of that area is near existing aspen stands (Fig. \@ref(fig:GainDistanceGeo) and \@ref(fig:GainDistanceMaps,)). Under the SSP4-2.5 scenario, `r  (dist.dat %>% filter(scenario=="SSP2-4.5" & years=="2071-2100" & distance =="90") %>% pull(prop)*100) %>% round()` % of the area forecasted to become suitable by 2071-2100 is within 90-m of existing aspen (Fig. \@ref(fig:GainDistanceGeo)), and `r  (dist.dat %>% filter(scenario=="SSP2-4.5" & years=="2071-2100" & distance %in% c("90", "180", "270", "540")) %>% pull(prop) %>% sum()*100) %>% round()`% of the suitable area is within 540-m of existing aspen. Under the SSP5-8.5 scenario, `r  (dist.dat %>% filter(scenario=="SSP5-8.5" & years=="2071-2100" & distance =="90") %>% pull(prop)*100) %>% round()` % of the area forecasted to become suitable by 2071-2100 is within 90-m of existing aspen (Fig. \@ref(fig:GainDistanceGeo)), and `r  (dist.dat %>% filter(scenario=="SSP5-8.5" & years=="2071-2100" & distance %in% c("90", "180", "270", "540")) %>% pull(prop) %>% sum()*100) %>% round()`% of the suitable area is within 540-m of existing aspen. 
+While the area suitable for aspen is expected to increases substantially, only a fraction of that area is near existing aspen stands (Fig. \@ref(fig:GainDistanceGeo) and \@ref(fig:GainDistanceMaps,)). Under the SSP4-2.5 scenario, `r  (dist.dat %>% filter(scenario=="SSP2-4.5" & years=="2071-2100" & distance =="90") %>% pull(prop)*100) %>% round()` % of the area forecasted to become suitable by 2071-2100 is within 90-m of existing aspen (Fig. \@ref(fig:GainDistanceGeo)), and `r  (dist.dat %>% filter(scenario=="SSP2-4.5" & years=="2071-2100" & distance %in% c("90", "180", "270", "540")) %>% pull(prop) %>% sum()*100) %>% round()`% of the suitable area is within 540-m of existing aspen. Under the SSP5-8.5 scenario, `r  (dist.dat %>% filter(scenario=="SSP5-8.5" & years=="2071-2100" & distance =="90") %>% pull(prop)*100) %>% round()` % of the area forecasted to become suitable by 2071-2100 is within 90-m of existing aspen (Fig. \@ref(fig:GainDistanceGeo)), and `r  (dist.dat %>% filter(scenario=="SSP5-8.5" & years=="2071-2100" & distance %in% c("90", "180", "270", "540")) %>% pull(prop) %>% sum()*100) %>% round()`% of the suitable area is within 540-m of existing aspen.
 
 ```{r GainDistanceGeo, fig.cap="The distance to the nearest existing aspen patch for pixels where changes in climate may promote aspen expansion.", out.width="90mm", out.height="150mm"}
 knitr::include_graphics(here("Results", "Figures", "gaindist-geography.jpg"), dpi = NA)
@@ -2272,19 +2263,10 @@ tab %>% as.data.frame() %>% flextable() %>% set_caption(caption="Climate variabl
 knitr::include_graphics(here("Results/Figures/CorrelationMatrix.jpg"), dpi = NA)
 ```
 
-
 # Appendix C: Supplemental figures
 
-<<<<<<< HEAD
-```{r MissClassMap, fig.cap="Spatial patterns of missclassification for the ensemble model.", out.width="3.5in", out.height="5in"}
-knitr::include_graphics(here("Results", "Figures", "ensemble-error-map.jpg"), dpi = NA)
-```
-
-```{r PercentMap, fig.cap="Percent cover", out.width="3.5in", out.height="5in"}
-=======
-
 ```{r PercentMap, fig.cap="The percent cover of aspen within a 90 x 90 m pixel for the Southern Rocky Mountains. Data were produced by aggregating the 10 m resolution map of aspen presence-absence from Cook et al. (in review).", out.width="3.5in", out.height="5in"}
->>>>>>> master
+
 
   aspen90 <-rast(here("Data", "Spatial", "Aspen", "srme_skcv_probability_mosaic-90.tif"))
   aspen90 <- aspen90/10
@@ -2301,7 +2283,6 @@ knitr::include_graphics(here("Results", "Figures", "ensemble-error-map.jpg"), dp
 knitr::include_graphics(here("Results", "Figures", "aspenpercent-map.jpg"), dpi=NA) 
 ```
 
-
 ```{r MissClassMap, fig.cap="Spatial patterns of missclassification for the ensemble model.", out.width="3.5in", out.height="5in"}
 knitr::include_graphics(here("Results", "Figures", "ensemble-error-map.jpg"), dpi = NA)
 ```
@@ -2314,7 +2295,6 @@ knitr::include_graphics(here("Results", "Figures", "FigMaps-Change.jpg"), dpi=NA
 knitr::include_graphics(here("Results", "Figures", "FigMaps-LossGain1.jpg"), dpi = NA)
 ```
 
-```{r GainDistanceMaps, fig.cap="Distance to the nearest existing aspen patch for pixels were future climate may promote aspen expansion by 2100.", out.width="3.5in", out.height="3.25in"}
+```{r GainDistanceMaps, fig.cap="Distance to the nearest existing aspen patch for pixels were future climate may promote aspen expansion by 2100 under the SSP2-4.5 scenario.", out.width="3.5in", out.height="3.25in"}
 knitr::include_graphics(here("Results", "Figures", "FigMaps-Gain-Distance1.jpg"), dpi = NA)
 ```
-
