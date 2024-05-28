@@ -1,2 +1,2 @@
 "","mtry","min_n","tree_depth","learn_rate","loss_reduction","sample_size","stop_iter",".config"
-"1",1,5,8,0.00318240347255322,3.64797136831844e-08,0.410164077749942,6,"Preprocessor1_Model27"
+"1",2,10,9,0.00908041070810633,1.40117783999422e-08,0.756820562769193,8,"Preprocessor1_Model07"
