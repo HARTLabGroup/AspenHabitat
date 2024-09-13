@@ -1,8 +1,6 @@
 ---
-title: "Title"
-author: "Sarah J. Hart, Asha Paudel..."
-email: "Hart: Sarah.Hart@colostate.edu"
-date: "Sept 20, 2023"
+title: "Future warming will decrease aspen habitat suitability across the Southern Rockies"
+author: "Sarah J. Hart, Maxwell Cook, and Asha Paudel"
 output: 
   bookdown::word_document2:
     reference_docx: Template.docx
@@ -13,11 +11,11 @@ output:
 editor_options: 
   chunk_output_type: inline
 bibliography: references.bib
-csl: "`r here:::here('forest-ecology-and-management.csl')`"
 link-citations: true
 urlcolor: blue
 linkcolor: blue
 citationcolor: blue
+csl: "`r here:::here('forest-ecology-and-management.csl')`"
 ---
 
 ```{r setup, include=FALSE}
@@ -33,7 +31,6 @@ knitr::opts_chunk$set(
 set.seed(513)
 options(repos = c(CRAN = "http://cran.rstudio.com"))
 options(timeout=60*30) #timeout downloads that last longer than 30 minutes
-
 
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(
@@ -106,8 +103,6 @@ set_flextable_defaults(
   padding.top=1,
   text.align='center')
 
-
-
 # Set directory structure for project
 dir.create(here("Data"), showWarnings = FALSE)
 dir.create(here("Data", "Spatial"), showWarnings = FALSE)
@@ -120,8 +115,9 @@ dir.create(here("Results", "Figures"), showWarnings = FALSE)
 
 # Highlights
 
--   Across the SRM, the distribution of aspen is strongly associated with moisture availability patterns.
--   Future changes in climate will likely lead to the loss of existing aspen.
+-   An ensemble model explained 79% of the variation in aspen occurrence.
+-   The distribution of aspen is strongly associated with moisture availability patterns.
+-   Future changes in climate will likely lead to decreases in aspen habitat suitability.
 -   The potential for aspen to expand under future climate change will be limited by dispersal.
 
 # Introduction
@@ -132,19 +128,19 @@ Species distribution models (SDMs) - correlative models that associate species d
 
 Recent advances in computation power, geospatial technologies, and open-data science are paving the way for a new generation of use-inspired SDMs. For example, greater computation power and publicly available data and code have reduced many of the barriers that historically limited scientists from incorporating high resolution climate data in SDMs [@kusch2022KrigRToolDownloadinga]. Scientists have also recently begun using remotely sensed datasets that provide spatially-continuous information on both species presence and absences to build SDMs with less spatial bias [@he2015WillRemoteSensing]. Importantly these remotely sensed data products can also allow for more robust predictions of range shifts by incorporating locations of known populations and information on dispersal distances [@randin2020MonitoringBiodiversityAnthropocene]. Finally, expectations for the reproducibility and transparency of ecological research are rapidly growing [@powers2019OpenScienceReproducibility], as evidenced by the recently published standardized open-science protocols for building and sharing SDMs [@zurell2020StandardProtocolReporting].
 
-Across western North America there is a particular need for updated SDMs that provide insight into how the distribution of trembling aspen (*Populus tremuloides* Michx) (hereafter aspen) may shift in response to climate change. Here aspen is the most widely distirbution tree species and it is highly valued for its contributions to biodiversity, aesthetic quality, soil carbon sequestration, and the potential to mitigate wildfire activity, among other things [@mitton1996GeneticVariationNatural; @campbell2001AspenEcosystemsObjectives; @rogers2020GlobalViewAspen]. Importantly, recent widespread warm and dry conditions during the early 21st century have been associated with changes in the demography and distribution of aspen, highlighting the potential for future climate climate to drive dramtic shifts. For instance, during the early 21st century rapid crown dieback and mortality and poor regeneration (i.e. sudden aspen decline; SAD), was observed across much of aspen's distribution, particularly in relatively dry areas [@rehfeldt2009AspenClimateSuddena; @hanna2012; @worrall2013RecentDeclinesPopulusa]. While in relatively cool and wet areas affected by recent bark beetle outbreaks and wildfires, aspen has increased in dominance and even shown upward range expansion [@andrus2020ForestRecoveryFollowing; @nigro2022WildfireCatalyzesUpward].
+Across western North America there is a particular need for updated SDMs that provide insight into how the distribution of trembling aspen (*Populus tremuloides* Michx) (hereafter aspen) may shift in response to climate change. Here aspen is the most widely distiributed tree species and it is highly valued for its contributions to biodiversity, aesthetic quality, soil carbon sequestration, and the potential to mitigate wildfire activity, among other things [@mitton1996GeneticVariationNatural; @campbell2001AspenEcosystemsObjectives; @rogers2020GlobalViewAspen]. Importantly, recent widespread warm and dry conditions during the early 21st century have been associated with changes in the demography and distribution of aspen, highlighting the potential for future climate climate to drive dramatic shifts. For instance, during the early 21st century rapid crown dieback and mortality and poor regeneration (i.e. sudden aspen decline; SAD), was observed across much of aspen's distribution, particularly at more arid sites [@hanna2012; @worrall2013RecentDeclinesPopulusa]. While in relatively cool and wet areas affected by recent bark beetle outbreaks and wildfires, aspen has increased in dominance and even shown upward range expansion [@andrus2020ForestRecoveryFollowing; @nigro2022WildfireCatalyzesUpward].
 
-The objectives of this study are to: (1) use fine-scale remotely-sensed data on the presence and aspen of aspen to better understand how climate, topographic, and soil variables influence aspen's distribution; (2) produce maps of the area suitable for aspen under current and future climate conditions; and (3) integrate future habitat suitability along with with maps of existing aspen coverage to characterize the potential for aspen to expand into new areas. We expand upon earlier SDMs of aspen, notably Rehfeldt et al. [-@rehfeldt2006EmpiricalAnalysesPlantclimate; -@rehfeldt2009AspenClimateSuddena; -@rehfeldt2015] and Worral et al. [-@worrall2013RecentDeclinesPopulusa], to build an SDM that: (1) integrates data from the most recent phase of Coupled Model Intercomparison Project (CMIP6); (2) follows the standardized protocols developed by Zurrell et al. [-@zurell2020StandardProtocolReporting]; (3) integrates a novel 10-m remotely sensed map of aspen cover for Cook et al. [-@cook2024MappingQuakingAspen]; and (4) integrates information about aspen's dispersal to better understand the potential for range shifts to occur.
+The objectives of this study are to: (1) use fine-scale remotely-sensed data on the presence and aspen of aspen to better understand how climate, topographic, and soil variables influence aspen's distribution; (2) produce maps of the area suitable for aspen under current and future climate conditions; and (3) integrate future habitat suitability along with with maps of existing aspen coverage to characterize the potential for aspen to expand into new areas. We expand upon earlier SDMs of aspen, notably Rehfeldt et al. [-@rehfeldt2006EmpiricalAnalysesPlantclimate; -@rehfeldt2009; -@rehfeldt2015] and Worral et al. [-@worrall2013RecentDeclinesPopulusa], to build an SDM that: (1) integrates data from the most recent phase of Coupled Model Intercomparison Project (CMIP6); (2) follows the standardized protocols developed by Zurrell et al. [-@zurell2020StandardProtocolReporting]; (3) makes use of a novel 10-m remotely sensed map of aspen cover for Cook et al. [-@cook2024MappingQuakingAspen]; and (4) integrates information about aspen's distribution and dispersal to better understand the potential for range shifts to occur.
 
 # Materials and Methods
 
 ## Study area
 
-The SRM is a mountainous region an area of approximately 145,700 km^2^ that extends from southern Wyoming to northern New Mexico (Fig. \@ref(fig:StudyArea)). The SRM consists of rugged, topography with elevation ranging from 1450 m to above 4400 m, seven mountain ranges that largely trend north-south, and four Intermontane basins [@drummond2012SouthernRockiesEcoregion]. The climate of the SRM is characterized by a continental climate, with hot summers (mean July maximum temperature of 24.5°C) and cool winters (mean January minimum temperatures of -12.3°C), and moderate precipitation (mean annual precipitation of 625 mm), most of which falls as snow [@lukas2014ClimateChangeColorado; @rodman2021EffectsBarkBeetle]. At local scales, the climate is driven by elevation gradients, the prevailing westerly winds, and the north-south orientation of the mountains. Temperatures are warmer at lower elevations, while more precipitation falls at higher elevations, particularly on the windward side of the Rockies [@lukas2014ClimateChangeColorado]. Summer precipitation patterns exhibit a distinct latitudinal gradient, where more southern locations often receive more precipitation due to the North American Monsoon system [@lukas2014ClimateChangeColorado].
+The SRME is a mountainous region an area of approximately 145,700 km^2^ that extends from southern Wyoming to northern New Mexico (Fig. \@ref(fig:StudyArea)). The SRME consists of rugged, topography with elevation ranging from 1450 m to above 4400 m, seven mountain ranges that largely trend north-south, and four Intermontane basins [@drummond2012SouthernRockiesEcoregion]. The climate of the SRME is characterized by a continental climate, with hot summers (mean July maximum temperature of 24.5°C) and cool winters (mean January minimum temperatures of -12.3°C), and moderate precipitation (mean annual precipitation of 625 mm), most of which falls as snow [@lukas2014ClimateChangeColorado; @rodman2021EffectsBarkBeetle]. At local scales, the climate is driven by elevation gradients, the prevailing westerly winds, and the north-south orientation of the mountains. Temperatures are warmer at lower elevations, while more precipitation falls at higher elevations, particularly on the windward side of the Rockies [@lukas2014ClimateChangeColorado]. Summer precipitation patterns exhibit a distinct latitudinal gradient, where more southern locations often receive more precipitation due to the North American Monsoon system [@lukas2014ClimateChangeColorado].
 
 Ecosystems of the SRME correspond with topoclimatic patterns; low elevation valleys and intermountain basins are dominated by grasslands and shrublands, forest occupy intermediate elevations, while grasses, sedges, cushion plants, forbs, mosses, and lichens dominate cold, alpine elevations [@comer2001SouthernRockyMountains]. Within the ca. 55% of the SRME that is forested [@drummond2012SouthernRockiesEcoregion], tree communities also follow elevation gradients. Lower montane forests (\< 2,300 m) are generally composed of ponderosa pine (*Pinus ponderosae*) woodlands, piñon (*Pinus edulis*) and juniper (*Juniperus* spp.) woodlands, and gamble oak (*Quercus gambelii*) shrublands. Forests of the upper montane zone (ca. 2,300 - 2,800 m) are dominated by ponderosa pine-Douglas fir mixed conifer systems, quaking aspen, and lodgepole pine (*Pinus contorta*). Forests of the subalpine zone (ca. 2,800 m - 3,200 m) are dominated by Engelmann spruce, subalpine fir, and to a lesser limber pine (*Pinus flexilis)* and Rocky Mountain bristlecone pine (*P. aristata*). Forests dynamics across the SRME are strongly shaped by climate-sensitive disturbances, notably wildfires, outbreaks of native bark beetles, and windstorms [@peet1981ForestVegetationColorado; @baker1990; @veblen1994DisturbanceRegimeDisturbance; @veblen2000ClimaticHumanInfluences; @chapman2012SpatiotemporalPatternsMountain; @hart2014DroughtInducesSpruce).
 
-```{r StudyArea, fig.cap="The Southern Rocky Mountain Ecoregion and current distribution of aspen.", out.width="3.25in", out.height="4.34"}
+```{r StudyArea, fig.cap="The Southern Rocky Mountain Ecoregion and current distribution of aspen.", out.width="3.25in", out.height="4.34in"}
 knitr::include_graphics(here("Results", "Figures", "StudyArea.jpg"), dpi=NA)
 ```
 
@@ -191,7 +187,7 @@ pred.var.tab %>% as.data.frame() %>% flextable()  %>% set_caption(caption="Predi
 ```
 
 ```{r DL_soils}
- #SRM <- st_read(here("Data", "Spatial", "Ecoregions","us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=4326) %>% st_bbox 
+ #SRME <- st_read(here("Data", "Spatial", "Ecoregions","us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=4326) %>% st_bbox 
 lons <- c("110-109", "109-108", "108-107", "107-106", "106-105", "105-104", "104-103")
 lats <- c("3536", "3637", "3738", "3839","3940", "4041", "4142", "4243")
 
@@ -271,7 +267,7 @@ if(!dir.exists(here("Data", "Spatial","DEM"))){
   
   dir.create(here("Data", "Spatial","DEM"), showWarnings = FALSE)
   
-  SRM <- st_read(here("Data", "Spatial", "Ecoregions",
+  SRME <- st_read(here("Data", "Spatial", "Ecoregions",
 "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=5071) %>% st_buffer(20000)
 
   # 30 m 
@@ -427,7 +423,7 @@ if(!file.exists(temp)){
 dir.create(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"))
 monthly.climate.rasters <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010/Normal_1981_2010_monthly"), full.names=T))
 
-SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>%  st_transform(crs(monthly.climate.rasters))
+SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>%  st_transform(crs(monthly.climate.rasters))
  
 monthly.climate.rasters <- crop(monthly.climate.rasters, SRM)
 names(monthly.climate.rasters) <- do.call(c, strsplit(sapply(strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010/Normal_1981_2010_monthly"), full.names=F), split="Normal_1981_2010_"), "[", 2), split=".tif"))
@@ -469,7 +465,7 @@ for(select.scenario in select.scenarios){
  bioclimate.rasters <- rast(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_bioclim"), full.names=T))
   names(bioclimate.rasters) <- sapply(strsplit(do.call(c,strsplit(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_bioclim"), full.names=F), split=".tif")),split=paste0("ensemble_8GCMs_", select.scenario, select.year, "_")), "[", 2)
  
- SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>%  st_transform(crs(monthly.climate.rasters))
+ SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>%  st_transform(crs(monthly.climate.rasters))
 
  monthly.climate.rasters <- crop(monthly.climate.rasters, SRM)
  bioclimate.rasters <- crop(bioclimate.rasters, monthly.climate.rasters)
@@ -710,6 +706,14 @@ SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filte
 aspen90.prob <- terra::mask(aspen90.prob, SRM)
 aspen90.prob01 <-terra::mask(aspen90.prob01, SRM)
 
+ tm.aspen90.prob01  <- tm_shape( aspen90.prob01 )+tm_raster(title="", palette="viridis", midpoint=NA)+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
+
+  
+  Fig.file <- here("Results", "Figures", "aspen90.prob01-01map.jpg")
+  jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
+   tmap_arrange( tm.aspen90.prob01  , nrow=1)
+  whatever <- dev.off()
+
 # Import predictor variables
 topo90 <- rast(here("Data", "Spatial", "DEM", "Topo90.tif"))
 soil90 <- rast(here("Data", "Spatial", "Soils", "Soils90.tif"))
@@ -730,7 +734,7 @@ aspen.sample.pts <- aspen.pts %>% as.data.frame() %>% filter(cell %in% aspen90.1
 # Remove collinear variables
 dat <- aspen.sample.pts %>% na.omit()
 dat$aspen.presence <- dat$aspen.presence %>% as.factor()
-pred.vars <- dat[, c(select.variables, "om", "tpi3", "tpi15", "pH", "thetas", "clay", "hli")] %>% spatialRF::auto_vif(vif.threshold = 5, preference.order = select.variables)
+pred.vars <- dat[, c(select.variables, "om", "tpi3", "tpi15", "pH", "thetas", "clay", "hli")] %>% spatialRF::auto_cor(cor.threshold = 0.7, preference.order = select.variables) %>% spatialRF::auto_vif(vif.threshold = 5, preference.order = select.variables)
 
 pred.vars <- pred.vars$selected.variables
 remove.vars <- c(select.variables, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli")[!c(select.variables, "om", "tpi3", "pH", "thetas", "tpi15", "clay", "hli") %in% pred.vars]
@@ -851,7 +855,7 @@ pdp <- model_profile(explainer_glm , N = 500, variables = pred.vars, type="parti
 pdp$agr_profiles %>% mutate(method="PDP", Model="GLM") %>% write.csv(here("Results", "pdp-GLM.csv"))
 ale <- model_profile(explainer_glm , N = 500, variables = pred.vars, type="accumulated")
 ale$agr_profiles %>% mutate(method="ALE", Model="GLM")  %>% write.csv(here("Results", "ale-GLM.csv"))
-rm(list(ale, pdp))
+rm(ale); rm(pdp)
 ```
 
 #### Generalized additive models
@@ -945,7 +949,7 @@ pdp <- model_profile(explainer_gam , N = 500, variables = pred.vars, type="parti
 pdp$agr_profiles %>% mutate(method="PDP", Model="GAM") %>% write.csv(here("Results", "pdp-GAM.csv"))
 ale <- model_profile(explainer_gam , N = 500, variables = pred.vars, type="accumulated")
 ale$agr_profiles %>% mutate(method="ALE", Model="GAM")  %>% write.csv(here("Results", "ale-GAM.csv"))
-rm(list(ale, pdp))
+rm(ale); rm(pdp)
 ```
 
 #### Random Forests
@@ -1354,7 +1358,7 @@ if(!file.exists(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ense
   aspen90.prob01[aspen90.prob01>0]<-1
   names(aspen90.prob01) <- "aspen.presence"
 
-  SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
+  SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
   aspen90.prob <- terra::mask(aspen90.prob, SRM)
   aspen90.prob01 <-terra::mask(aspen90.prob01, SRM)
 
@@ -1390,7 +1394,7 @@ miss.class.fun(predicted= predictions.ensemble, model="ensemble", true=aspen90.p
 }
 ensemble.error<- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble-classerror.tif"))
 
-  study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(ensemble.error)) 
+study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(ensemble.error)) 
   
   tm.error<-  tm_shape(ensemble.error)+tm_raster(style= "cat", title="", labels=c("false negative","true negative", "true positive", "false positive"), palette=c("#e78ac3", "grey25", "#a6d854", "#377eb8"))+tm_layout(bg.color="white", legend.position = c(0.01,0.85))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
 Fig.file <- here("Results", "Figures", "ensemble-error-map.jpg")
@@ -1413,6 +1417,7 @@ if(!file.exists(here("Results", "Figures","missclass-geography.jpg"))){
   dat <- cbind(as.data.frame(pts), pts.coords)
   colnames(dat) <- c('Class', "Percent aspen", "Elevation (m)", "Longitude (°W)","Latitude (°N)")
   dat$`Percent aspen` <- dat$`Percent aspen`*100
+  dat$`Longitude (°W)` <-  dat$`Longitude (°W)` *-1
   
   
   dat <- pivot_longer(dat,
@@ -1422,9 +1427,9 @@ if(!file.exists(here("Results", "Figures","missclass-geography.jpg"))){
   )
   dat$Class <- factor(dat$Class, levels=c(-1,0,1,2), labels=c("false\nnegative","true\nnegative", "true\npositive", "false\npositive"), ordered=T)
   dat <- dat %>% as.data.frame()
-  p1<-ggplot(dat, aes(x=Class, y=value,fill=Class))+geom_boxplot(outlier.size = 0.5)+facet_wrap(~variable, scales="free_y", ncol=1)+theme(legend.position="none", legend.title=element_blank())+ylab("value")+scale_fill_manual(values=c("#e78ac3", "grey25", "#a6d854", "#377eb8"))
+  p1<-ggplot(dat, aes(x=Class, y=value,fill=Class))+geom_boxplot(outlier.size = 0.5)+facet_wrap(~variable, scales="free_y", ncol=1, strip.position="right")+theme(legend.position="none", legend.title=element_blank())+ylab("value")+scale_fill_manual(values=c("#e78ac3", "grey25", "#a6d854", "#377eb8"))
   
-    ggsave(p1, filename=here("Results", "Figures", "missclass-geography.jpg"), width=3.5, height=4, units="in")
+    ggsave(p1, filename=here("Results", "Figures", "missclass-geography.jpg"), width=3.5, height=4.5, units="in")
     
     dat %>% group_by(Class, variable) %>% summarise(median=median(value, na.rm=T)) %>% write.csv(here("Results", "misclass-dat.csv"), row.names=F)
   
@@ -1473,6 +1478,7 @@ if(!file.exists(here("Results", "Figures", "vip-ale.jpg"))){
   vip.dat <- rbind(vip.glm, vip.rf, vip.xgb, vip.gam)  %>% filter(!variable %in% c("_full_model_", "_baseline_", "aspen.prob", "x", "y", "cell")) %>% filter(variable %in% pred.vars)
   var.order <- vip.dat %>% group_by(variable) %>% summarise(median=median(dropout_loss)) %>% arrange(median) %>% pull(variable)
   var.order.labs <- var.order
+  var.order.labs[var.order.labs=="tpi15"] <- "TPI15"
   var.order.labs[var.order.labs=="tpi3"] <- "TPI3"
   var.order.labs[var.order.labs=="hli"] <- "HLI"
   var.order.labs[var.order.labs=="clay"] <- "Clay"
@@ -1495,10 +1501,11 @@ if(!file.exists(here("Results", "Figures", "vip-ale.jpg"))){
   ale.dat <- ale.dat %>% filter(Model %in% ensemble.set)
   ale.dat$Model <- factor(ale.dat$Model, levels=c("GLM", "GAM", "RF", "XGB"), labels=c("GLM", "GAM", "RF", "RGBT"))
 
+
+  p2 <-  ale.dat %>% filter(X_vname_ %in% toupper(rev(var.order)[1:6]))  %>% ggplot( aes(x=X_x_,y=X_yhat_, col=Model)) +geom_line(show.legend = FALSE)+theme(legend.position="bottom")+ylab("probability of aspen presence")+xlab("value")+scale_color_cosmic()+facet_wrap(~X_vname_, scales="free_x",nrow=2)+geom_vline(data=results%>% filter(X_vname_ %in% rev(var.order)[1:6]), aes(xintercept=mean, lty=Years),linewidth=0.5) + theme(panel.spacing = unit(4, "mm"))
+  p12 <- p1+theme(legend.position = "none")+ p2 +plot_layout(nrow=1)+plot_annotation(tag_levels="A")+ plot_layout(guides = "collect", widths = c(1, 3)) & theme(legend.position = 'bottom', legend.title = element_blank())
+   ggsave(p12, filename=here("Results", "Figures", "vip-ale.jpg"), width=7.2, height=4.5, units="in")
   
-  p2 <-  ale.dat %>% filter(X_vname_ %in% toupper(rev(var.order)[1:4]))  %>% ggplot( aes(x=X_x_,y=X_yhat_, col=Model)) +geom_line(show.legend = FALSE)+theme(legend.position="bottom")+ylab("probability of aspen presence")+xlab("value")+scale_color_cosmic()+facet_wrap(~X_vname_, scales="free_x",nrow=2)+geom_vline(data=results%>% filter(X_vname_ %in% rev(var.order)[1:4]), aes(xintercept=mean, lty=Years),linewidth=0.5)
-  p12 <- p1+theme(legend.position = "none")+ p2 +plot_layout(nrow=1)+plot_annotation(tag_levels="A")+ plot_layout(guides = "collect") & theme(legend.position = 'bottom', legend.title = element_blank())
-   ggsave(p12, filename=here("Results", "Figures", "vip-ale.jpg"), width=180, height=110, units="mm")
    
    
    p3 <-  ale.dat %>% filter(X_vname_ %in% c(toupper(rev(var.order)), "clay"))  %>% ggplot( aes(x=X_x_,y=X_yhat_, col=Model)) +geom_line(show.legend = FALSE)+theme(legend.position="bottom")+ylab("probability of aspen presence")+xlab("value")+scale_color_cosmic()+facet_wrap(~X_vname_, scales="free_x",nrow=1)+geom_vline(data=results%>% filter(X_vname_ %in% c(toupper(rev(var.order)), "clay")) , aes(xintercept=mean, lty=Years),linewidth=0.5)
@@ -1569,19 +1576,15 @@ if(!file.exists(here("Results", "Figures", "vip-pdp.jpg"))){
   pdp.dat[pdp.dat$X_vname_=="OM", "X_vname_"] <- "OM"
   pdp.dat <- pdp.dat %>% filter(Model %in% ensemble.set)
   pdp.dat$Model <- factor(pdp.dat$Model, levels=c("GLM", "GAM", "RF", "XGB"), labels=c("GLM", "GAM", "RF", "RGBT"))
-
   
   p2 <-  pdp.dat %>% filter(X_vname_ %in% toupper(rev(var.order)[1:4]))  %>% ggplot( aes(x=X_x_,y=X_yhat_, col=Model)) +geom_line(show.legend = FALSE)+theme(legend.position="bottom")+ylab("probability of aspen presence")+xlab("value")+scale_color_cosmic()+facet_wrap(~X_vname_, scales="free_x",nrow=2)+geom_vline(data=results%>% filter(X_vname_ %in% rev(var.order)[1:4]), aes(xintercept=mean, lty=Years),linewidth=0.5)
   p12 <- p1+theme(legend.position = "none")+ p2 +plot_layout(nrow=1)+plot_annotation(tag_levels="A")+ plot_layout(guides = "collect") & theme(legend.position = 'bottom', legend.title = element_blank())
-   ggsave(p12, filename=here("Results", "Figures", "vip-pdp.jpg"), width=180, height=110, units="mm")
+  ggsave(p12, filename=here("Results", "Figures", "vip-pdp.jpg"), width=180, height=110, units="mm")
    
-   
-   p3 <-  pdp.dat %>% filter(X_vname_ %in% c(toupper(rev(var.order)), "om"))  %>% ggplot( aes(x=X_x_,y=X_yhat_, col=Model)) +geom_line(show.legend = FALSE)+theme(legend.position="bottom")+ylab("organic matter")+xlab("value")+scale_color_cosmic()+facet_wrap(~X_vname_, scales="free_x",nrow=1)+geom_vline(data=results%>% filter(X_vname_ %in% c(toupper(rev(var.order)), "om")) , aes(xintercept=mean, lty=Years),linewidth=0.5)
+  p3 <-  pdp.dat %>% filter(X_vname_ %in% c(toupper(rev(var.order)), "om"))  %>% ggplot( aes(x=X_x_,y=X_yhat_, col=Model)) +geom_line(show.legend = FALSE)+theme(legend.position="bottom")+ylab("organic matter")+xlab("value")+scale_color_cosmic()+facet_wrap(~X_vname_, scales="free_x",nrow=1)+geom_vline(data=results%>% filter(X_vname_ %in% c(toupper(rev(var.order)), "om")) , aes(xintercept=mean, lty=Years),linewidth=0.5)
  ggsave(p3, filename=here("Results", "Figures", "pdp-total.jpg"), width=7, height=3, units="in")
   
-   
 }
-
 ```
 
 ### Forecasting change in aspen habitat
@@ -1589,112 +1592,112 @@ if(!file.exists(here("Results", "Figures", "vip-pdp.jpg"))){
 To understand how future changes in climate may affect the distribution of aspen, we used the ensemble model to forecast the probability of aspen habitat suitability under the SSP2-4.5 and SSP5-8.5 scenarios for the 2011-2040, 2041-2070, and 2071-2100 periods. We then used these probabilistic forecasts of aspen habitat suitability to forecast aspen presence and absence based on the optimal probability threshold (see \@ref(model-ensemble)). We then overlaid forecasts of aspen presence-absence with the map of existing aspen occurrence from Cook et al. (in review) to produce maps where changes in climate may lead to aspen gain, loss, or stability. Finally, given expansion will be constrained by dispersal, we used a moving widow approach to calculate the distance to the nearest existing stand of aspen for each gain pixel. Specifically, we quantified the presence of aspen with 3, 5, 7, 13, 25, and 47 cell neighborhoods (i.e., within 90 m, 180 m, 270 m, 540 m, 1080 m, and 2070 m).
 
 ```{r GenFutureMap}
-  pred19812010 <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))  
-  pred19812010[pred19812010>1] <- 1
-  pred20112040 <- rast(here("Data", "Spatial", "Predictions","predicted_ensemble_8GCMs_ssp585_2011_2040-ensemble.tif"))
-  pred20412070 <- rast(here("Data", "Spatial", "Predictions","predicted_ensemble_8GCMs_ssp585_2041_2070-ensemble.tif"))
-  pred20712100 <- rast(here("Data", "Spatial", "Predictions","predicted_ensemble_8GCMs_ssp585_2041_2070-ensemble.tif"))
+if(!file.exists(here("Results", "Figures", "ensemble-prob-2071-2100-01map.jpg"))){
+  #Import data
+  aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
   
-  study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(pred19812010)) 
-  
-  tm.19812010<-  tm_shape(pred19812010)+tm_raster(title="", palette="viridis")+tm_layout(main.title = "Current",main.title.size=1,main.title.position="center", bg.color="white", legend.position = c(0.01,0.725))+tm_shape(study.area) + tm_borders()
-  
-  tm.20112040<-  tm_shape(pred20112040)+tm_raster(title="", palette="viridis")+tm_layout(main.title = "2011-2040",main.title.size=1,main.title.position="center", bg.color="white",legend.show = FALSE)+tm_shape(study.area) + tm_borders()
-  
-  tm.20412070<-  tm_shape(pred20412070)+tm_raster(title="", palette="viridis")+tm_layout(main.title = "2041-2070",main.title.size=1,main.title.position="center", bg.color="white",legend.show = FALSE)+tm_shape(study.area) + tm_borders()
-  
-  tm.20712100<-  tm_shape(pred20712100)+tm_raster(title="", palette="viridis")+tm_layout(main.title = "2071-2100",main.title.size=1,main.title.position="center", bg.color="white", legend.show = FALSE)+tm_shape(study.area) + tm_borders()
-  
-  Fig.file <- here("Results", "Figures", "FigMaps-Change.jpg")
-  jpeg(Fig.file, width=7, height=3.25, units="in", res=300)
-  tmap_arrange(tm.19812010, tm.20112040, tm.20412070, tm.20712100, nrow=1)
-  whatever <- dev.off()
-```
+  study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob )) 
 
-```{r Change}
-if(!file.exists(here("Results", "percent-change-meansd.csv"))){
-  pred19812010 <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))
-pred19812010[pred19812010>1] <- 1
-pred19812010.mean <- pred19812010%>% global(na.rm=T, fun="mean")
-pred19812010.sd <- pred19812010%>% global(na.rm=T, fun="sd")
-  
-ssp245 <- list.files(here("Data", "Spatial", "Predictions"), pattern=glob2rx("predicted_ensemble_8GCMs_ssp245*-ensemble.tif"), full.names=T) %>% rast()
-ssp245.pc <- (ssp245 - pred19812010) / pred19812010 *100
-ssp245.mean <- ssp245.pc %>% global(na.rm=T, fun="mean")
-ssp245.sd <- ssp245.pc %>% global(na.rm=T, fun="sd")
-
-ssp585 <- list.files(here("Data", "Spatial", "Predictions"), pattern=glob2rx("predicted_ensemble_8GCMs_ssp585*-ensemble.tif"), full.names=T) %>% rast()
-ssp585.pc <- (ssp585 - pred19812010) / pred19812010 *100
-ssp585.mean <- ssp585.pc %>% global(na.rm=T, fun="mean")
-ssp585.sd <- ssp585.pc %>% global(na.rm=T, fun="sd")
-  
-change.ssp245 <- data.frame(years=c("2011-2040", "2041-2070", "2071-2100"), mean=round(ssp245.mean$mean,1), sd=round(ssp245.sd$sd,1),scenario="SSP2-4.5")
-change.ssp245 <- unite(change.ssp245, "value", mean:sd, sep=" ± ")
-
-change.ssp585 <- data.frame(years=c( "2011-2040", "2041-2070", "2071-2100"), mean=round(ssp585.mean$mean,1), sd=round(ssp585.sd$sd,1),scenario="SSP5-8.5")
-change.ssp585 <- unite(change.ssp585, "value", mean:sd, sep=" ± ")
-
-change.dat <- rbind(change.ssp245, change.ssp585)
-colnames(change.dat) <- c("years", "percent change", "scenario")
-
-write.csv(change.dat, here("Results", "percent-change-meansd.csv"), row.names=F)
-}
-
-
-```
-
-```{r TemporalPatterns, eval=F}
-if(!file.exists(here("Data", "Spatial", "Predictions", "prob-change-predicted_ensemble_8GCMs_ssp245-ensemble.tif"))){
-    aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
-  names(aspen90.prob) <- "aspen.prob"
   aspen90.prob01 <- aspen90.prob
-  aspen90.prob01[aspen90.prob01>0]<-1
+  aspen90.prob01[aspen90.prob01>0]<-100
+  aspen90.prob01 <-terra::mask(aspen90.prob01, study.area)
   
   pred.1981_2010 <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))
+   threshold.ensemble <- read.csv(here("Results", "Ensemble-prediction-threshold.csv")) %>%filter(.metric == "j_index") %>% filter(.estimate == max(.estimate)) %>% pull(.threshold)
   
-  ssp245.pred.2011_2040 <- rast(here("Data", "Spatial", "Predictions", "predicted_ensemble_8GCMs_ssp245_2011_2040-ensemble.tif"))
-  ssp245.pred.2041_2070 <- rast(here("Data", "Spatial", "Predictions", "predicted_ensemble_8GCMs_ssp245_2041_2070-ensemble.tif"))
-  ssp245.pred.2071_2100<- rast(here("Data", "Spatial", "Predictions", "predicted_ensemble_8GCMs_ssp245_2071_2100-ensemble.tif"))
-  ssp245.pred <- c(ssp245.pred.2011_2040, ssp245.pred.2041_2070,ssp245.pred.2071_2100)
-  names(ssp245.pred) <- c("2011-2040", "2041-2070", "2071-2100")
+  ssp245 <- list.files(here("Data", "Spatial", "Predictions"), pattern=glob2rx("predicted_ensemble_8GCMs_ssp245*-ensemble.tif"), full.names=T) %>% rast()
+  names(ssp245) <- c("2011-2040", "2041-2070", "2071-2100")
   
-  ssp585.pred.2011_2040 <- rast(here("Data", "Spatial", "Predictions", "predicted_ensemble_8GCMs_ssp585_2011_2040-ensemble.tif"))
-  ssp585.pred.2041_2070 <- rast(here("Data", "Spatial", "Predictions", "predicted_ensemble_8GCMs_ssp585_2041_2070-ensemble.tif"))
-  ssp585.pred.2071_2100<- rast(here("Data", "Spatial", "Predictions", "predicted_ensemble_8GCMs_ssp585_2071_2100-ensemble.tif"))
-  ssp585.pred <- c(ssp585.pred.2011_2040 , ssp585.pred.2041_2070, ssp585.pred.2071_2100)
-  names(ssp585.pred) <- c("2011-2040", "2041-2070", "2071-2100")
+  ssp585 <- list.files(here("Data", "Spatial", "Predictions"), pattern=glob2rx("predicted_ensemble_8GCMs_ssp585*-ensemble.tif"), full.names=T) %>% rast()
+  names(ssp585) <- c("2011-2040", "2041-2070", "2071-2100")
   
-  ssp245.pred.continuous.change <- ssp245.pred - pred.1981_2010
-  writeRaster(ssp245.pred.continuous.change, here("Data", "Spatial", "Predictions", "prob-change-predicted_ensemble_8GCMs_ssp245-ensemble.tif"), overwrite=T)
-  
-  ssp585.pred.continuous.change <-ssp585.pred - pred.1981_2010
-  writeRaster(ssp585.pred.continuous.change, here("Data", "Spatial", "Predictions", "prob-change-predicted_ensemble_8GCMs_ssp585-ensemble.tif"), overwrite=T)
-}
-
-ssp585.pred.continuous.change <- rast(here("Data", "Spatial", "Predictions", "prob-change-predicted_ensemble_8GCMs_ssp585-ensemble.tif"))
-change.dat.ssp245 <- ssp245.pred.continuous.change %>% spatSample(size=10000,na.rm=T) %>% mutate(scenario="ssp245") %>% pivot_longer(-scenario)
-change.dat.ssp585 <- ssp585.pred.continuous.change %>% spatSample(size=10000,na.rm=T) %>% mutate(scenario="ssp585") %>% pivot_longer(-scenario)
-change.dat <- rbind(change.dat.ssp245, change.dat.ssp585)
-change.dat$scenario <- factor(change.dat$scenario, levels=c("ssp245", "ssp585"), labels=c("SSP2-4.5", "SSP5-8.5"))
-p1 <- ggplot(change.dat, aes(x=name, y=value, col=scenario))+geom_boxplot(outlier.size = 0.5)+ylab("change in the probability\nof aspen presence")+xlab("time period")+scale_colour_manual(values=c( "#1b9e77", "#7570b3"))+theme(legend.title=element_blank(), legend.position = "bottom")
-ggsave(p1, filename=here("Results", "Figures", "change-probability.jpg"), width=90, height=70, units="mm")
-
-# Categorical
-if(!file.exists(here("Data", "Spatial", "Predictions","pa-change_ensemble_8GCMs_ssp245-ensemble.tif"))){
-  read.csv(here("Results", "Ensemble-prediction-threshold.csv")) %>% 
-  filter(.metric == "j_index") %>%
-  filter(.estimate == max(.estimate)) %>%
-  pull(.threshold) -> threshold.ensemble
-
+ 
   pred.1981_2010.cat <- pred.1981_2010
   pred.1981_2010.cat[pred.1981_2010.cat<threshold.ensemble]<-0
   pred.1981_2010.cat[pred.1981_2010.cat>=threshold.ensemble] <-1
   
-  ssp245.pred.cat <- ssp245.pred
+  ssp245.pred.cat <- ssp245
   ssp245.pred.cat[ssp245.pred.cat<threshold.ensemble]<-0
   ssp245.pred.cat[ssp245.pred.cat>=threshold.ensemble]<-1
   
-  ssp585.pred.cat <- ssp585.pred
+  ssp585.pred.cat <- ssp585
+  ssp585.pred.cat[ssp585.pred.cat<threshold.ensemble]<-0
+  ssp585.pred.cat[ssp585.pred.cat>=threshold.ensemble]<-1
+  
+  tm.aspen90.prob01<- tm_shape(aspen90.prob01)+tm_raster(  
+style= "cat", title="", labels=c("absent","present"), palette=c( "grey25", "#E1BB4B"))+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
+  
+  Fig.file <- here("Results", "Figures", "aspen90-presence-map.jpg")
+  jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
+   tmap_arrange(tm.aspen90.prob01, nrow=1)
+  whatever <- dev.off()
+  
+  tm.prob.ssp245.20712100 <- tm_shape(ssp245[[3]])+tm_raster(title="", palette="viridis", midpoint=NA, breaks=c(0,0.1,0.2, 0.3,0.4,0.5,0.6,0.7,0.8))+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
+  
+  tm.prob.ssp585.20712100 <- tm_shape(ssp585[[3]])+tm_raster(title="", palette="viridis", midpoint=NA, breaks=c(0,0.1,0.2, 0.3,0.4,0.5,0.6,0.7,0.8))+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
+  
+  Fig.file <- here("Results", "Figures", "ensemble-prob-2071-2100.jpg")
+  jpeg(Fig.file, width=7, height=5, units="in", res=300)
+   tmap_arrange( tm.prob.ssp245.20712100+tm_layout(main.title = "SSP2-4.5",main.title.size=1,main.title.position="center"), tm.prob.ssp585.20712100+tm_layout(main.title = "SSP5-8.5",main.title.size=1,main.title.position="center"),nrow=1)
+  whatever <- dev.off()
+  
+  
+  Fig.file <- here("Results", "Figures", "ensemble-prob-ssp245-2071-2100.jpg")
+  jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
+   tmap_arrange( tm.prob.ssp245.20712100,nrow=1)
+  whatever <- dev.off()
+  
+  tm.pred.1981_2010.cat <- tm_shape(pred.1981_2010.cat)+tm_raster(  
+style= "cat", title="", labels=c("absent","present"), palette=c( "grey25", "#E1BB4B"))+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
+  
+  Fig.file <- here("Results", "Figures", "ensemble-prob-catmap.jpg")
+  jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
+   tmap_arrange(tm.pred.1981_2010.cat, nrow=1)
+  whatever <- dev.off()
+
+  tm.ssp245.pred.cat.2070.2100 <- tm_shape(ssp245.pred.cat[[3]])+tm_raster(  
+style= "cat", title="", labels=c("absent","present"), palette=c( "grey25", "#E1BB4B"))+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
+  
+  tm.ssp585.pred.cat.2070.2100 <- tm_shape(ssp585.pred.cat[[3]])+tm_raster(  
+style= "cat", title="", labels=c("absent","present"), palette=c( "grey25", "#E1BB4B"))+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
+
+  
+  Fig.file <- here("Results", "Figures", "ensemble-prob-ssp245-2071-2100-01map.jpg")
+  jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
+   tmap_arrange(  tm.ssp245.pred.cat.2070.2100  , nrow=1)
+  whatever <- dev.off()
+  
+    
+  Fig.file <- here("Results", "Figures", "ensemble-prob-2071-2100-01map.jpg")
+  jpeg(Fig.file, width=7, height=5, units="in", res=300)
+   tmap_arrange(  tm.ssp245.pred.cat.2070.2100+tm_layout(main.title = "SSP2-4.5", main.title.size=1, main.title.position="center"),  tm.ssp585.pred.cat.2070.2100+tm_layout(main.title = "SSP5-8.5", main.title.size=1, main.title.position="center"), nrow=1)
+  whatever <- dev.off()
+}
+```
+
+```{r GenLossGainStable}
+if(!file.exists(here("Data", "Spatial", "Predictions","lgs-change_ensemble_8GCMs_ssp245-ensemble.tif"))){
+  
+  ### FIRST HABITAT SUITABILITY
+  #Import data
+  pred.1981_2010<- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))
+  
+  ssp245 <- list.files(here("Data", "Spatial", "Predictions"), pattern=glob2rx("predicted_ensemble_8GCMs_ssp245*-ensemble.tif"), full.names=T) %>% rast()
+  names(ssp245) <- c("2011-2040", "2041-2070", "2071-2100")
+  
+  ssp585 <- list.files(here("Data", "Spatial", "Predictions"), pattern=glob2rx("predicted_ensemble_8GCMs_ssp585*-ensemble.tif"), full.names=T) %>% rast()
+  names(ssp585) <- c("2011-2040", "2041-2070", "2071-2100")
+  
+  threshold.ensemble <- read.csv(here("Results", "Ensemble-prediction-threshold.csv")) %>%filter(.metric == "j_index") %>% filter(.estimate == max(.estimate)) %>% pull(.threshold)
+  pred.1981_2010.cat <- pred.1981_2010
+  pred.1981_2010.cat[pred.1981_2010.cat<threshold.ensemble]<-0
+  pred.1981_2010.cat[pred.1981_2010.cat>=threshold.ensemble] <-1
+  
+  ssp245.pred.cat <- ssp245
+  ssp245.pred.cat[ssp245.pred.cat<threshold.ensemble]<-0
+  ssp245.pred.cat[ssp245.pred.cat>=threshold.ensemble]<-1
+  
+  ssp585.pred.cat <- ssp585
   ssp585.pred.cat[ssp585.pred.cat<threshold.ensemble]<-0
   ssp585.pred.cat[ssp585.pred.cat>=threshold.ensemble]<-1
   
@@ -1705,7 +1708,7 @@ if(!file.exists(here("Data", "Spatial", "Predictions","pa-change_ensemble_8GCMs_
   change.ssp245[change.ssp245==10] <- -1 # loss
   change.ssp245[change.ssp245==9] <- 1 # stable
   names(change.ssp245) <- c("2011-2040", "2041-2070", "2071-2100")
-  writeRaster(change.ssp245, here("Data", "Spatial", "Predictions","pa-change_ensemble_8GCMs_ssp245-ensemble.tif"), overwrite=T)
+  writeRaster(change.ssp245, here("Data", "Spatial", "Predictions","lgs-change_ensemble_8GCMs_ssp245-ensemble.tif"), overwrite=T)
   
   change.ssp585 <- pred.1981_2010.cat
   change.ssp585[change.ssp585==1] <- 10
@@ -1714,135 +1717,181 @@ if(!file.exists(here("Data", "Spatial", "Predictions","pa-change_ensemble_8GCMs_
   change.ssp585[change.ssp585==10] <- -1 # loss
   change.ssp585[change.ssp585==9] <- 1 # stable
   names(change.ssp585) <- c("2011-2040", "2041-2070", "2071-2100")
-  writeRaster(change.ssp585, here("Data", "Spatial", "Predictions", "pa-change_ensemble_8GCMs_ssp585-ensemble.tif"), overwrite=T)
+  writeRaster(change.ssp585, here("Data", "Spatial", "Predictions", "lgs-change_ensemble_8GCMs_ssp585-ensemble.tif"), overwrite=T)
+  
+  ### COMBINED
+  aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
+  names(aspen90.prob) <- "aspen.prob"
+  aspen90.prob01 <- aspen90.prob
+  aspen90.prob01[aspen90.prob01>0]<-100
+ 
+  contemporary.aspenXchange4.ssp245 <- aspen90.prob01 + change.ssp245
+  contemporary.aspenXchange4.ssp245[contemporary.aspenXchange4.ssp245==2] <-  4 # aspen absent & habitat gain
+  contemporary.aspenXchange4.ssp245[contemporary.aspenXchange4.ssp245==1] <-  2 # aspen absent & habitat stable
+  contemporary.aspenXchange4.ssp245[contemporary.aspenXchange4.ssp245==100] <- -3 # aspen present & unsuitable habitat
+  contemporary.aspenXchange4.ssp245[contemporary.aspenXchange4.ssp245==99] <- -2 # aspen present & habitat loss
+  contemporary.aspenXchange4.ssp245[contemporary.aspenXchange4.ssp245==-1] <- -1 # aspen absent & habitat loss
+  contemporary.aspenXchange4.ssp245[contemporary.aspenXchange4.ssp245==0] <-  0 # aspen absent & unsuitable habitat
+  contemporary.aspenXchange4.ssp245[contemporary.aspenXchange4.ssp245==101] <- 1 # aspen present & habitat stable
+  contemporary.aspenXchange4.ssp245[contemporary.aspenXchange4.ssp245==102] <- 3  # aspen present & habitat gain
+  
+  writeRaster(contemporary.aspenXchange4.ssp245, here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp245-ensemble.tif"), overwrite=T)
+  
+  
+  contemporary.aspenXchange4.ssp585 <- aspen90.prob01 + change.ssp585
+  contemporary.aspenXchange4.ssp585[contemporary.aspenXchange4.ssp585==2] <-  4 # aspen absent & habitat gain
+  contemporary.aspenXchange4.ssp585[contemporary.aspenXchange4.ssp585==1] <-  2 # aspen absent & habitat stable
+  contemporary.aspenXchange4.ssp585[contemporary.aspenXchange4.ssp585==100] <- -3 # aspen present & unsuitable habitat
+  contemporary.aspenXchange4.ssp585[contemporary.aspenXchange4.ssp585==99] <- -2 # aspen present & habitat loss
+  contemporary.aspenXchange4.ssp585[contemporary.aspenXchange4.ssp585==-1] <- -1 # aspen absent & habitat loss
+  contemporary.aspenXchange4.ssp585[contemporary.aspenXchange4.ssp585==0] <-  0 # aspen absent & unsuitable habitat
+  contemporary.aspenXchange4.ssp585[contemporary.aspenXchange4.ssp585==101] <- 1 # aspen present & habitat stable
+  contemporary.aspenXchange4.ssp585[contemporary.aspenXchange4.ssp585==102] <- 3  # aspen present & habitat gain
+  
+  writeRaster(contemporary.aspenXchange4.ssp585, here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp585-ensemble.tif"), overwrite=T)
+
 }
-change.ssp245 <- rast(here("Data", "Spatial", "Predictions", "pa-change_ensemble_8GCMs_ssp245-ensemble.tif"))
-change.ssp585 <- rast(here("Data", "Spatial", "Predictions", "pa-change_ensemble_8GCMs_ssp585-ensemble.tif"))
-change.ssp245.f <- freq(change.ssp245) %>% mutate(layer=factor(layer, levels=1:3, labels=names(change.ssp245)), scenario="ssp245")
-change.ssp585.f <- freq(change.ssp585) %>% mutate(layer=factor(layer, levels=1:3, labels=names(change.ssp585)), scenario="ssp585")
-change.f <- rbind(change.ssp245.f, change.ssp585.f) %>% filter(!value==0)
-change.f$var <- factor(change.f$value, levels=c(-1,1,2),labels=c("loss", "stable", "gain"))
-change.f$area <- change.f$count*90*90*10^-6
-p2 <- ggplot(change.f, aes(x=layer, y=area,fill=scenario))+geom_bar(stat="identity", position="dodge")+theme(legend.title=element_blank(), legend.position="right")+ylab("area (sq. km)")+scale_fill_manual(values=c( "#1b9e77", "#7570b3"))+facet_wrap(~var, scales="free_y", nrow=3)+xlab("time period")
-ggsave(p2, filename=here("Results", "Figures", "loss-gain.jpg"), width=90, height=90, units="mm")
-
-
-area.1981.2010 <- freq(pred.1981_2010) %>% filter(value==1) %>% pull(count)
-
-
-area.ssp245.2011_2040 <- freq(ssp245.pred.2011_2040) %>% filter(value==1) %>% pull(count)
-area.ssp245.2041_2070<- freq(ssp245.pred.2041_2070) %>% filter(value==1) %>% pull(count)
-area.ssp245.2071_2100<- freq(ssp245.pred.2071_2100) %>% filter(value==1) %>% pull(count)
-area.ssp245 <- data.frame( year=c("1981-2010", "2011-2040", "2041-2070", "2071-2100"), scenario="ssp245", area=c(area.1981.2010, area.ssp245.2011_2040, area.ssp245.2041_2070, area.ssp245.2071_2100))
-
-
-area.ssp585.2011_2040 <- freq(ssp585.pred.2011_2040) %>% filter(value==1) %>% pull(count)
-area.ssp585.2041_2070<- freq(ssp585.pred.2041_2070) %>% filter(value==1) %>% pull(count)
-area.ssp585.2071_2100<- freq(ssp585.pred.2071_2100) %>% filter(value==1) %>% pull(count)
-area.ssp585 <- data.frame( year=c("1981-2010","2011-2040", "2041-2070", "2071-2100"), scenario="ssp585", area=c(area.1981.2010,area.ssp585.2011_2040, area.ssp585.2041_2070, area.ssp585.2071_2100))
-
-area.df <- rbind( area.ssp245, area.ssp585)
-area.df$area <- 90*90 * area.df$area *10^-6
-area.df$year <- factor(area.df$year, ordered=T)
-area.df$scenario <- factor(area.df$scenario, levels=c("ssp245", "ssp585"), labels=c("SSP2-4.5", "SSP5-8.5"))
-
-
-  p1 <- ggplot(area.df, aes(x=year, y=area, col=scenario, group=scenario))+geom_line()+geom_point()+ylab("area suitable\nfor aspen (sq. km)")+theme(legend.position="bottom", legend.title=element_blank())+xlab("time period")+scale_colour_manual(values=c( "#1b9e77", "#7570b3"))
-  ggsave(p1, filename=here("Results", "Figures", "area-timeseries.jpg"), width=90, height=60, units="mm")
 ```
 
-```{r CompositeLossGain}
-if(!file.exists(here("Data", "Spatial", "Predictions", "lossgain-ssp245.tif"))){
-  aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
-  names(aspen90.prob) <- "aspen.prob"
-  aspen90.prob01 <- aspen90.prob
-  aspen90.prob01[aspen90.prob01>0]<-1
+```{r TemporalPatterns}
+# Calculate change in global means
+if(!file.exists(here("Results", "globalchange.csv"))){
+  # GLOBAL PATTERNS
+  #Import data
+  pred19812010 <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))
+  pred19812010[pred19812010>1] <- 1
   
-  read.csv(here("Results", "Ensemble-prediction-threshold.csv")) %>% 
-    filter(.metric == "j_index") %>%
-    filter(.estimate == max(.estimate)) %>%
-    pull(.threshold) -> threshold.ensemble
-  
-  ssp245.pred.2011_2040 <- rast(here("Data", "Spatial", "Predictions", "predicted_ensemble_8GCMs_ssp245_2011_2040-ensemble.tif"))
-  ssp245.pred.2041_2070 <- rast(here("Data", "Spatial", "Predictions", "predicted_ensemble_8GCMs_ssp245_2041_2070-ensemble.tif"))
-  ssp245.pred.2071_2100<- rast(here("Data", "Spatial", "Predictions", "predicted_ensemble_8GCMs_ssp245_2071_2100-ensemble.tif"))
-  ssp245.pred <- c(ssp245.pred.2011_2040, ssp245.pred.2041_2070,ssp245.pred.2071_2100)
+  ssp245.pred <- list.files(here("Data", "Spatial", "Predictions"), pattern=glob2rx("predicted_ensemble_8GCMs_ssp245*-ensemble.tif"), full.names=T) %>% rast()
   names(ssp245.pred) <- c("2011-2040", "2041-2070", "2071-2100")
-  ssp245.pred.cat <- ssp245.pred
-  ssp245.pred.cat[ssp245.pred.cat<threshold.ensemble]<-0
-  ssp245.pred.cat[ssp245.pred.cat>=threshold.ensemble]<-10
-  ssp245.pred.cat <- ssp245.pred.cat + aspen90.prob01
-  #0 = not suitable
-  #1 = loss
-  #10 = gain
-  # 11 = stable
-  writeRaster(ssp245.pred.cat, here("Data", "Spatial", "Predictions", "lossgain-ssp245.tif"), overwrite=T)
-}
-
-if(!file.exists(here("Data", "Spatial", "Predictions", "lossgain-ssp585.tif"))){
-  aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
-  names(aspen90.prob) <- "aspen.prob"
-  aspen90.prob01 <- aspen90.prob
-  aspen90.prob01[aspen90.prob01>0]<-1
-  
-  read.csv(here("Results", "Ensemble-prediction-threshold.csv")) %>% 
-    filter(.metric == "j_index") %>%
-    filter(.estimate == max(.estimate)) %>%
-    pull(.threshold) -> threshold.ensemble
-  
-  ssp585.pred.2011_2040 <- rast(here("Data", "Spatial", "Predictions", "predicted_ensemble_8GCMs_ssp585_2011_2040-ensemble.tif"))
-  ssp585.pred.2041_2070 <- rast(here("Data", "Spatial", "Predictions", "predicted_ensemble_8GCMs_ssp585_2041_2070-ensemble.tif"))
-  ssp585.pred.2071_2100<- rast(here("Data", "Spatial", "Predictions", "predicted_ensemble_8GCMs_ssp585_2071_2100-ensemble.tif"))
-  ssp585.pred <- c(ssp585.pred.2011_2040, ssp585.pred.2041_2070,ssp585.pred.2071_2100)
+   
+  ssp585.pred <- list.files(here("Data", "Spatial", "Predictions"), pattern=glob2rx("predicted_ensemble_8GCMs_ssp585*-ensemble.tif"), full.names=T) %>% rast()
   names(ssp585.pred) <- c("2011-2040", "2041-2070", "2071-2100")
-  ssp585.pred.cat <- ssp585.pred
-  ssp585.pred.cat[ssp585.pred.cat<threshold.ensemble]<-0
-  ssp585.pred.cat[ssp585.pred.cat>=threshold.ensemble]<-10
-  ssp585.pred.cat <- ssp585.pred.cat + aspen90.prob01
-  #0 = not suitable
-  #1 = loss
-  #10 = gain
-  # 11 = stable
-  writeRaster(ssp585.pred.cat, here("Data", "Spatial", "Predictions", "lossgain-ssp585.tif"), overwrite=T)
+  
+  
+  # Calculate pixel-level absolute change --> (future - historical)
+  ssp245.c <- ssp245.pred - pred19812010
+  ssp585.c <- ssp585.pred - pred19812010
+  
+  study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(pred19812010)) 
+  
+    tm.ssp245.c.20112040<- tm_shape( ssp245.c[[1]])+tm_raster(title="", palette="BrBG", midpoint=NA, breaks=c(-0.7, -0.5, -0.3, -0.1, 0.1,0.3, 0.5, 0.7))+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))
+  
+   tm.ssp245.c.20412070<- tm_shape( ssp245.c[[2]])+tm_raster(title="", palette="BrBG", midpoint=NA, breaks=c(-0.7, -0.5, -0.3, -0.1, 0.1,0.3, 0.5, 0.7))+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"))+tm_shape(study.area) + tm_borders()
+  
+  tm.ssp245.c.20712100<- tm_shape( ssp245.c[[3]])+tm_raster(title="", palette="BrBG", midpoint=NA, breaks=c(-0.7, -0.5, -0.3, -0.1, 0.1,0.3, 0.5, 0.7))+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"))+tm_shape(study.area) + tm_borders()
+  
+    tm.ssp585.c.20712100<- tm_shape( ssp585.c[[3]])+tm_raster(title="", palette="BrBG", midpoint=NA, breaks=c(-0.7, -0.5, -0.3, -0.1, 0.1,0.3, 0.5, 0.7))+tm_layout(bg.color="white", legend.show = F)+tm_shape(study.area) + tm_borders()
+
+    Fig.file <- here("Results", "Figures", "change-map-2071-2100.jpg")
+  jpeg(Fig.file, width=7, height=5.5, units="in", res=300)
+   tmap_arrange(tm.ssp245.c.20712100 + tm_scale_bar(position=c("left", "bottom"), breaks=c(0,100)) + tm_layout(main.title = "SSP2-4.5",main.title.size=1,main.title.position="center"),tm.ssp585.c.20712100+tm_layout(main.title = "SSP5-8.5",main.title.size=1,main.title.position="center"), nrow=1)
+whatever <- dev.off()
+
+  Fig.file <- here("Results", "Figures", "change-map-SSP2-4_5.jpg")
+  jpeg(Fig.file, width=7, height=3.5, units="in", res=300)
+  tmap_arrange(tm.ssp245.c.20112040 + tm_scale_bar(position=c("left", "bottom"), breaks=c(0,100)) + tm_layout(main.title = "2011 - 2040" ,main.title.size=1,main.title.position="center"), tm.ssp245.c.20412070+tm_layout(main.title = "2041 - 2070", main.title.size=1,main.title.position="center", legend.show = F), tm.ssp245.c.20712100+tm_layout(main.title = "2071 - 2100", main.title.size=1, main.title.position="center", legend.show = F), nrow=1)
+  whatever <- dev.off()
+
+  Fig.file <- here("Results", "Figures", "change-map-SSP2-4_5-2071-2100.jpg")
+  jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
+  tmap_arrange(tm.ssp245.c.20712100 + tm_scale_bar(position=c("left", "bottom"), breaks=c(0,100))+ tm_compass( position=c("right", "top")), nrow=1)
+  whatever <- dev.off()
+
+  # Calculate pixel-level percent change --> (future - historical) / historical
+  ssp245.pc <-  ssp245.c / pred19812010 *100
+  ssp585.pc <-  ssp585.c / pred19812010 *100
+  
+  ## SUMMARIZE TRENDS
+  # Calculate global means
+  pred19812010.mean <- pred19812010%>% global(na.rm=T, fun="mean")
+  ssp245.mean <- ssp245.pred %>% global(na.rm=T, fun="mean")
+  ssp585.mean <- ssp585.pred %>% global(na.rm=T, fun="mean")
+ 
+  # Calculate global means of absolute change
+  ssp245.c.mean <- ssp245.c %>% global(na.rm=T, fun="mean")
+  ssp585.c.mean <- ssp585.c %>% global(na.rm=T, fun="mean")
+ 
+  # Calculate global means of percent change
+  ssp245.pc.mean <- ssp245.pc %>% global(na.rm=T, fun="mean")
+  ssp585.pc.mean <- ssp585.pc %>% global(na.rm=T, fun="mean")
+
+  change.historical <- data.frame(years=c("1981-2010"), mean = round(pred19812010.mean$mean, 3), mean.c=NA, mean.pc= NA,scenario="historical")
+  change.ssp245 <- data.frame(years=c("2011-2040", "2041-2070", "2071-2100"), mean = round(ssp245.mean$mean, 2), mean.c= round(ssp245.c.mean$mean, 2), mean.pc=round(ssp245.pc.mean$mean,1),scenario="SSP2-4.5")
+  change.ssp585 <- data.frame(years=c("2011-2040", "2041-2070", "2071-2100"), mean = round(ssp585.mean$mean, 2), mean.c= round(ssp585.c.mean$mean, 2), mean.pc=round(ssp585.pc.mean$mean,1),scenario="SSP5-8.5")
+
+  change.dat <- do.call(rbind, list(change.historical, change.ssp245, change.ssp585))
+
+  change.dat$mean.dif <- c(NA, change.dat$mean[-1]-change.dat$mean[1])*100
+
+  write.csv(change.dat, here("Results", "globalchange.csv"), row.names=F)
+
 }
 
-if(!file.exists(here("Results", "Figures", "FigMaps-LossGain.jpg"))){
-  ssp245<- rast(here("Data", "Spatial", "Predictions", "lossgain-ssp245.tif"))
-  ssp245 <- subst(ssp245, 0, NA)
-  ssp585<- rast(here("Data", "Spatial", "Predictions", "lossgain-ssp585.tif"))
-  ssp585 <- subst(ssp585, 0, NA)
+# Calculate change in area
+if(!file.exists(here("Results", "area-lossgain.csv"))){
   
-  loss.gain.freq.ssp585 <-  ssp585 %>% freq() %>% mutate(scenario="SSP5-8.5")
-  loss.gain.freq.ssp245 <-  ssp245 %>% freq() %>% mutate(scenario="SSP2-4.5")
-  loss.gain.freq <- rbind(loss.gain.freq.ssp245,loss.gain.freq.ssp585)
-  colnames(loss.gain.freq) <- c("years", "status", "count", "scenario")
-  loss.gain.freq$years <- factor(loss.gain.freq$years, levels=1:3, labels=c("2011-2040", "2041-2070", "2071-2100"))
-  loss.gain.freq$status <- factor(loss.gain.freq$status, levels=c(1,10,11), labels=c("loss", "gain", "stable"))
-  loss.gain.freq$area <- round(loss.gain.freq$count * 90*90 *10^-6, 0)
-  write.csv(loss.gain.freq, here("results", "loss-gain.csv"),row.names=F)
+   contemporary.aspenXchange4.ssp245 <- rast(here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp245-ensemble.tif")) 
+  contemporary.aspenXchange4.ssp585 <- rast(here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp585-ensemble.tif"))
+ 
+  change.ssp245.f <- freq(contemporary.aspenXchange4.ssp245 ) %>% mutate(layer=factor(layer, levels=1:3, labels=names(lgs.ssp245)), scenario="ssp245")
+  change.ssp585.f <- freq(contemporary.aspenXchange4.ssp585 ) %>% mutate(layer=factor(layer, levels=1:3, labels=names(lgs.ssp585)), scenario="ssp585")
+  change.f <- rbind(change.ssp245.f, change.ssp585.f)  %>% mutate(value=factor(value, levels=c(-3, -2, -1, 0, 1, 2, 3, 4), labels=c("present &\nunsuitable habitat", "present &\nhabitat loss", "absent &\nhabitat loss", "absent &\nunsuitable habitat", "present &\nhabitat stable", "absent &\nhabitat stable", "present &\nhabitat gain", "absent &\nhabitat gain"), ordered=T), scenario=factor(scenario, levels=c("ssp245", "ssp585"), labels=c("SSP2-4.5", "SSP5-8.5")))
+
+  change.f$area <- round(change.f$count * 90*90 *10^-6, 0)
   
-  tm.ssp245<- tm_shape(study.area)+tm_fill(col="grey25") + tm_shape(ssp245[[3]])+tm_raster( style= "cat", title="", labels=c("loss", "gain", "stable"), palette=c("#fdc086","#386cb0", "#7fc97f"))+tm_layout(main.title = "SSP2-4.5",main.title.size=1,main.title.position="center", bg.color="white", legend.position = c(0.01,0.8))+tm_shape(study.area) +tm_borders()
+  write.csv(change.f, here("Results", "area-lossgain.csv"), row.names = F)
   
-  tm.ssp585<- tm_shape(study.area)+tm_fill(col="grey25")+tm_shape(ssp585[[3]])+tm_raster( style= "cat", title="", labels=c("loss",  "gain", "stable"), palette=c("#fdc086","#386cb0", "#7fc97f"), legend.show = FALSE)+tm_layout(main.title = "SSP5-8.5",main.title.size=1,main.title.position="center", bg.color="white",legend.show = FALSE)+tm_shape(study.area) + tm_borders()
+  p2 <- change.f %>% filter(!value=="absent &\nunsuitable habitat") %>% ggplot(aes(x=layer, y=area, fill=value))+geom_bar(stat="identity", position="dodge")+facet_wrap(.~scenario,ncol=1)+scale_fill_manual(values=c("#9e0142", "#f46d43", "#fdae61", "#abdda4","#66c2a5", "#3288bd", "#5e4fa2"))+ylab(expression("area ("~km^2~")"))+theme(axis.title.x = element_blank(), legend.title = element_blank(), legend.position="bottom")
+  
+  ggsave(p2, filename=here("Results", "Figures", "loss-gain.jpg"), width=4.5, height=4.5, units="in")  
+
+}
+```
+
+```{r MapLossGain}
+if(!file.exists(here("Results", "Figures", "FigMaps-LossGain-SSP585.jpg"))){
+  
+     contemporary.aspenXchange4.ssp245 <- rast(here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp245-ensemble.tif")) 
+      contemporary.aspenXchange4.ssp245[contemporary.aspenXchange4.ssp245==0] <-NA
+ 
+  contemporary.aspenXchange4.ssp585 <- rast(here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp585-ensemble.tif"))
+   contemporary.aspenXchange4.ssp585[contemporary.aspenXchange4.ssp585==0] <-NA
+ 
+    study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(contemporary.aspenXchange4.ssp245)) 
+  
+    
+   map1 <-  tm_shape(study.area)+tm_fill(col="grey25") + tm_shape(contemporary.aspenXchange4.ssp245[[3]])+tm_raster( style= "cat", title="", labels=c("present & unsuitable habitat", "present & habitat loss", "absent & habitat loss",  "present & habitat stable", "absent & habitat stable", "present & habitat gain", "absent & habitat gain"), palette=c("#9e0142", "#f46d43", "#fdae61", "#abdda4","#66c2a5", "#3288bd", "#5e4fa2"))+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"), legend.text.size = 0.5)+tm_shape(study.area) +tm_borders()
+ 
+    Fig.file <- here("Results", "Figures", "FigMaps-LossGain-SSP245.jpg")
+  jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
+   tmap_arrange( map1+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"), breaks=c(0,100)), nrow=1)
+  whatever <- dev.off()
+     
+   map2 <-  tm_shape(study.area)+tm_fill(col="grey25") + tm_shape(contemporary.aspenXchange4.ssp585[[3]])+tm_raster( style= "cat", title="", labels=c("present & unsuitable habitat", "present & habitat loss", "absent & habitat loss",  "present & habitat stable", "absent & habitat stable", "present & habitat gain", "absent & habitat gain"), palette=c("#9e0142", "#f46d43", "#fdae61", "#abdda4","#66c2a5", "#3288bd", "#5e4fa2"))+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"), legend.text.size = 0.5)+tm_shape(study.area) +tm_borders()
+   
+    Fig.file <- here("Results", "Figures", "FigMaps-LossGain-SSP585.jpg")
+  jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
+   tmap_arrange( map2+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"), breaks=c(0,100)), nrow=1)
+  whatever <- dev.off()
+  
   
   Fig.file <- here("Results", "Figures", "FigMaps-LossGain.jpg")
-    jpeg(Fig.file, width=3.5, height=3.25, units="in", res=300)
-    tmap_arrange(tm.ssp245, tm.ssp585, nrow=1)
+  jpeg(Fig.file, width=7, height=5.5, units="in", res=300)
+   tmap_arrange( map1+ tm_scale_bar(position=c("left", "bottom"), breaks=c(0,100))+tm_layout(main.title="SSP2-4.5", main.title.position="center", main.title.size=1), map2+tm_layout(legend.show=F,main.title="SSP5-8.5", main.title.position="center", main.title.size=1)+ tm_compass( position=c("right", "top")), nrow=1)
   whatever <- dev.off()
-  
-  Fig.file <- here("Results", "Figures", "FigMaps-LossGain1.jpg")
-    jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
-    tm_shape(study.area)+tm_fill(col="grey25") + tm_shape(ssp245[[3]])+tm_raster( style= "cat", title="", labels=c("loss", "gain", "stable"), palette=c("#fdc086","#386cb0", "#7fc97f"))+tm_layout(main.title = "",main.title.size=1,main.title.position="center", bg.color="white", legend.position = c(0.01,0.9))+tm_shape(study.area) +tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
-  whatever <- dev.off()
-
 }
+```
 
-
-##  Spatial patterns
-if(!file.exists(here("Results", "Figures", "gainloss-geography.jpg"))){
+```{r GeographyLossGain}
+## Geographic patterns
+if(!file.exists(here("Results", "Figures", "gainloss-geography-SSP585.jpg"))){
   elev <- rast(here("Data", "Spatial", "DEM", "DEM250.tif"))
   aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
-  pts <- ssp245 %>%  spatSample(size=5000,na.rm=T, method="stratified", as.points=T, exhaustive=T)
+  ssp245<- rast(here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp245-ensemble.tif")) 
+  ssp585<- rast(here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp585-ensemble.tif"))
+
+  pts <- ssp245[[3]] %>%  spatSample(size=5000,na.rm=T, method="stratified", as.points=T, exhaustive=T)
+
   pts <- extract(ssp245, pts, bind=T)
   pts <- extract(ssp585, pts, bind=T) 
   pts <- extract(aspen90.prob, pts, bind=T) %>% terra::project(crs(elev))
@@ -1851,9 +1900,8 @@ if(!file.exists(here("Results", "Figures", "gainloss-geography.jpg"))){
   
   dat <- cbind(as.data.frame(pts)[,-1], pts.coords)
   dat$x <- dat$x *-1
-  colnames(dat) <- c(paste("SSP2-4.5", c("2011-2040", "2041-2070","2071-2100"), sep=":"), paste("SSP5-8.5", c("2011-2040", "2041-2070","2071-2100"), sep=":"), "Percent\naspen", "Elevation\n(m)", "Longitude\n(°W)","Latitude\n(°N)")
-  dat$`Percent\naspen` <- dat$`Percent\naspen`*100
-  
+  colnames(dat) <- c(paste("SSP2-4.5", c("2011-2040", "2041-2070","2071-2100"), sep=":"), paste("SSP5-8.5", c("2011-2040", "2041-2070","2071-2100"), sep=":"), "Percent aspen", "Elevation (m)", "Longitude (°W)","Latitude (°N)")
+  dat$`Percent aspen` <- dat$`Percent aspen`*100
   
   dat <- pivot_longer(dat,
       cols = 'SSP2-4.5:2011-2040':'SSP5-8.5:2071-2100', 
@@ -1863,88 +1911,127 @@ if(!file.exists(here("Results", "Figures", "gainloss-geography.jpg"))){
   
   dat$scenario <- sapply(strsplit(dat$`time period`, split=":"), "[", 1)
   dat$`time period` <- sapply(strsplit(dat$`time period`, split=":"), "[", 2)
-  dat$value <- factor(dat$value, levels=c(1,11,10), labels=c("loss", "gain","stable"), ordered=T)
-  
+  dat$value <- factor(dat$value, levels=c(-3, -2, -1, 0, 1, 2, 3, 4), labels=c("present &\nunsuitable habitat", "present &\n habitat loss", "absent &\nhabitat loss", "absent &\nunsuitable habitat", "present &\nhabitat stable", "absent &\nhabitat stable", "present &\nhabitat gain", "absent &\nhabitat gain"), ordered=T)
+  dat <- dat %>% filter(!value=="absent &\nunsuitable habitat")
+
   datx <- pivot_longer(dat,
-      cols = `Percent\naspen`:`Latitude\n(°N)`, 
+      cols = `Percent aspen`:`Latitude (°N)`, 
       names_to = "variable",
       values_to = "val"
   )
-  datx$`time period` <- factor(datx$`time period`, levels=c("2011-2040", "2041-2070","2071-2100"), labels=c("2011-\n2040", "2041-\n2070","2071-\n2100"))
+  datx$`time period` <- factor(datx$`time period`, levels=c("2011-2040", "2041-2070","2071-2100"), labels=c("2011-2040", "2041-2070","2071-2100"))
   datx <- datx %>% na.omit()
-  p1<-ggplot(datx, aes(x=`time period`, y=val,fill=value))+geom_boxplot(outlier.size = 0.5)+facet_grid(variable~scenario, scales="free")+theme(legend.position="bottom", legend.title=element_blank())+ylab("value")+scale_fill_manual(values=c("#fdc086","#386cb0", "#7fc97f"))
+  p1<- datx %>% filter(scenario=="SSP2-4.5") %>%  ggplot(aes(x=`time period`, y=val,fill=value))+geom_boxplot(outlier.size = 0.5)+facet_grid(variable~., scales="free")+theme(legend.position="bottom", legend.title=element_blank(), legend.margin=margin())+ylab("value")+scale_fill_manual(values=c("#9e0142", "#f46d43", "#fdae61", "#abdda4","#66c2a5", "#3288bd", "#5e4fa2"))
   
-  ggsave(p1, filename=here("Results", "Figures", "gainloss-geography.jpg"), width=90, height=110, units="mm")  
+  ggsave(p1, filename=here("Results", "Figures", "gainloss-geography-SSP245.jpg"), width=4.5, height=5, units="in")  
+  
+    p1<- datx %>% filter(scenario=="SSP5-8.5") %>%  ggplot(aes(x=`time period`, y=val,fill=value))+geom_boxplot(outlier.size = 0.5)+facet_grid(variable~., scales="free")+theme(legend.position="bottom", legend.title=element_blank(), legend.margin=margin())+ylab("value")+scale_fill_manual(values=c("#9e0142", "#f46d43", "#fdae61", "#abdda4","#66c2a5", "#3288bd", "#5e4fa2"))
+  
+  ggsave(p1, filename=here("Results", "Figures", "gainloss-geography-SSP585.jpg"), width=4.5, height=5, units="in")  
 }
 ```
 
-```{r GainDistance, eval=F}
-aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
-names(aspen90.prob) <- "aspen.prob"
-aspen90.prob01 <- aspen90.prob
-aspen90.prob01[aspen90.prob01>0]<-1
-
-windowz <- c(3, 5, 7, 13, 25, 47)
-
-if(!dir.exists(here("Data", "Spatial", "Aspen", "Focal"))){
+```{r GainDistance}
+if(!file.exists(here("Results", "Figures", "FigMaps-ExpansionDistance.jpg"))){
   
-  dir.create(here("Data", "Spatial", "Aspen", "Focal"))
-  for(win in windowz){
-    aspen90.focal <- focal(aspen90.prob01, w=win, fun=max, na.policy="omit", filename=here("Data", "Spatial", "Aspen", "Focal", paste0("aspen-", win, ".tif")))
+  aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
+  names(aspen90.prob) <- "aspen.prob"
+  aspen90.prob01 <- aspen90.prob
+  aspen90.prob01[aspen90.prob01>0]<-1
+  
+  windowz <- c(3, 5, 7, 13, 25, 47)
+  
+  if(!dir.exists(here("Data", "Spatial", "Aspen", "Focal"))){
+    
+    dir.create(here("Data", "Spatial", "Aspen", "Focal"))
+    for(win in windowz){
+      aspen90.focal <- focal(aspen90.prob01, w=win, fun=max, na.policy="omit", filename=here("Data", "Spatial", "Aspen", "Focal", paste0("aspen-", win, ".tif")))
+    }
+    focal.sum<- list.files(here("Data", "Spatial", "Aspen", "Focal"), full.names=T) %>% rast() %>% sum()
+    writeRaster(focal.sum, filename=here("Data", "Spatial", "Aspen", "Focal","Aspen-sum.tif"))
   }
-  focal.sum<- list.files(here("Data", "Spatial", "Aspen", "Focal"), full.names=T) %>% rast() %>% sum()
-  writeRaster(focal.sum, filename=here("Data", "Spatial", "Aspen", "Focal","Aspen-sum.tif"))
+  
+  focal.sum <- rast(here("Data", "Spatial", "Aspen", "Focal","Aspen-sum.tif"))
+  focal.sum[focal.sum==0] <- -1
+  
+  read.csv(here("Results", "Ensemble-prediction-threshold.csv")) %>% 
+    filter(.metric == "j_index") %>%
+    filter(.estimate == max(.estimate)) %>%
+    pull(.threshold) -> threshold.ensemble
+  
+  ## ABSENT & HABITAT GAIN (4)
+  ssp245.ahg<- rast(here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp245-ensemble.tif"))
+  ssp245.ahg <- subst(ssp245.ahg, c(-3, -2, -1, 0, 1, 2, 3), NA) # replace everything other than ABSENT & HABITAT GAIN with NA
+  ssp585.ahg<-  rast(here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp585-ensemble.tif"))
+  ssp585.ahg <- subst(ssp585.ahg, c(-3, -2, -1, 0, 1, 2, 3), NA) # replace everything other than expansion with NA
+   
+  ssp245.ahg.dist <-  ssp245.ahg* focal.sum 
+  ssp585.ahg.dist <-  ssp585.ahg* focal.sum 
+  
+  writeRaster(ssp245.ahg.dist, here(here("Data", "Spatial", "Predictions", "ssp245-aspen-habitat-gain-distance.tif")), overwrite=T)
+  writeRaster(ssp585.ahg.dist, here(here("Data", "Spatial", "Predictions", "ssp585-aspen-habitat-gain-distance.tif")), overwrite=T)
+    
+  ssp245.ahg.dist.dat <- ssp245.ahg.dist %>% freq() %>% filter(!value==0) %>% group_by(layer) %>% mutate(prop=count/sum(count), scenario="SSP2-4.5")
+  ssp585.ahg.dist.dat <- ssp585.ahg.dist %>% freq() %>% filter(!value==0) %>% group_by(layer) %>% mutate(prop=count/sum(count), scenario="SSP5-8.5")
+  
+    ahg.dist.dat <- rbind(ssp245.ahg.dist.dat , ssp585.ahg.dist.dat) %>% mutate(years = factor(layer, levels=1:3, labels=c("2011-2040", "2041-2070", "2071-2100")), distance=factor(value/4, levels=c(1:6, -1), labels=c("90", "180", "270", "540", "1080", "2070", ">2070"), ordered=T))
+   ahg.dist.dat <-  ahg.dist.dat %>%  arrange(scenario, years, distance) %>% group_by(scenario, years) %>% mutate(sum=cumsum(prop)) 
+    
+  write.csv(ahg.dist.dat, here("Results", "distance-AHG.csv"), row.names=F)
+  
+  
+  ## ABSENT & STABLE HABITAT (2)
+   ssp245.ash<- rast(here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp245-ensemble.tif"))
+  ssp245.ash <- subst(ssp245.ash, c(-3, -2, -1, 0, 1, 3, 4), NA) # replace everything other than ABSENT & HABITAT GAIN with NA
+  ssp585.ash<-  rast(here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp585-ensemble.tif"))
+  ssp585.ash <- subst(ssp585.ash, c(-3, -2, -1, 0, 1, 3, 4), NA) # replace everything other than expansion with NA
+   
+  ssp245.ash.dist <-  ssp245.ash* focal.sum 
+  ssp585.ash.dist <-  ssp585.ash* focal.sum 
+  
+  writeRaster(ssp245.ash.dist, here("Data", "Spatial", "Predictions", "ssp245-aspen-stable-habitat-distance.tif"), overwrite=T)
+  writeRaster(ssp585.ash.dist, here("Data", "Spatial", "Predictions", "ssp585-aspen-stable-habitat-distance.tif"), overwrite=T)
+    
+  ssp245.ash.dist.dat <- ssp245.ash.dist %>% freq() %>% filter(!value==0) %>% group_by(layer) %>% mutate(prop=count/sum(count), scenario="SSP2-4.5")
+  ssp585.ash.dist.dat <- ssp585.ash.dist %>% freq() %>% filter(!value==0) %>% group_by(layer) %>% mutate(prop=count/sum(count), scenario="SSP5-8.5")
+  
+    ash.dist.dat <- rbind(ssp245.ash.dist.dat , ssp585.ash.dist.dat) %>% mutate(years = factor(layer, levels=1:3, labels=c("2011-2040", "2041-2070", "2071-2100")), distance=factor(value/2, levels=c(1:6, -1), labels=c("90", "180", "270", "540", "1080", "2070", ">2070"), ordered=T))
+   ash.dist.dat <-  ash.dist.dat %>%  arrange(scenario, years, distance) %>% group_by(scenario, years) %>% mutate(sum=cumsum(prop)) 
+    
+  write.csv(ash.dist.dat, here("Results", "distance-ASH.csv"), row.names=F)
+    
+    # COMBINE
+    ahg.dist.dat <- read.csv(here("Results", "distance-AHG.csv"))
+    ahg.dist.dat <- ahg.dist.dat %>% filter(!distance==">2070") %>% mutate(distance.c=as.numeric(as.character(distance)), variable="absent & habitat\ngain")
+    
+    ash.dist.dat <- read.csv(here("Results", "distance-ASH.csv"))
+    ash.dist.dat <- ash.dist.dat %>% filter(!distance==">2070") %>% mutate(distance.c=as.numeric(as.character(distance)), variable="absent & suitable\nexisting habitat")
+    
+    dist.dat <- rbind(ahg.dist.dat, ash.dist.dat) %>% mutate(variable=factor(variable, levels=c("absent & suitable\nexisting habitat","absent & habitat\ngain"), ordered=T))
+    
+    p1 <- ggplot(dist.dat, aes(x=distance.c, y=sum, col=years))+geom_point()+geom_path()+facet_grid(variable~scenario)+theme(legend.position = "bottom")+xlab("distance (m)")+ylab("cumulative proportion")+scale_color_manual(values=c("#49006a", "#ae017e", "#f768a1" ))
+    
+    ggsave(p1, filename=here("Results", "Figures", "expansion-dist-all.jpg"),  width=5, height=5, units="in")  
+    
+      p1 <- dist.dat %>% filter(years=="2071-2100") %>% ggplot(aes(x=distance.c, y=sum, linetype=scenario, col=variable))+geom_point()+geom_line()+theme(legend.position = "bottom", legend.title=element_blank(), legend.box="vertical", legend.margin=margin())+xlab("distance to existing aspen (m)")+ylab("cumulative proportion")+scale_colour_manual(values=c("#6FAD96", "#5e4fa2"))
+      
+  ggsave(p1, filename=here("Results", "Figures", "expansiondist.jpg"),  width=3.25, height=3, units="in")  
+    
+  tm.ssp245.ash<- tm_shape(study.area)+tm_fill(col="grey95") +tm_shape(ssp245.ash.dist[[3]])+tm_raster( style= "cat", title="", labels=c("90", "180", "270", "540", "1080", "2070", ">2070"), palette=c("#fde725", "#a0da39", "#4ac16d", "#1fa187","#277f8e", "#365c8d", "#46327e"))+tm_layout(main.title = "SSP2-4.5:\nabsent & stable habitat",main.title.size=1,main.title.position="center", bg.color="white",legend.position = c(0.01,0.625))+tm_shape(study.area) + tm_borders()
+    
+  tm.ssp585.ash<- tm_shape(study.area)+tm_fill(col="grey95")+tm_shape(ssp585.ash.dist[[3]])+tm_raster( style= "cat", title="", labels=c("90", "180", "270", "540", "1080", "2070", ">2070"), palette=c("#fde725", "#a0da39", "#4ac16d", "#1fa187","#277f8e", "#365c8d", "#46327e"), legend.show = FALSE)+tm_layout(main.title = "SSP5-8.5:\nabsent & stable habitat",main.title.size=1,main.title.position="center", bg.color="white",legend.show = FALSE)+tm_shape(study.area) + tm_borders()
+  
+    tm.ssp245.ahg<- tm_shape(study.area)+tm_fill(col="grey95") +tm_shape(ssp245.ahg.dist[[3]])+tm_raster( style= "cat", title="", labels=c("90", "180", "270", "540", "1080", "2070", ">2070"), palette=c("#fde725", "#a0da39", "#4ac16d", "#1fa187","#277f8e", "#365c8d", "#46327e"))+tm_layout(main.title = "SSP2-4.5:\nabsent & habitat gain",main.title.size=1,main.title.position="center", bg.color="white", legend.show = FALSE)+tm_shape(study.area) + tm_borders()
+    
+  tm.ssp585.ahg<- tm_shape(study.area)+tm_fill(col="grey95")+tm_shape(ssp585.ahg.dist[[3]])+tm_raster( style= "cat", title="", labels=c("90", "180", "270", "540", "1080", "2070", ">2070"), palette=c("#fde725", "#a0da39", "#4ac16d", "#1fa187","#277f8e", "#365c8d", "#46327e"), legend.show = FALSE)+tm_layout(main.title = "SSP5-8.5:\nabsent & habitat gain",main.title.size=1,main.title.position="center", bg.color="white",legend.show = FALSE)+tm_shape(study.area) + tm_borders()
+  
+  
+  Fig.file <- here("Results", "Figures", "FigMaps-ExpansionDistance.jpg")
+    jpeg(Fig.file, width=7, height=3.75, units="in", res=300)
+    tmap_arrange(tm.ssp245.ash, tm.ssp585.ash,tm.ssp245.ahg, tm.ssp585.ahg, nrow=1)
+  whatever <- dev.off()
+  
 }
-
-focal.sum <- rast(here("Data", "Spatial", "Aspen", "Focal","Aspen-sum.tif"))
-focal.sum[focal.sum==0] <- -1
-
-read.csv(here("Results", "Ensemble-prediction-threshold.csv")) %>% 
-  filter(.metric == "j_index") %>%
-  filter(.estimate == max(.estimate)) %>%
-  pull(.threshold) -> threshold.ensemble
-
-ssp245<- rast(here("Data", "Spatial", "Predictions", "lossgain-ssp245.tif"))
-ssp245 <- subst(ssp245, c(0,1,11), NA)
-ssp585<- rast(here("Data", "Spatial", "Predictions", "lossgain-ssp585.tif"))
-ssp585 <- subst(ssp585, c(0,1,11), NA)
- 
-ssp245.dist <-  ssp245 * focal.sum 
-ssp585.dist <-  ssp585* focal.sum 
-writeRaster(ssp245.dist, here(here("Data", "Spatial", "Predictions", "ssp245-gain-distance.tif")), overwrite=T)
-writeRaster(ssp585.dist, here(here("Data", "Spatial", "Predictions", "ssp585-gain-distance.tif")), overwrite=T)
-  
-ssp245.dist <- rast(here("Data", "Spatial", "Predictions", "ssp245-gain-distance.tif"))
-ssp585.dist <- rast(here("Data", "Spatial", "Predictions", "ssp585-gain-distance.tif"))
-
-ssp245dat <- ssp245.dist %>% freq() %>% filter(!value==0) %>% group_by(layer) %>% mutate(prop=count/sum(count), scenario="SSP2-4.5")
-ssp585dat <- ssp585.dist %>% freq() %>% filter(!value==0) %>% group_by(layer) %>% mutate(prop=count/sum(count), scenario="SSP5-8.5")
-  
- dist.dat <- rbind(ssp245dat, ssp585dat) %>% mutate(years = factor(layer, levels=1:3, labels=c("2011-2040", "2041-2070", "2071-2100")), distance=factor(value/10, levels=c(1:6, -1), labels=c("90", "180", "270", "540", "1080", "2070", ">2070")) )
-  
-  write.csv(dist.dat, here("Results", "distance.csv"), row.names=F)
-  
-  p1 <- ggplot(dist.dat, aes(x=distance, y=prop, fill=scenario))+geom_bar(stat="identity", position="dodge")+facet_wrap(~years, nrow=3)+theme(legend.position = "bottom")+scale_fill_manual(values=c( "#1b9e77", "#7570b3"))+xlab("distance (m)")+ylab("proportion")
-  
-ggsave(p1, filename=here("Results", "Figures", "gaindist-geography.jpg"), width=90, height=150, units="mm")  
-
-  
-tm.ssp245<- tm_shape(study.area)+tm_fill(col="grey95") +tm_shape(ssp245.dist[[3]])+tm_raster( style= "cat", title="", labels=c("90", "180", "270", "540", "1080", "2070", ">2070"), palette=c("#fde725", "#a0da39", "#4ac16d", "#1fa187","#277f8e", "#365c8d", "#46327e"))+tm_layout(main.title = "SSP2-4.5",main.title.size=1,main.title.position="center", bg.color="white",legend.position = c(0.01,0.625))+tm_shape(study.area) + tm_borders()
-  
-tm.ssp585<- tm_shape(study.area)+tm_fill(col="grey95")+tm_shape(ssp585.dist[[3]])+tm_raster( style= "cat", title="", labels=c("90", "180", "270", "540", "1080", "2070", ">2070"), palette=c("#fde725", "#a0da39", "#4ac16d", "#1fa187","#277f8e", "#365c8d", "#46327e"), legend.show = FALSE)+tm_layout(main.title = "SSP5-8.5",main.title.size=1,main.title.position="center", bg.color="white",legend.show = FALSE)+tm_shape(study.area) + tm_borders()
-
-
-Fig.file <- here("Results", "Figures", "FigMaps-Gain-Distance.jpg")
-  jpeg(Fig.file, width=3.5, height=3.25, units="in", res=300)
-  tmap_arrange(tm.ssp245, tm.ssp585, nrow=1)
-whatever <- dev.off()
-
-Fig.file <- here("Results", "Figures", "FigMaps-Gain-Distance1.jpg")
-  jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
-   tm_shape(study.area)+tm_fill(col="grey95") +tm_shape(ssp245.dist[[3]])+tm_raster( style= "cat", title="", labels=c("90", "180", "270", "540", "1080", "2070", ">2070"), palette=c("#fde725", "#a0da39", "#4ac16d", "#1fa187","#277f8e", "#365c8d", "#46327e"))+tm_layout(main.title = "",main.title.size=1,main.title.position="center", bg.color="white", legend.position = c(0.01,0.78))+tm_shape(study.area) +tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
-whatever <- dev.off()
-
-
 ```
 
 # Results
@@ -1973,32 +2060,38 @@ photo.results <- read.csv(here("results", "photo-accuracy-combined.csv")) %>% mu
 missclass.dat <- read.csv(here("Results", "misclass-dat.csv"))
 ```
 
-Spatial cross-validation revealed all models accurately predicted to new areas; across the five folds the mean AUC statistic (± standard error of the mean) was `r train.results %>% filter(Model=="GLM") %>% pull(AUC)`, `r train.results %>% filter(Model=="GAM") %>% pull(AUC)`, `r  train.results %>% filter(Model=="RF") %>% pull(AUC)`, `r train.results %>% filter(Model=="GBT") %>% pull(AUC)`, for the GLM, GAM, RF, and RGBT, respectively. When compared with the testing data, all models achieved an AUC greater than `r test.results %>% pull(AUC) %>% min()`, indicating a good model fit (Table \@ref(tab:PerformanceTab)). When compared aspen with an independent dataset of aspen presence derived from aerial photo interpretation, the ensemble model correctly predicted `r photo.results %>% filter(model=='Ensemble') %>% pull(percent)`% of points (n=`r photo.results %>% filter(model=='Ensemble') %>% pull(n)`).
+The GAM, GLM, RF, and XGB models all accurately modeled the presence and absence of aspen across the study area. Spatial cross-validation revealed all models accurately predicted to new areas; across the five folds the mean AUC statistic (± standard error of the mean) was `r train.results %>% filter(Model=="GLM") %>% pull(AUC)`, `r train.results %>% filter(Model=="GAM") %>% pull(AUC)`, `r  train.results %>% filter(Model=="RF") %>% pull(AUC)`, `r train.results %>% filter(Model=="GBT") %>% pull(AUC)` for the GLM, GAM, RF, and RGBT, respectively. When compared with the testing data, all models achieved an AUC greater than `r test.results %>% pull(AUC) %>% min()`, indicating a good model fit (Table \@ref(tab:PerformanceTab)). When compared with the dataset of aspen presence derived from aerial photo interpretation, the ensemble model correctly predicted `r photo.results %>% filter(model=='Ensemble') %>% pull(percent)`% of points (n=`r photo.results %>% filter(model=='Ensemble') %>% pull(n)`).
 
 ```{r PerformanceTab}
 test.results %>%  flextable() %>% set_caption(caption="Model performance statistics. Observed values are from independent testing data.") %>% autofit() %>% set_table_properties(layout = "autofit")
 ```
 
-While the ensemble model performed well, there were spatial patterns in the residuals (Fig. \@ref(fig:MissClassMap) and \@ref(fig:MissClassBoxPlot)). Relative to true positives (i.e., pixels where aspen was present that were correctly classified), false negatives (i.e., pixels where aspen was present but the model predicted absence) were concentrated at more eastern longitudes. False negatives were common where the percent aspen cover within the 90 x 90 m pixel was low (median value of `r missclass.dat %>% filter(Class=="false\nnegative", variable=="Percent aspen") %>% pull(median) %>% round(1)`%).
+While the ensemble model performed well, there were spatial patterns in the residuals (Fig. \@ref(fig:MissClassBoxPlot) and \@ref(fig:MissClassMap)). Relative to true positives (i.e., pixels where aspen was present that were correctly classified), false negatives (i.e., pixels where aspen was present but the model predicted absence) were concentrated at more eastern longitudes. False negatives were also common where the percent aspen cover within the 90 x 90 m pixel was low (median value of `r missclass.dat %>% filter(Class=="false\nnegative", variable=="Percent aspen") %>% pull(median) %>% round(1)`%). Generally, false positives tended to occur at similar geographies as true positives (Fig. \@ref(fig:MissClassBoxPlot) and \@ref(fig:MissClassMap)).
 
-```{r MissClassBoxPlot, fig.cap="Boxplots illustrating the relationship between pixels missclassified and geographic variables and percent aspen cover.", out.width="90mm", out.height="100mm"}
+```{r MissClassBoxPlot, fig.cap="Boxplots illustrating the relationship between pixels missclassified and geographic variables and percent aspen cover.", out.width="3.5in", out.height="4in"}
 knitr::include_graphics(here("Results", "Figures", "missclass-geography.jpg"), dpi=NA)
 ```
 
-a## Effects of predictor variables on aspen habitat suitability
+## Effects of predictor variables on aspen habitat suitability
 
-Variable importance scores illustrated the effects of regularization, which were included in the GLM and GAM and allowed for coefficient estimates to shrink to zero. In these models, the top variables were very important predicting aspen presence (Fig. \@ref(fig:VIPFig)A). Across all models, variable importance scores revealed that climate variables contributed more to model fit than soil or topographic factors (Fig. \@ref(fig:VIPFig)A). PRATIO was on average the most important predictor, followed by ADI, and GSPDD5 (Fig. \@ref(fig:VIPFig)A). Generally, increases in PRATIO and ADI were associated with a decrease in the probability of aspen presence, while GSPDD5 and OM were positively associated with the the probability of aspen presence (Fig. \@ref(fig:VIPFig)B).
+Across all models, variable importance scores revealed that climate variables contributed more to model fit than soil or topographic factors (Fig. \@ref(fig:VIPFig)A). Of the climate variables, PRATIO was on average the most important predictor, followed by ADI, GSPDD5, TD, and RH (Fig. \@ref(fig:VIPFig)A). Generally, aspen presence was negatively associated with PRATIO and positively associated GSPDD5 (Fig. \@ref(fig:VIPFig)B). Both ADI and TD were related to aspen presence following a more hump-shaped curve (Fig. \@ref(fig:VIPFig)B). For ADI, the highest probabilities of aspen presence occurred when ADI was between 0.04 and 0.06. For TD, aspen occurrence was most likely to occur when TD was between 20.6 and 21.7°C, although the GAM suggested a strong increase in the probability of aspen when TD exceeded 25°C, which rarely occurred across the study area. Of the topoedaphic factors, OM was the most important predictor, followed by TPI3, HLI, Clay, and SWC (Fig. \@ref(fig:VIPFig)A). Aspen presence was generally positively related to OM and negatively related to TPI3 (Fig. \@ref(fig:VIPFig)B).
 
-```{r VIPFig, fig.cap="Variable importance scores (A) and accumulate local effects (B) for models of aspen habitat suitability by modeling approach. In A, boxes illustrate the loss in model performance (1-AUC) when the predcitor variable was been randomized for 10 different permutations. In B, vertical lines illustrate the mean climate conditions for areas with existing aspen for the historical period (1981-2010) and projections for the 2011-2040, 2041-2070, and 2071-2100 periods under the SPP4-8.5 scenario. For variable definitions and descriptions see Table 1.", out.width="180mm", out.height="110mm"}
+```{r VIPFig, fig.cap="Variable importance scores (A) and accumulate local effects (B) for models of aspen habitat suitability by modeling approach. In A, boxes illustrate the loss in model performance (1-AUC) when the predcitor variable was been randomized for 10 different permutations. In B, vertical lines illustrate the mean climate conditions for areas with existing aspen for the historical period (1981-2010) and projections for the 2011-2040, 2041-2070, and 2071-2100 periods under the SSP5-8.5 scenario. For variable definitions and descriptions see Table 1.", out.width="180mm", out.height="110mm"}
 knitr::include_graphics(here("Results", "Figures", "vip-ale.jpg"), dpi = NA)
 ```
 
 ## Forecasted change in the distribution of aspen
 
-```{r}
-pchange.dat <- read.csv(here("Results", "percent-change-meansd.csv"))
-lg.freq <- read.csv(here("results", "loss-gain.csv"))
-dist.dat <- read.csv( here("Results", "distance.csv"))
+```{r percentchange}
+globalchange<- read.csv(here("Results", "globalchange.csv"))
+
+lg.area <- read.csv(here("results", "area-lossgain.csv"))
+ 
+dist.dat.ash <- read.csv(here("Results", "distance-ASH.csv")) %>% filter(!distance==">2070") %>% mutate(distance.c=as.numeric(as.character(distance)), variable="ASH")
+  
+dist.dat.ahg <- read.csv(here("Results", "distance-AHG.csv")) %>% filter(!distance==">2070") %>% mutate(distance.c=as.numeric(as.character(distance)), variable="AHG")
+
+dist.dat <- rbind(dist.dat.ash, dist.dat.ahg)
 
 read.csv(here("Results", "ensemble-prediction-threshold.csv")) %>%
   filter(.metric == "j_index") %>%
@@ -2006,59 +2099,73 @@ read.csv(here("Results", "ensemble-prediction-threshold.csv")) %>%
   pull(.threshold) -> threshold.ensemble
 ```
 
-Our ensemble SDM forecasts notable decreases in future aspen habit suitability with particularly dramatic decreases predicted to occur within the first half of the 21st century. Under the SSP2-4.5 scenario, the ensemble model suggests a percent change in the mean probability of aspen of `r pchange.dat %>% filter(years=="2011-2040" & scenario =="SSP2-4.5") %>% pull(percent.change)`% by 2040. With continued warming, the ensemble model suggests that in the mean probability of aspen occurring may actual increase to `r pchange.dat %>% filter(years=="2071-2100" & scenario =="SSP2-4.5") %>% pull(percent.change)`% more area by 2100. Under the SSP5-8.5 scenario, our model forecasts an even larger increase in the probability of aspen occurring across the SRM (`r pchange.dat %>% filter(years=="2071-2100" & scenario =="SSP5-8.5") %>% pull(percent.change)`%).
+Our ensemble SDM suggests notable decreases in future aspen habit suitability across the SRM, particularly during the first half of the 21st century (Table \@ref(tab:changeTab)). Relative to the 1981-2010 period, average aspen habitat suitability across the SRME for the 2011-2040 is forecasted to decrease by `r globalchange %>% filter(years=="2011-2040" & scenario =="SSP2-4.5") %>% pull(mean.dif)*-1`% under both the SSP2-4.5 and SSP5-8.5 scenarios. Low elevations are forecasted to experience particularly dramatic decreases in habitat suitability (Fig. \@ref(fig:changeFig)).
 
-Based on the `r threshold.ensemble` probability threshold for classifying aspen occurrence, which was selected based on Youden's J statistic, our ensemble SDM suggests that decreases in the aspen habitat suitability may result in the loss of aspen across `r lg.freq %>% filter(status=="loss" & years == "2071-2100" & scenario=="SSP2-4.5") %>% pull(area)` km^2^ under the SSP2-4.5 scenario and `r lg.freq %>% filter(status=="loss" & years == "2071-2100" & scenario=="SSP5-8.5") %>% pull(area)` km^2^ under the SSP5-8.5 scenario by 2100 (Fig. \@ref(fig:LossGainMaps)). However, the decrease in the area suitable for aspen may be offset by increases in the area suitable for aspen. By 2100, the ensemble model suggests an increase in the area suitable for aspen of `r lg.freq %>% filter(status=="gain" & years == "2071-2100" & scenario=="SSP2-4.5") %>% pull(area)` and `r lg.freq %>% filter(status=="gain" & years == "2071-2100" & scenario=="SSP5-8.5") %>% pull(area)` km^2^ under the SSP2-4.5 and SSP5-8.5 scenarios, respectively. Across both scenarios and all time periods, losses in the area suitable for aspen are forecasted to occur at lower elevations and eastern longitudes, where aspen is already limited (Figs. \@ref(fig:LossGainBox) and \@ref(fig:LossGainMaps)). Increases in the area suitable for aspen are forecasted to occur at higher elevations.
-
-```{r LossGainBox, fig.cap="Boxplots illustrating spatial patterns in the areas were aspen my lost, gained, or remain stable based on the ensemeble SDM's forecast of future aspen habitat suitability.", out.width="90mm", out.height="110mm"}
-knitr::include_graphics(here("Results", "Figures", "gainloss-geography.jpg"), dpi = NA)
+```{r changeTab}
+globalchange  %>% select(scenario, years, mean) %>%  flextable() %>% set_caption(caption="The ensemble mean habitat suitability for aspen across the study area by time period and scenario.") %>% autofit() %>% set_table_properties(layout = "autofit")
 ```
 
-While the area suitable for aspen is expected to increases substantially, only a fraction of that area is near existing aspen stands (Fig. \@ref(fig:GainDistanceGeo) and \@ref(fig:GainDistanceMaps)). Under the SSP4-2.5 scenario, `r  (dist.dat %>% filter(scenario=="SSP2-4.5" & years=="2071-2100" & distance =="90") %>% pull(prop)*100) %>% round()` % of the area forecasted to become suitable by 2071-2100 is within 90-m of existing aspen (Fig. \@ref(fig:GainDistanceGeo)), and `r  (dist.dat %>% filter(scenario=="SSP2-4.5" & years=="2071-2100" & distance %in% c("90", "180", "270", "540")) %>% pull(prop) %>% sum()*100) %>% round()`% of the suitable area is within 540-m of existing aspen. Under the SSP5-8.5 scenario, `r  (dist.dat %>% filter(scenario=="SSP5-8.5" & years=="2071-2100" & distance =="90") %>% pull(prop)*100) %>% round()` % of the area forecasted to become suitable by 2071-2100 is within 90-m of existing aspen (Fig. \@ref(fig:GainDistanceGeo)), and `r  (dist.dat %>% filter(scenario=="SSP5-8.5" & years=="2071-2100" & distance %in% c("90", "180", "270", "540")) %>% pull(prop) %>% sum()*100) %>% round()`% of the suitable area is within 540-m of existing aspen.
+```{r changeFig, fig.cap="The forecasted change in aspen habitat suitability for the 2071-2100 period based on the SSP2-4.5 and SSP5-8.5 scenarios.",  out.width="7in", out.height="5in"}
+knitr::include_graphics(here("Results", "Figures", "change-map-2071-2100.jpg"), dpi = NA)
+```
 
-```{r GainDistanceGeo, fig.cap="The distance to the nearest existing aspen patch for pixels where changes in climate may promote aspen expansion.", out.width="90mm", out.height="150mm"}
-knitr::include_graphics(here("Results", "Figures", "gaindist-geography.jpg"), dpi = NA)
+The decreases in suitability are forecasted to lead to the loss of suitable aspen habitat across `r lg.area %>% filter(value %in% c("present &\n habitat loss", "absent &\nhabitat loss") & layer == "2011-2040" & scenario=="SSP2-4.5") %>% pull(area) %>% sum()` km^2^ under the SSP2-4.5 scenario `r lg.area %>% filter(value %in% c("present &\n habitat loss", "absent &\nhabitat loss") & layer == "2011-2040" & scenario=="SSP5-8.5") %>% pull(area) %>% sum()` km^2^ under the SSP5-8.5 scenario) (Fig. \@ref(fig:LossGainTS)). Notably, this loss includes an area of `r lg.area %>% filter(value %in% "present &\nhabitat loss" & layer == "2011-2040" & scenario=="SSP2-4.5") %>% pull(area) %>% sum()` (SSP2-4.5) to `r lg.area %>% filter(value %in% "present &\nhabitat loss" & layer == "2011-2040" & scenario=="SSP5-8.5") %>% pull(area) %>% sum()` (SSP5-8.5) km^2^ where aspen was present in 2019 (Fig. \@ref(fig:LossGainTS)). These losses are expected to occur at lower elevations and eastern longitudes, where aspen is already limited (Fig. \@ref(fig:LossGainMaps); \@ref(fig:LossGainBox)).
+
+```{r LossGainMaps, fig.cap="The distribution of pixels where the ensemble SDM forecasts aspen may be lost, gained, or stable by 2100 under the SSP2-4.5 and SSP5-8.5 scenarios.", out.width="7in"}
+knitr::include_graphics(here("Results", "Figures", "FigMaps-LossGain.jpg"), dpi = NA)
+```
+
+The near-term losses in the area suitable for aspen may be offset by colonization of habitat currently suitable for aspen that is expected to remain suitable over the next century and/or increases in the areas suitable for aspen. Based on forecasted climate for the 2071-2100 period, `r lg.area %>% filter(value %in% c("absent &\nhabitat stable") & layer == "2071-2100" & scenario=="SSP2-4.5") %>% pull(area) %>% sum()` (SSP2-4.5) to `r lg.area %>% filter(value %in% c("absent &\nhabitat stable") & layer == "2071-2100" & scenario=="SSP5-8.5") %>% pull(area) %>% sum()` (SSP5-8.5) km^2^ where aspen is presently absent but the habitat is suitable will remain suitable. Further, our ensemble model suggests that `r lg.area %>% filter(value %in% c("absent &\nhabitat gain") & layer == "2071-2100" & scenario=="SSP2-4.5") %>% pull(area) %>% sum()` (SSP2-4.5) to `r lg.area %>% filter(value %in% c("absent &\nhabitat gain") & layer == "2071-2100" & scenario=="SSP5-8.5") %>% pull(area) %>% sum()` (SSP5-8.5) km^2^ will become suitable for aspen by 2100. Across both scenarios and all time periods, increases in the area suitable for aspen are expected to occur at higher elevations (Figs. \@ref(fig:LossGainBox)).
+
+While the ensemble model suggests that the considerable area across the SRME will remain or become be suitable for aspen expansion over the next century, only a fraction of that area is near existing aspen stands (Fig. \@ref(fig:ExpansionDistance)). Under the SSP4-2.5 scenario, `r  (dist.dat %>% filter(scenario=="SSP2-4.5"  & variable=="AHG" & years=="2071-2100" & distance =="90") %>% pull(sum)*100) %>% round()`% of the area forecasted to become suitable by 2071-2100 is within 90-m of existing aspen (Fig. \@ref(fig:ExpansionDistance)), and `r (dist.dat %>% filter(scenario=="SSP2-4.5" & variable=="AHG" & years=="2071-2100" & distance =="540") %>% pull(sum)*100) %>% round()`% of the suitable area is within 540-m of existing aspen. Under the SSP5-8.5 scenario, `r (dist.dat %>% filter(scenario=="SSP5-8.5" & variable=="AHG" & years=="2071-2100" & distance =="90") %>% pull(prop)*100) %>% round()`% of the area forecasted to become suitable by 2071-2100 is within 90-m of existing aspen (Fig. \@ref(fig:ExpansionDistance)), and `r (dist.dat %>% filter(scenario=="SSP2-4.5"  & variable=="AHG"  & years=="2071-2100" & distance =="540") %>% pull(prop)*100) %>% round()`% of the suitable area is within 540-m of existing aspen. Further, the potential for aspen expansion into areas that our model suggests are currently suitable may be even more limited by aspen's current distribution. By 2071-2100, only `r  (dist.dat %>% filter(scenario=="SSP2-4.5"  & variable=="ASH" & years=="2071-2100" & distance =="90") %>% pull(sum)*100) %>% round()`% of the area forecasted to remain suitable is within 90-m of existing aspen (Fig. \@ref(fig:ExpansionDistance)) and only `r (dist.dat %>% filter(scenario=="SSP2-4.5" & variable=="ASH" & years=="2071-2100" & distance =="540") %>% pull(sum)*100) %>% round()`% of the area forecasted to remain suitable is within 540-m of existing aspen.
+
+```{r ExpansionDistance, fig.cap="The distance to the nearest existing aspen patch for pixels where changes in climate may promote aspen expansion.", out.width="3.25in", out.height="3.25in"}
+knitr::include_graphics(here("Results", "Figures", "expansiondist.jpg"), dpi = NA)
 ```
 
 # Discussion
 
 ## Overview
 
+This study combines high-resolution maps of the distribution of aspen, SDMs, and data from the most recent generation of climate models (CMIP6) to understand how climate change may influence aspen habitat suitability, the implications for existing aspen forest, and the potential for aspen expansion at high elevations. Using an ensemble modeling approach, we found that interactions between temperature and precipitation were important in constraining aspen's distribution across the SRME and that future climate change will likely lead to widespread decreases in aspen habitat suitability across the SRM. While warming will likely increase habitat suitability at high elevations, we found that most of the area suitable for expansion is located more than 100 meters from existing aspen patches.
+
 ## Model performance
 
-Here we accurately modeled the distribution of aspen across the SRME. Our ensemble model was characterized by an overall accuracy of `r test.results %>% filter(Model=="Ensemble") %>% pull(Accuracy)`. While previous aspen SDM efforts have reported lower error rates [e.g. \<10%; @rehfeldt2009AspenClimateSuddena; @worrall2013RecentDeclinesPopulusa], we note that it is difficult to directly compare SDM performance when models differ in their spatial extent or grain, input data, and validation strategy. In our SDM, most false negatives were located at more eastern latitudes, where. aspen is generally present in lower abundance, presumably due to lower habitat quality. In contrast, most false negatives were located at higher elevations and more western latitudes. In some habitats across the Southern Rocky Mountains, aspen regeneration is thought to occur episodically following severe stand-replacing fire, which removes competing conifers and stimulates vegetative reproduction [@kurzel2007TypologyStandStructure]. Thus some errors of commission likely result from successional patterns and disturbance history, which are poorly captured by SDMs.
+Here we accurately modeled the distribution of aspen across the SRME. Overall our ensemble model correctly predicted `r test.results %>% filter(Model=="Ensemble") %>% pull(Accuracy)*100`% of aspen presences and absences. While previous efforts to use SDMS to model the occurrence of aspen have reported lower error rates [e.g. \<10%; @rehfeldt2009; @worrall2013RecentDeclinesPopulusa], we note that it is difficult to directly compare SDM performance when models differ in their spatial extent or grain, input data, and validation strategy. These challenges further emphasize the need for standardized methods that follow best practices for open-access science when building and sharing SDMs [@zurell2020StandardProtocolReporting].
 
-## Climate, soil, and topographic drivers
+In our SDM, most false negatives were located at more eastern latitudes, where aspen is generally present in lower abundance. In contrast, most false negatives were located at higher elevations and more western latitudes, likely due to biotic factors that our model does not include. Notably, in some habitats across the SRME, aspen regeneration is thought to occur episodically following severe stand-replacing fire, which removes competing conifers and stimulates vegetative reproduction [@kurzel2007TypologyStandStructure]. Across high elevation forests of the SRME, fires burn infrequently [@sibold2006RelationshipsSubalpineForest; @sherriff2001FireHistoryHigh] and the century prior to Cook et al.'s [-@cook2024MappingQuakingAspen] aspen map (i.e., 1917-2018) was characterized by relatively little burning [@higuera2021RockyMountainSubalpine]. Thus at least some of the errors of commission may be due to disturbance and successional patterns, rather than abiotic constraints.
 
-Our modeling confirms the importance of climate, topography, and soils characteristics in driving aspen's distribution [@rehfeldt2006EmpiricalAnalysesPlantclimate]. Notably, across all models we found that climate variables were more important predictors than soil or topographic variables, consistent with previous research [@rehfeldt2015]. However, prior to modeling our variable reduction processes reduced the set of thirteen variables to only eight; we retained five of seven climate variables, two out of three topographic variables, and three out of four soil variables. Thus at least some of the reason that soil and topographic may be due to covariance between climate and topoedaphic variables. For instance, we expected that high soil pH would limit aspen [@zhang2013GrowthPhysiologicalResponses], however across the SRME pH was positively correlated with ADI. Thus at least part of the effect of ADI on aspen's distribution may be attributed to soil effects.
+## Influences of climate, soil, and topography on aspen occurrence
 
-Our SDMs show that aspen's distribution across the SRM is strongly associated with interactions between temperature and precipitation. We found aspen was less likely to occur in areas with long growing seasons and low annual precipitation (i.e., high ADI). In these locations, low water availability and high evapotranspiration rates likely limits the regeneration, survival, and growth of aspen [@rehfeldt2009AspenClimateSuddena]. This finding is consistent with observations of sudden aspen decline in areas with higher ADI across the SRM (Fig. \@ref(fig:FigSAD)). However when relatively long growing seasons are accompanied by abundant growing season precipitation (i.e., high GSPDD5), aspen may
+Our SDMs show that aspen's distribution across the SRME is strongly associated with interactions between temperature and precipitation. Aspen was notably absent from areas with long growing seasons and low annual precipitation (i.e., high ADI). In these locations, warm temperatures and low precipitation contribute to high atmospheric demand for moisture and low soil moisture. These conditions may limit carbohydrate production and cause hydraulic disfunction thereby negatively impacting many demographic processes @anderegg2013DroughtCharacteristicsRole]. For many trees across the SRME, the negative effects of summer aridity may be moderated by snow, which may provide trees with the necessary soil moisture to sustain growth late into the summer [@hu2010LongerGrowingSeasons]. Here we found that aspen was mostly likely to occur in areas where most precipitation fell during the cooler months (i.e. PRATIO \< 0.5), consistent previous with research [@rehfeldt2009]. While low moisture availability due to warm temperatures and low winter precipitation may limit the distribution of aspen, our model also suggests that aspen is unlikely to occur in habitats where extremely low temperatures result in a very short growing season. Such conditions are well established to limit many tree physiological and demographic processes [@tranquillini1979GrowthTreesTimberline; @way2010DifferentialResponsesChanges], particularly when combined with low growing season precipitation (i.e., low GSPDD5) [@rehfeldt2009].
 
-Interactions between growing season precipitation and degree days (GSPDD5) were also related to aspen's distribution across the SRM. Light and moisture may be less limiting for aspen in areas with abundant growing season precipitation and long growing season.
-
-Aspen was generally more likely to occur in areas where growing season precipitation made up a little less than half of the total precipitation (i.e. PRATIO 0.4 - 0.5), consistent previous research [@rehfeldt2009AspenClimateSuddena]. Higher growing season precipitation is expected to decrease
-
-While climate variables were important in predicting, . Soils with higher organic matter contents may retain more moisture, particularly early in the growings season. Although we acknowledge that aspen may also contribute to higher soil organic matter [@buck2012].
-
-This interpretation is supported by recent observations of aspen expansion at high elevations [@nigro2022WildfireCatalyzesUpward], which have occurred during a period of pronounced warming across Colorado [@bolinger2023ClimateChangeColorado]. Future warming may continue to provide opportunities for aspen range expansion.
-
-## Limitations
-
-Across the SRME, PRATIOs are generally highest east of the Continental Divide, where more precipitation occurs during the growing season due to storm tracks that bring warm and wet moisture from the Gulf of Mexico [@lukas2014ClimateChangeColorado]. Whereas areas of low PRATIO generally occur at high elevations, west of the Continent Divide, which receive large precipitation inputs in the form of snow due to the prevalence of westerly winds flowing from the Pacific Ocean in the winter [@lukas2014ClimateChangeColorado]. Notably, these geographic patterns in the seasonality of precipitation also reflect patterns in annual precipitation and temperature, where higher PRATIO correspond with higher mean annual temperatures and lower mean annual precipitation.
-
-Across the SRME, PRATIOs are generally highest east of the Continental Divide, where more precipitation occurs during the growing season due to storm tracks that bring warm and wet moisture from the Gulf of Mexico [@lukas2014ClimateChangeColorado]. Whereas areas of low PRATIO generally occur at high elevations, west of the Continent Divide, which receive large precipitation inputs in the form of snow due to the prevalence of westerly winds flowing from the Pacific Ocean in the winter [@lukas2014ClimateChangeColorado]. Notably, these geographic patterns in the seasonality of precipitation also reflect patterns in annual precipitation and temperature, where higher PRATIO correspond with higher mean annual temperatures and lower mean annual precipitation.
-
-## Dispersal
+The topoedaphic factors included in our SDM also highlight the role of moisture availability in shaping aspen's distribution across the SRME. Aspen occurrence was positively associated soils with higher organic matter content, which may promote soil moisture retention [@perala1990]. Similarly, aspen was more likely to occur in valley bottoms and on benches than steep slopes (i.e., high TPI3), where overland and subsurface flow may cause more rapid drying of soils [@jones1985Soils]. The importance of these topoedaphic factors even after including topographically downscaled climate variables, highlights the important role that landscape heterogeneity will likely play in determining how species respond to climate change.
 
 ## The future for aspen
 
-While across the SRM forecasted changes in the precipitation patterns are far more uncertain than changes in temperature [@bolinger2023ClimateChangeColorado], the eight GCM ensemble data used here suggest a slight decrease in the PRATIO across aspen's current distribution, particularly at more northern latitudes. All of the SDMs suggest that this may increase the area
+Our modeling suggests that future changes in climate are likely to dramatically alter aspen habitat suitability across the SRM, consistent with previous research [@rehfeldt2015; @greer2016PopulationsAspenPopulus; @worrall2013RecentDeclinesPopulusa]. Interestingly, we find that near-term climate conditions (2011-2040), will cause the most dramatic decrease in the area suitable for aspen. This near-term decrease is expected to occur primarily as a result of increases in ADI. On average, ADI during the 2011-2040 period is forecasted decrease by 16% relative to the 1981-2010 . This decrease in aspen habitat suitability over the near term corresponds with observations of sudden aspen decline that occurred concurrently with drought events during the early 21st century [@worrall2007SuddenAspenDecline; @anderegg2013DroughtCharacteristicsRole]. Our research adds to a growing body of literature that highlights the potential for future increases in aridity and the frequency and severity of droughts to drive significant change in forest ecosystems [@andrus2021IncreasingRatesSubalpinea; @williams2012TemperaturePotentDriver; @smith2015PermanentForestPlots; @allen2010GlobalOverviewDrought; @hammond2022GlobalFieldObservations].
 
-Given ADI is expected to substantially increase across the SRM over the 21st century, areas where ADI is already high may experience elevated mortality and thus contraction of aspen's distribution.
+While there are large areas that are currently suitable for aspen will likely become unsuitable, our ensemble model also suggests that there are extensive areas where the climate may be suitable for aspen expansion over the 21st century. However, nearly all of the area suitable for aspen expansion is located more than 90 m from existing mature live aspen. Because most aspen regeneration occurs clonally through root suckering [@debyle1985AspenEcologyManagement] and the lateral roots of aspen that produce new suckers generally extend less than 30 m from the adult tree [@debyle1985AspenEcologyManagement], natural expansion into these areas may be limited. Instead, expansion into these areas may depend upon establishment from seed or artificial regeneration practices.
 
-## Management Implications
+The potential for aspen to colonize new areas through aspen seedling recruitment will depend on several factors. Aspen produce abundant light-weight seeds that can be transported several kilometers by strong winds [@turner2003PostfireAspenSeedling; @landhausser2019TammReviewSeedlingbased], but most seedling establishment occurs near live adult trees [@gill2017; @kreider2021AspenSeedlingEstablishment]. Thus like the limited potential for vegetative reproduction, natural regeneration from seed will be restricted to the narrow area with suitable habitat that is nearby existing aspen. Given seed arrives, germination will only occur on moist substrates, which are often located within microdepressions where water collects or near coarse woody debris that provides shade [@kreider2021AspenSeedlingEstablishment; @carter2024OccurrenceDistributionDriving]. Because aspen seeds lack an endosperm, germinants require partial or direct sunlight to survive [@landhausser2019TammReviewSeedlingbased]. This limits seedling establishment to sites that were recently burned or harvested, where competition is limited [@mcilroy2020PostfireAspenPopulus]. While the root systems of young seedlings are developing and capable of accessing water close to the soil surface they are highly vulnerable to drought [@landhausser2019TammReviewSeedlingbased]. Finally, recruitment into the canopy is often limited by herbivory because aspen are a favored food of many ungulates and continued browsing can severely limit aspen height growth [@romme1995AspenElkFire; @ripple2000]. While these filters are generally well understood, more research is necessary to understand when and where aspen seedling establishment will result in mature aspen forest [@gill2017InitialPostdisturbanceRegeneration], particularly in the Southern Rocky Mountains.
+
+Out-planting of nursery grown seedlings or suckers can bypass some of the filters that limit natural regeneration from seed. Nursery practice that enhance resilience to drought. For instance, nursery practices that increase non-structural carbohydrate reserves and root:shoot ratios have the potential to increase growth rates of seedlings in field experiments [[@landhausser2012PartitioningCarbonAllocation; @landhäusser2012; @sloan2020DroughtConditioningQuakingAspen]. More research is needed to understand how nursery practices may be used to manipulate the morphological and physiological traits of seedlings and the implications for out-planting performance, which has received relatively little study relative to more commercially viable conifer species [@landhausser2019TammReviewSeedlingbased].
 
 # Conclusions
+
+Climate change presents considerable threats to forest ecosystems and challenges for forest managers [@keenan2015ClimateChangeImpacts]. By combining a SDM with fine-grain maps of aspen's current distribution, we provide a novel assessment of how climate change may influence existing aspen stands and where might be suitable for future expansion - insights that are key for effective management. Our modeling shows that future warming is likely to considerably decrease aspen habitat suitability across the SRME, particularly for populations at low elevations. Nonetheless, considerable area will remain or become suitable for aspen. However, areas suitable for expansion are typically not adjacent to existing stands, thereby limiting colonization of these areas to natural regeneration from seed or artificial regeneration through direct seeding or planting. Yet, we still know very little about the role of seedling establishment or how genetic factors, nursery practies, and planting approaches influence the outcomes of artificial regeneration [@landhausser2019TammReviewSeedlingbased].
+
+# Acknowledgements
+
+The Southern Rocky Mountains are the sacred homelands to many Indigenous nations – we honor their past, present, and future generations, who have lived here and stewarded these forests for millennia.This research was funded by the Joint Fire Science Program (JFSP, Project ID 21-2-02-29).
+
+# Author contributions: CRediT
+
+**Sarah J. Hart:** Conceptualization, Funding acquisition, Methodology, Formal analysis, Writing- Original draft preparation, Writing – review and editing; **Maxwell Cook**: Funding acquisition, Writing – review and editing; **Asha Paudel**: Writing – review and editing, Methodology.
+
+# Data availability
+
+All code used in this paper are available in a public GitHub repository (link). Data associated with this paper are available
 
 # References
 
@@ -2071,9 +2178,7 @@ Given ADI is expected to substantially increase across the SRM over the 21st cen
 
 ## Overview
 
-Here we describe the SDMs produced herein following the Overview, Data, Model, Assessment, Prediction (ODMAP) protocol for species distribution models [@zurell2020StandardProtocolReporting]. Here, we first provide the Overview for our modeling, while the remaining ODMAP sections are detailed in Table S\@ref(tab:ODMAP).
-
-The objectives of this modelling exercise are to (1) better explain the drivers of aspen's distribution across the Southern Rocky Mountains, (2) map the area suitable for aspen, and (3) forecast the area suitable for aspen presence in the future under two different climate scenarios.
+Here we describe the SDMs produced herein following the Overview, Data, Model, Assessment, Prediction (ODMAP) protocol for species distribution models [@zurell2020StandardProtocolReporting]. Here, we first provide the Overview for our modeling, while the remaining ODMAP sections are detailed in Table S\@ref(tab:ODMAP). The objectives of this modelling exercise are to (1) better explain the drivers of aspen's distribution across the Southern Rocky Mountains, (2) map the area suitable for aspen, and (3) forecast the area suitable for aspen presence in the future under two different climate scenarios.
 
 ```{r ODMAP}
 pred.var.tab <- read_excel(here("Documents", "ODMAP-Table.xlsx"), sheet=1)
@@ -2097,7 +2202,7 @@ names(aspen90.prob01) <- "aspen.presence"
 
 writeRaster(aspen90.prob01, here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90-presence.tif"), overwrite=T)
 
-SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
+SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
 aspen90.prob <- terra::mask(aspen90.prob, SRM)
 aspen90.prob01 <-terra::mask(aspen90.prob01, SRM)
 
@@ -2218,21 +2323,15 @@ results$var <- factor(results$var, levels=levelz, ordered=T)
 results  %>% ggplot( aes(x=var, y=dropout_loss))+geom_bar(stat="identity")+coord_flip()+theme(axis.title.y = element_blank())+ylab("relative importance") ->p1
 ggsave(p1, filename=here("Results", "Figures", "climatevarselection-bar.jpg"), width=90, height=120, units="mm")
 
-PRATIO.MAP <- ggplot(aspen.pts.1981_2010, aes(x=PRATIO, y=MAP))+geom_point(size=0.1)+geom_smooth()
-PRATIO.MAT <- ggplot(aspen.pts.1981_2010, aes(x=PRATIO, y=MAT))+geom_point(size=0.1)+geom_smooth()
-PRATIO.MAP.MAP <- ggplot(aspen.pts.1981_2010 , aes(x=MAP, y=MAT, z=PRATIO)) + stat_summary_hex(fun = function(x) mean(x), bins = 30) + scale_fill_viridis_c(option = "magma")
-ggsave(PRATIO.MAP + PRATIO.MAT + PRATIO.MAP.MAP, filename=here("Results", "Figures", "PRATIO-MAPMAT.jpg"), width=7, height=2.25, units="in")
+p1 <-  ggplot(dat, aes(x=MAT, y=PPT_at+PPT_sm+PPT_sp+PPT_wt, z=ADI)) +  stat_summary_hex(fun = function(x) mean(x), bins = 20) + scale_fill_viridis_c(option = "magma", name="ADI") + ylab("Mean annual precipitation (mm)") + xlab("Mean annual temperature (°C)")
+p2 <-  ggplot(dat, aes(x=MAT, y=PPT_at+PPT_sm+PPT_sp+PPT_wt, z=GSPDD5)) +  stat_summary_hex(fun = function(x) mean(x), bins = 20) + scale_fill_viridis_c(option = "magma", name="GSPDD5") + ylab("Mean annual precipitation (mm)") + xlab("Mean annual temperature (°C)")
 
+p3 <-  ggplot(dat, aes(x=MAT, y=PPT_at+PPT_sm+PPT_sp+PPT_wt, z=PRATIO)) +  stat_summary_hex(fun = function(x) mean(x), bins = 20) + scale_fill_viridis_c(option = "magma", name="PRATIO") + ylab("Mean annual precipitation (mm)") + xlab("Mean annual temperature (°C)")
 
-ADI.MAP <- ggplot(aspen.pts.1981_2010, aes(x=ADI, y=MAP))+geom_point(size=0.1)+geom_smooth()
-ADI.MAT <- ggplot(aspen.pts.1981_2010, aes(x=ADI, y=MAT))+geom_point(size=0.1)+geom_smooth()
-ADI.MAP.MAP <- ggplot(aspen.pts.1981_2010 , aes(x=MAP, y=MAT, z=ADI)) + stat_summary_hex(fun = function(x) mean(x), bins = 30) + scale_fill_viridis_c(option = "magma")
-ggsave(ADI.MAP + ADI.MAT + ADI.MAP.MAP, filename=here("Results", "Figures", "ADI-MAPMAT.jpg"), width=7, height=2.25, units="in")
-
-GSPDD5.MAP <- ggplot(aspen.pts.1981_2010, aes(x=GSPDD5, y=MAP))+geom_point(size=0.1)+geom_smooth()
-GSPDD5.MAT <- ggplot(aspen.pts.1981_2010, aes(x=GSPDD5, y=MAT))+geom_point(size=0.1)+geom_smooth()
-GSPDD5.MAP.MAP <- ggplot(aspen.pts.1981_2010 , aes(x=MAP, y=MAT, z=GSPDD5)) + stat_summary_hex(fun = function(x) mean(x), bins = 30) + scale_fill_viridis_c(option = "magma")
-ggsave(GSPDD5.MAP + GSPDD5.MAT + GSPDD5.MAP.MAP, filename=here("Results", "Figures", "GSPDD5-MAPMAT.jpg"), width=7, height=2.25, units="in")
+p123 <- p1 + theme(legend.position="bottom") + p2  + theme(legend.position="bottom", axis.text.y = element_blank(), axis.title.y=element_blank()) +  p3  + theme(legend.position="bottom", axis.text.y = element_blank(), axis.title.y=element_blank())& 
+  plot_annotation(tag_levels = "A") & 
+  theme(plot.tag.position  = c(.935, .96))
+ggsave(p123, filename=here("results", "figures", "MAPxMAT-ADI_GSPDD5_PRATIO.jpg"), dpi=300, width=7,height=3.25, units="in")
 
 ```
 
@@ -2250,46 +2349,29 @@ knitr::include_graphics(here("Results/Figures/CorrelationMatrix.jpg"), dpi = NA)
 
 # Appendix C: Supplemental figures
 
-```{r PercentMap, fig.cap="The percent cover of aspen within a 90 x 90 m pixel for the Southern Rocky Mountains. Data were produced by aggregating the 10 m resolution map of aspen presence-absence from Cook et al. (in review).", out.width="3.5in", out.height="5in"}
-
-  aspen90 <-rast(here("Data", "Spatial", "Aspen", "srme_skcv_probability_mosaic-90.tif"))
-  aspen90 <- aspen90/10
-  
-  study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90))
-  aspen90 <- aspen90 %>%  mask(study.area)
-  
-  tm.percent <- tm_shape(aspen90)+tm_raster(palette="viridis",title="")+tm_layout(bg.color="white", legend.position = c(0.01,0.825))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
-  Fig.file <- here("Results", "Figures", "aspenpercent-map.jpg") 
-  jpeg(Fig.file, width=3.5, height=5, units="in", res=300) 
-  tm.percent
-  whatever <- dev.off()
-
-knitr::include_graphics(here("Results", "Figures", "aspenpercent-map.jpg"), dpi=NA) 
-```
-
 ```{r MissClassMap, fig.cap="Spatial patterns of missclassification for the ensemble model.", out.width="3.5in", out.height="5in"}
 knitr::include_graphics(here("Results", "Figures", "ensemble-error-map.jpg"), dpi = NA)
 ```
 
-```{r FutureChange, fig.cap="The ensemble projection of aspen habitat suitability under current conditions and projections for future periods based on the projected climate for the SSP5-8.5 scenario."}
-knitr::include_graphics(here("Results", "Figures", "FigMaps-Change.jpg"), dpi=NA)
+```{r LossGainTS, fig.cap="Barplots illustrating the temporal patterns in the areas were aspen my lost, gained, or remain stable based on the current distribution of aspen and the ensemeble SDM forecast of future aspen habitat suitability.", out.width="4.5in", out.height="4.5in"}
+knitr::include_graphics(here("Results", "Figures", "loss-gain.jpg"), dpi = NA)
 ```
 
-```{r LossGainMaps, fig.cap="The distribution of pixels where the ensemble SDM forecasts aspen may be lost, gained, or stable by 2100 under the SSP2-4.5 scenario.", out.width="3.5in", out.height="5in"}
-knitr::include_graphics(here("Results", "Figures", "FigMaps-LossGain1.jpg"), dpi = NA)
+```{r LossGainBox, fig.cap="Boxplots illustrating spatial patterns in the areas were aspen my lost, gained, or remain stable based on the current distribution of aspen the ensemeble SDM forecast of future aspen habitat suitability under the SSP2-45 scenario.", out.width="4.5in", out.height="5in"}
+knitr::include_graphics(here("Results", "Figures", "gainloss-geography-SSP245.jpg"), dpi = NA)
 ```
 
-```{r GainDistanceMaps, fig.cap="Distance to the nearest existing aspen patch for pixels were future climate may promote aspen expansion by 2100 under the SSP2-4.5 scenario.", out.width="3.5in", out.height="5in"}
-knitr::include_graphics(here("Results", "Figures", "FigMaps-Gain-Distance1.jpg"), dpi = NA)
+```{r GainDistanceMaps, fig.cap="Distance to the nearest existing aspen patch for pixels were future climate may promote aspen expansion by 2100 under the SSP2-4.5 scenario.", out.width="7in"}
+knitr::include_graphics(here("Results", "Figures", "FigMaps-ExpansionDistance.jpg"), dpi = NA)
 ```
 
-```{r FigSAD, fig.cap="Boxplots illustrating the relationship between areas affected by sudden aspen decline and healthy aspen forests and climate variables.", out.width="5in", out.height="3in"}
+```{r FigSAD, fig.cap="Boxplots illustrating the relationship between areas affected by sudden aspen decline and healthy aspen forests and climate variables.", out.width="5in", out.height="3in", eval=F}
 if(!file.exists(filename=here("Results", "Figures", "SAD.jpg"))){
   predictions.ensemble <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))
   
   ensemble.error<- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble-classerror.tif"))
 
-  SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>% st_transform(st_crs(predictions.ensemble))
+  SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>% st_transform(st_crs(predictions.ensemble))
   
   R2 <- st_read(here("Data", "Spatial", "ADS","CONUS_Region2_AllYears.gdb", "CONUS_Region2_AllYears.gdb")) %>% filter(HOST=="quaking aspen" & DCA_COMMON_NAME =="sudden aspen decline") %>% st_union() %>% st_transform(st_crs(predictions.ensemble)) %>% st_crop(SRM)
   
@@ -2299,6 +2381,7 @@ if(!file.exists(filename=here("Results", "Figures", "SAD.jpg"))){
   R2R3 <- st_sf(R2R3)
   R2R3$value <- 3
   R2R3.r <- terra::rasterize(R2R3,field="value", y=predictions.ensemble, background=0)
+
   
   # Import response variable
   aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
@@ -2309,6 +2392,15 @@ if(!file.exists(filename=here("Results", "Figures", "SAD.jpg"))){
   
   SAD <- (R2R3.r +aspen90.prob01)
   
+  SAD.plot <- SAD
+  SAD.plot[SAD.plot==3] <- 4
+  SAD.plot[SAD.plot==0] <- NA
+  SAD.plot <- mask(SAD.plot, study.area)
+  Fig.file <- here("Results", "Figures", "FigMaps-SAD.jpg")
+    jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
+    tm_shape(study.area)+tm_fill(col="grey25") + tm_shape( SAD.plot)+tm_raster( style= "cat", title="", labels=c("unaffected", "affected"), palette=c("#5ab4ac","#d8b365"))+tm_layout(main.title = "",main.title.size=1,main.title.position="center", bg.color="white", legend.position = c(0.01,0.9))+tm_shape(study.area) +tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
+  whatever <- dev.off()
+
   
   # Import climate variables
   
@@ -2339,20 +2431,52 @@ knitr::include_graphics(here("Results", "Figures", "SAD.jpg"), dpi = NA)
  
 ```
 
-```{r FigClimate, fig.cap="Maps illustrating the spatial patterning of contemporary climate.", out.width="7in", out.height="4in"}
-select.variables <- c("ADI",   "PRATIO", "GSPDD5",  "GSP","TD","DD_0", "RH")
-normals90 <- rast(here("Data", "Spatial", "Downscaled", "Normals90.tif"))
-normals90 <- normals90[[select.variables]]
+```{r FutureClimate, eval=F}
+select.variables <- c("ADI",   "PRATIO", "GSPDD5",  "TD", "RH")
 
-future90 <- rast(here("Data", "Spatial", "Downscaled", "ensemble_8GCMs_ssp585_2071_2100_90.tif"))
-future90 <- future90[[select.variables]]
+aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
+names(aspen90.prob) <- "aspen.prob"
+aspen90.prob01 <- aspen90.prob
+aspen90.prob01[aspen90.prob01>0]<-1
+aspen90.prob01.sample <- aspen90.prob01%>% spatSample(size=10000, as.points=T, method="stratified", na.rm=T, exhaustive=T, exp=10) %>% filter(aspen.prob==1)
+
+study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
+
+normals90 <- rast(here("Data", "Spatial", "Downscaled", "Normals90.tif"))[[select.variables]]
+normals90  <- normals90 %>%  mask(study.area)
 
 
-study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(normals90))
+normals90.df <- terra::extract(normals90,  aspen90.prob01.sample) %>% as.data.frame() %>% mutate(Years="1981-2010", scenario="historical")
+
+results <-normals90.df 
+select.scenarios<- c( "ssp245", "ssp585")
+select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
+for(select.scenario in select.scenarios){
+  for(years in select.years.all){
+    climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, years, "_90.tif"))[[select.variables]]  %>%  mask(study.area)
+    climate90.df <- extract(climate90,  aspen90.prob01.sample)  %>% mutate(Years=years, scenario=select.scenario)
+      results <- rbind(results, climate90.df)
+    }
+}
+
+results.x <- pivot_longer(results[,-1], cols=ADI:RH)
+results.x$years <- factor(results.x$Years, levels=c("1981-2010", "_2011_2040", "_2041_2070", "_2071_2100"), labels=c("1981-2010", "2011-2040", "2041-2070", "2071-2100"), ordered=T)
+p1 <- results.x %>% filter(name %in% c("ADI", "PRATIO", "GSPDD5", "TD", "RH")) %>% ggplot(aes(x=years, y=value, col=scenario))+geom_boxplot(position = position_dodge(preserve = "single"))+facet_wrap(.~name, scales="free")+ theme(axis.text.x = element_text(angle = 45, hjust = 1))+theme(legend.position="bottom")+scale_color_manual(values=c("#49006a", "#ae017e", "#f768a1" ))
+ggsave(filename=here("Results", "Figures", "climatevarchange.jpg"), p1,  width=7, height=4, units="in")
+    
+
+```
+
+```{r FigClimateMaps, fig.cap="Maps illustrating the spatial patterning of contemporary climate.", out.width="7in", out.height="4in"}
+if(!file.exists( here("Results", "Figures", "FigMaps-Climate.jpg"))){
+  select.variables <- c("ADI",   "PRATIO", "GSPDD5",  "TD", "RH")
+  normals90 <- rast(here("Data", "Spatial", "Downscaled", "Normals90.tif"))
+  normals90 <- normals90[[select.variables]]
+
+
+  study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(normals90))
   normals90  <- normals90 %>%  mask(study.area)
-  future90  <- future90 %>%  mask(study.area)
-  
-  
+
   tm.ADI <- tm_shape(normals90[['ADI']])+tm_raster(palette="plasma",title="", style="cont",breaks=c(0,0.025,0.05, 0.075,0.1,0.125, 0.15,0.175, 0.2,0.225))+tm_layout(bg.color="white", legend.position = c(0.01,0.6))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))+tm_layout(aes.palette="seq")+tm_layout(main.title = "ADI",main.title.size=1,main.title.position="center", bg.color="white", legend.format = list(fun = function(x) {ifelse(x %in% c(0, 0.1, 0.2), x, "")}))
   
   tm.PRATIO <- tm_shape(normals90[['PRATIO']])+tm_raster(palette="plasma",title="",style="cont", breaks=c(0.3, 0.375, 0.450, 0.525,0.6, 0.675, 0.750, 0.825,0.9))+tm_layout(bg.color="white", legend.position = c(0.01,0.625))+tm_shape(study.area) + tm_borders()+ tm_layout(aes.palette="seq")+tm_layout(main.title = "PRATIO",main.title.size=1,main.title.position="center", bg.color="white", legend.format = list(fun = function(x) {ifelse(x %in% c(0.3, 0.6, 0.9), x, "")}))
@@ -2363,39 +2487,15 @@ Fig.file <- here("Results", "Figures", "FigMaps-Climate.jpg")
   jpeg(Fig.file, width=7, height=4, units="in", res=300)
   tmap_arrange(tm.ADI,tm.PRATIO,tm.GSPDD5, nrow=1)
 whatever <- dev.off()
+}
+
+
 
 knitr::include_graphics(here("Results", "Figures", "FigMaps-Climate.jpg"), dpi = NA)
 
 
- tm.ADI <- tm_shape(future90[['ADI']])+tm_raster(palette="plasma",title="", style="cont",breaks=c(0.01,0.06, 0.11, 0.16, 0.21, 0.26, 0.31))+tm_layout(bg.color="white", legend.position = c(0.01,0.58))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))+tm_layout(aes.palette="seq")+tm_layout(main.title = "ADI",main.title.size=1,main.title.position="center", bg.color="white", legend.format = list(fun = function(x) {ifelse(x %in% c(0.01, 0.16, 0.31), x, "")}))
-  
-  tm.PRATIO <- tm_shape(future90[['PRATIO']])+tm_raster(palette="plasma",title="",style="cont", breaks=c(0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))+tm_layout(bg.color="white", legend.position = c(0.01,0.625))+tm_shape(study.area) + tm_borders()+ tm_layout(aes.palette="seq")+tm_layout(main.title = "PRATIO",main.title.size=1,main.title.position="center", bg.color="white", legend.format = list(fun = function(x) {ifelse(x %in% c(0.2, 0.5, 0.8), x, "")}))
- 
-    tm.GSPDD5 <- tm_shape(future90[['GSPDD5']])+tm_raster(palette="plasma", title="", style="cont", breaks=c(100, 250, 400, 550, 700, 850, 1000, 1150, 1300, 1450))+tm_layout(bg.color="white", legend.position = c(0.01,0.6))+tm_shape(study.area) + tm_borders()+tm_layout(aes.palette="seq")+tm_layout(main.title = "GSPDD5",main.title.size=1,main.title.position="center", bg.color="white", legend.format = list(fun = function(x) {ifelse(x %in% c(100,  700, 1300), x, "")}))
- 
-Fig.file <- here("Results", "Figures", "FigMaps-FutureClimate.jpg")
-  jpeg(Fig.file, width=7, height=4, units="in", res=300)
-  tmap_arrange(tm.ADI,tm.PRATIO,tm.GSPDD5, nrow=1)
-whatever <- dev.off()
+```
 
-knitr::include_graphics(here("Results", "Figures", "FigMaps-Climate.jpg"), dpi = NA)
-
- #tm.GSPDD5 <- tm_shape(normals90[['GSPDD5']])+tm_raster(palette="plasma", title="", style="fixed", breaks=c(0, .17, 0.44,3))+tm_layout(bg.color="white", legend.position = c(0.01,0.625))+tm_shape(study.area) + tm_borders()+tm_layout(aes.palette="seq")+tm_layout(main.title = "GSPDD5",main.title.size=1,main.title.position="center", bg.color="white")
- #tm.GSPDD5 
-
-future90pd <- future90/normals90 *100
-
-tm.ADI <- tm_shape(future90pd[['ADI']])+tm_raster(palette="plasma",title="", style="cont",  breaks=c(100,125, 150,175, 200, 225, 250, 300, 325, 350))+tm_layout(bg.color="white", legend.position = c(0.01,0.55))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))+tm_layout(aes.palette="seq")+tm_layout(main.title = "ADI",main.title.size=1,main.title.position="center", bg.color="white", legend.format = list(fun = function(x) {ifelse(x %in% c(100, 225, 350), x, "")}))
-  
-  tm.PRATIO <- tm_shape(future90pd[['PRATIO']])+tm_raster(palette="plasma",title="",style="cont", breaks=c(80, 85, 90, 95, 100, 105, 110))+tm_layout(bg.color="white", legend.position = c(0.01,0.625))+tm_shape(study.area) + tm_borders()+ tm_layout(aes.palette="seq")+tm_layout(main.title = "PRATIO",main.title.size=1,main.title.position="center", bg.color="white", legend.format = list(fun = function(x) {ifelse(x %in% c(80, 95, 110), x, "")}))
- 
-    tm.GSPDD5 <- tm_shape(future90pd[['GSPDD5']])+tm_raster(palette="plasma", title="", style="cont", breaks=c(100, 150, 200,250, 300,350, 400,450, 500))+tm_layout(bg.color="white", legend.position = c(0.01,0.6))+tm_shape(study.area) + tm_borders()+tm_layout(aes.palette="seq")+tm_layout(main.title = "GSPDD5",main.title.size=1,main.title.position="center", bg.color="white", legend.format = list(fun = function(x) {ifelse(x %in% c(100,  300, 500), x, "")}))
-    
-  Fig.file <- here("Results", "Figures", "FigMaps-FutureClimatePD.jpg")
-  jpeg(Fig.file, width=7, height=4, units="in", res=300)
-  tmap_arrange(tm.ADI,tm.PRATIO,tm.GSPDD5, nrow=1)
-whatever <- dev.off()
-
-knitr::include_graphics(here("Results", "Figures", "FigMaps-Climate.jpg"), dpi = NA)
-
+```{r FigClimateMATMAP, fig.cap="The relationships between mean total annual precipitation, mean annual daily temperature, and select climate variables, A - ADI,  B - GSPDD5, and C - PRATIO.", out.width="7in", out.height="4in"}
+knitr::include_graphics(here("Results", "Figures", "MAPxMAT-ADI_GSPDD5_PRATIO.jpg"), dpi = NA)
 ```
