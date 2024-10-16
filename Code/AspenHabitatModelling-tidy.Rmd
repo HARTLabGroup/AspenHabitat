@@ -755,8 +755,8 @@ dat_split <- initial_split(
   strata = aspen.presence
 )
 
-testing(dat_split) %>% write.csv(here("Data", "dat_testing.csv"), row.names=F)
-training(dat_split) %>% write.csv(here("Data", "dat_traing.csv"), row.names=F)
+testing(dat_split) %>% write.csv(here("Data", "Spatial", "dat_testing.csv"), row.names=F)
+training(dat_split) %>% write.csv(here("Data", "Spatial", "dat_traing.csv"), row.names=F)
 # preprocessing "recipe"
 presence.recipe<- 
   recipe(aspen.presence ~ ., data = training(dat_split))  %>%
