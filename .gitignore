@@ -34,3 +34,5 @@ vignettes/*.pdf
 *.zip
 # All spatial data
 Spatial/
+# Manuscript drafts
+Documents/Revisions/
