@@ -2214,7 +2214,7 @@ The Southern Rocky Mountains are the sacred homelands to many Indigenous nations
 
 # Data availability
 
-All code used in this paper are available in a public GitHub repository (link). Data associated with this paper are available
+All code used in this paper are available in a public GitHub repository (link). Maps of the predicted habitat suitability area available through Dryad via the following anonymized link: [http://datadryad.org/stash/share/gGubdiD6hCORznmbeHB6gkWoxodyj25Soa3s3yfOfHg](https://nam10.safelinks.protection.outlook.com/?url=http%3A%2F%2Fdatadryad.org%2Fstash%2Fshare%2FgGubdiD6hCORznmbeHB6gkWoxodyj25Soa3s3yfOfHg&data=05%7C02%7Csarah.hart%40colostate.edu%7Cc00ff4ef23d4486ecd8e08dceee39cf4%7Cafb58802ff7a4bb1ab21367ff2ecfc8b%7C0%7C0%7C638647908580903395%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C0%7C%7C%7C&sdata=i%2B45VPN9dbfLKYiR0rbKPxa%2BoWV6Kc%2BHP8v%2FlumACRM%3D&reserved=0).
 
 # References
 
