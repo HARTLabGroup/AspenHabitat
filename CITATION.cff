@@ -1,0 +1,9 @@
+cff-version: 1.1.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: Hart
+  given-names: Sarah
+orcid: https://orcid.org/0000-0001-8371-8568
+title: Code from: Climate-driven decreases in aspen's distribution and opportunities for future expansion across the Southern Rocky Mountains
+version: v1.0.0-alpha
+date-released: 2024-10-18
