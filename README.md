@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 ## Description of the project
 
 This repository contains all code for *Climate-driven decreases in
