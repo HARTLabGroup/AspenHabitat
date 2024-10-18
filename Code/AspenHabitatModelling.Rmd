@@ -1598,77 +1598,6 @@ if(!file.exists(here("Results", "Figures", "vip-ale.jpg"))){
    
 }
 
-
-pred.vars <- read.csv(here("Results", "Final-variables.csv")) %>% filter(include=="include") %>% pull(variable)
-pred.climate.vars <- pred.vars[!pred.vars %in% c("pH", "clay", "thetas", "om", "tpi3", "tpi15", "hli")]
-
-if(!file.exists(here("Results", "Figures", "vip-pdp.jpg"))){
-  
-  normals90 <- rast(here("Data", "Spatial", "Downscaled", "Normals90.tif"))[[pred.climate.vars]]
-  
-  aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
-  names(aspen90.prob) <- "aspen.prob"
-  aspen90.prob01 <- aspen90.prob
-  aspen90.prob01[aspen90.prob01>0]<-1
-
-  aspen90.prob01.sample <- aspen90.prob01%>% spatSample(size=10000, as.points=T, method="stratified", na.rm=T, exhaustive=T, exp=10) %>% filter(aspen.prob==1)
-
-  normals90.df <- terra::extract(normals90,  aspen90.prob01.sample) %>% as.data.frame() %>% mutate(Years="1981-2010", scenario="historical")
-  results <-normals90.df 
-  select.scenarios<- c( "ssp245", "ssp585")
-  select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
-  for(select.scenario in select.scenarios){
-    for(years in select.years.all){
-      climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, years, "_90.tif"))[[pred.climate.vars]] 
-       climate90 <- extract(climate90,  aspen90.prob01.sample)  %>% mutate(Years=years, scenario=select.scenario)
-       results <- rbind(results, climate90)
-    }
-  }
-    
-  results <- results %>% pivot_longer(cols=all_of(pred.climate.vars))
-  results$Years <- factor(results$Years, levels=c("1981-2010", "_2011_2040", "_2041_2070", "_2071_2100"), labels=c("1981-2010", "2011-2040", "2041-2070", "2071-2100"), ordered=T)
-  results$scenario <- factor(results$scenario, levels=c("historical", "ssp245", "ssp585"), labels=c("historical", "SSP2-4.5", "SSP5-8.5"))
-  results <- results %>% group_by(Years, scenario, name) %>% summarise(mean=mean(value, na.rm=T)) %>% filter(scenario %in% c("SSP5-8.5", "historical")) 
-  results$X_vname_ <- results$name
-  results$X_vname_ <- factor(results$X_vname_, levels=pred.vars)
-  
-  vip.glm <- read.csv(here("Results", "vip-glm.csv"))
-  vip.rf <- read.csv(here("Results", "vip-rf.csv"))
-  vip.xgb <- read.csv(here("Results", "vip-xgb.csv"))
-  vip.gam <- read.csv(here("Results", "vip-gam.csv"))
-
-  vip.dat <- rbind(vip.glm, vip.rf, vip.xgb, vip.gam)  %>% filter(!variable %in% c("_full_model_", "_baseline_", "aspen.prob", "x", "y", "cell")) %>% filter(variable %in% pred.vars)
-  var.order <- vip.dat %>% group_by(variable) %>% summarise(mean=mean(dropout_loss)) %>% arrange(mean) %>% pull(variable)
-  var.order.labs <- var.order
-  var.order.labs[var.order.labs=="tpi3"] <- "TPI3"
-  var.order.labs[var.order.labs=="hli"] <- "HLI"
-  var.order.labs[var.order.labs=="clay"] <- "Clay"
-  var.order.labs[var.order.labs=="thetas"] <- "SWC"
-  vip.dat$variable <- factor(vip.dat$variable, levels=var.order, labels=var.order.labs, ordered=T)
-  vip.dat <- vip.dat %>% filter(Model %in% ensemble.set)
-  vip.dat$Model <- factor(vip.dat$Model, levels=c("GLM", "GAM", "RF", "XGB"), labels=c("GLM", "GAM", "RF", "RGBT"))
-
-  
-  p1 <- vip.dat %>%ggplot(aes(x=variable, y=dropout_loss, col=Model))+geom_boxplot()+coord_flip()+theme(legend.position="bottom")+theme(axis.title.y=element_blank(),legend.title = element_blank())+ylab("relative variable importance")+scale_color_cosmic()
-
-  pdp.glm <- read.csv(here("Results", "pdp-GLM.csv"))
-  pdp.xgb <- read.csv(here("Results", "pdp-xgb.csv"))
-  pdp.rf <- read.csv(here("Results", "pdp-RF.csv"))
-  pdp.gam <- read.csv(here("Results", "pdp-gam.csv"))
-  pdp.dat <- rbind(pdp.glm, pdp.xgb, pdp.rf, pdp.gam)
-  pdp.dat[pdp.dat$X_vname_=="tpi3", "X_vname_"] <- "TPI3"
-  pdp.dat[pdp.dat$X_vname_=="OM", "X_vname_"] <- "OM"
-  pdp.dat <- pdp.dat %>% filter(Model %in% ensemble.set)
-  pdp.dat$Model <- factor(pdp.dat$Model, levels=c("GLM", "GAM", "RF", "XGB"), labels=c("GLM", "GAM", "RF", "RGBT"))
-  
-  p2 <-  pdp.dat %>% filter(X_vname_ %in% toupper(rev(var.order)[1:4]))  %>% ggplot( aes(x=X_x_,y=X_yhat_, col=Model)) +geom_line(show.legend = FALSE)+theme(legend.position="bottom")+ylab("probability of aspen presence")+xlab("value")+scale_color_cosmic()+facet_wrap(~X_vname_, scales="free_x",nrow=2)+geom_vline(data=results%>% filter(X_vname_ %in% rev(var.order)[1:4]), aes(xintercept=mean, lty=Years),linewidth=0.5)
-  p12 <- p1+theme(legend.position = "none")+ p2 +plot_layout(nrow=1)+plot_annotation(tag_levels="A")+ plot_layout(guides = "collect") & theme(legend.position = 'bottom', legend.title = element_blank())
-  ggsave(p12, filename=here("Results", "Figures", "vip-pdp.jpg"), width=180, height=110, units="mm")
-   
-  p3 <-  pdp.dat %>% filter(X_vname_ %in% c(toupper(rev(var.order)), "om"))  %>% ggplot( aes(x=X_x_,y=X_yhat_, col=Model)) +geom_line(show.legend = FALSE)+theme(legend.position="bottom")+ylab("organic matter")+xlab("value")+scale_color_cosmic()+facet_wrap(~X_vname_, scales="free_x",nrow=1)+geom_vline(data=results%>% filter(X_vname_ %in% c(toupper(rev(var.order)), "om")) , aes(xintercept=mean, lty=Years),linewidth=0.5)
- ggsave(p3, filename=here("Results", "Figures", "pdp-total.jpg"), width=7, height=3, units="in")
-  
-}
 ```
 
 ### Forecasting change in aspen habitat
@@ -2249,7 +2178,7 @@ The Southern Rocky Mountains are the sacred homelands to many Indigenous nations
 
 # Data availability
 
-All code used in this paper are available in a public GitHub repository (link). Maps of the predicted habitat suitability area available through Dryad via the following anonymized link: [http://datadryad.org/stash/share/gGubdiD6hCORznmbeHB6gkWoxodyj25Soa3s3yfOfHg](https://nam10.safelinks.protection.outlook.com/?url=http%3A%2F%2Fdatadryad.org%2Fstash%2Fshare%2FgGubdiD6hCORznmbeHB6gkWoxodyj25Soa3s3yfOfHg&data=05%7C02%7Csarah.hart%40colostate.edu%7Cc00ff4ef23d4486ecd8e08dceee39cf4%7Cafb58802ff7a4bb1ab21367ff2ecfc8b%7C0%7C0%7C638647908580903395%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C0%7C%7C%7C&sdata=i%2B45VPN9dbfLKYiR0rbKPxa%2BoWV6Kc%2BHP8v%2FlumACRM%3D&reserved=0).
+Code and maps of the predicted habitat suitability area available for review through Dryad via the following anonymized link: [http://datadryad.org/stash/share/gGubdiD6hCORznmbeHB6gkWoxodyj25Soa3s3yfOfHg](https://nam10.safelinks.protection.outlook.com/?url=http%3A%2F%2Fdatadryad.org%2Fstash%2Fshare%2FgGubdiD6hCORznmbeHB6gkWoxodyj25Soa3s3yfOfHg&data=05%7C02%7Csarah.hart%40colostate.edu%7Cc00ff4ef23d4486ecd8e08dceee39cf4%7Cafb58802ff7a4bb1ab21367ff2ecfc8b%7C0%7C0%7C638647908580903395%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C0%7C%7C%7C&sdata=i%2B45VPN9dbfLKYiR0rbKPxa%2BoWV6Kc%2BHP8v%2FlumACRM%3D&reserved=0).
 
 # References
 
