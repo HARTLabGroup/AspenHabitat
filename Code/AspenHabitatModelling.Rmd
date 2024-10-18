@@ -48,7 +48,6 @@ pacman::p_load(
   ggcorrplot, # plot correlation between variables
   sf, # spatial data (new pkg)
   terra, # raster data
-  rgdal,
   raster, # (old pkg)
   rasterVis,
   tidyterra, #tidyverse extension to spatial data
@@ -57,8 +56,8 @@ pacman::p_load(
   spatialEco, # hli, tpi
   readxl, # read in excel data
   parallel,
+  doParallel, 
   FNN,
-  maptools,
   rgeos,
   elevatr, 
   tidymodels,
@@ -67,8 +66,7 @@ pacman::p_load(
   ncf, #spline correlog
   probably, 
   spatialsample, # spatial sampling
-  spatialRF,
-  doParallel
+  spatialRF
 ) 
 terraOptions(progress=0) # suppress all progress bars in terra
 cores <- parallel::detectCores() # Set number of cores for parallel processing
@@ -104,7 +102,6 @@ set_flextable_defaults(
 # Set directory structure for project
 dir.create(here("Data"), showWarnings = FALSE)
 dir.create(here("Data", "Spatial"), showWarnings = FALSE)
-dir.create(here("Data", "Spatial", "Predictions"), showWarnings = FALSE)
 dir.create(here("Results"), showWarnings = FALSE)
 dir.create(here("Results", "Figures"), showWarnings = FALSE)
 ```
@@ -127,7 +124,24 @@ c - Earth Lab, Cooperative Institute for Research in Environmental Sciences (CIR
 
 1 - Corresponding author; Email address: Sarah.Hart\@colostate.edu
 
-\pagebreak
+```{r}
+
+```
+
+\newpage
+
+# Highlights
+
+-   An ensemble model explained 79% of the variation in aspen occurrence.
+-   Interactions between temperature and precipitation influence aspen's distribution.
+-   Climate change will likely lead to decreases in aspen habitat suitability.
+-   Dispersal may limit the potential for aspen range expansion.
+
+```{r}
+
+```
+
+\newpage
 
 # Abstract
 
@@ -136,13 +150,6 @@ Understanding how species distributions may shift in response to changing climat
 # Keywords
 
 Trembling aspen; Southern Rockies; SDMs; Ensemble modeling; Climate change; Forest management
-
-# Highlights
-
--   An ensemble model explained 79% of the variation in aspen occurrence.
--   Interactions between temperature and precipitation influence aspen's distribution.
--   Climate change will likely lead to decreases in aspen habitat suitability.
--   Dispersal may limit the potential for aspen range expansion.
 
 # Introduction
 
@@ -165,14 +172,15 @@ The Southern Rocky Mountain Ecoregion (SRME) is a mountainous region an area of 
 Ecosystems of the SRME correspond with topoclimatic patterns; low elevation valleys and intermountain basins are dominated by grasslands and shrublands, forests occupy intermediate elevations, while grasses, sedges, cushion plants, forbs, mosses, and lichens dominate cold, alpine elevations [@comer2001SouthernRockyMountains]. Within the ca. 55% of the SRME that is forested [@drummond2012SouthernRockiesEcoregion], tree communities also follow elevation gradients. Lower montane forests (\< 2,300 m) are generally composed of ponderosa pine (*Pinus ponderosae*) woodlands, piñon (*Pinus edulis*) and juniper (*Juniperus* spp.) woodlands, and gamble oak (*Quercus gambelii*) shrublands. Forests of the upper montane zone (ca. 2,300 - 2,800 m) are dominated by ponderosa pine-Douglas fir mixed conifer systems, quaking aspen, and lodgepole pine (*Pinus contorta*). Forests of the subalpine zone (ca. 2,800 m - 3,200 m) are dominated by Engelmann spruce, subalpine fir, and to a lesser extent limber pine (*Pinus flexilis)* and Rocky Mountain bristlecone pine (*P. aristata*). Forests dynamics across the SRME are strongly shaped by climate-sensitive disturbances, notably wildfires, outbreaks of native bark beetles, and windstorms [@peet1981ForestVegetationColorado; @baker1990; @veblen1994DisturbanceRegimeDisturbance; @veblen2000ClimaticHumanInfluences; @chapman2012SpatiotemporalPatternsMountain; @hart2014DroughtInducesSpruce).
 
 ```{r StudyArea, fig.cap="The Southern Rocky Mountain Ecoregion and current distribution of aspen.", out.width="3.25in", out.height="4.34in"}
-knitr::include_graphics(here("Results", "Figures", "StudyArea.jpg"), dpi=NA)
+knitr::include_graphics(here("Figures","StudyArea.jpg"), dpi=NA) # load in figure generated in QGIS
 ```
 
 ```{r DL_ecoregions}
+# Download Ecoregion data
 temp <- here("Data", "Spatial", "Ecoregions","us_eco_l3.zip")
 if(!file.exists(temp)){
-download.file("https://gaftp.epa.gov/EPADataCommons/ORD/Ecoregions/us/us_eco_l3.zip", temp, mode="wb")
-unzip(temp, exdir=here("Data", "Spatial", "Ecoregions"))
+  download.file("https://gaftp.epa.gov/EPADataCommons/ORD/Ecoregions/us/us_eco_l3.zip", temp, mode="wb")
+  unzip(temp, exdir=here("Data", "Spatial", "Ecoregions"))
 }
 ```
 
@@ -187,10 +195,11 @@ Here we follow the ODMAP (Overview, Data, Model, Assessment and Prediction) prot
 To build SDMs, we used a 10-m gridded map of aspen presence-absence produced by Cook et al. [-@cook2024MappingQuakingAspen]. Briefly, this dataset was produced in Google Earth Engine using 10-m seasonal composite imagery from the Sentinel-1 and Sentinel-2 sensors. The map represents the distribution of aspen in ca. 2019 and is characterized by high accuracy (0.93 average F1-score). To generate our SDMs, we aggregated the data from 10-m to 90-m, a scale relevant to management [@rehfeldt2015].
 
 ```{r DL_aspen}
+# Download Aspen data from Cook et al. 2024
 dir.create(here("Data", "Spatial", "Aspen"), showWarnings = FALSE)
 temp <- here("Data", "Spatial", "Aspen", "SRM_ASPEN_CLASSIFIED_RF_10M_V1_0223.tif", mode="wb")
 if(!file.exists(temp)){
-download.file("https://1drv.ms/u/s!Aq4s9rj0qHBilL4B4PH1amvdUoiLyg?e=jHRUWI", temp )
+  download.file("https://1drv.ms/u/s!Aq4s9rj0qHBilL4B4PH1amvdUoiLyg?e=jHRUWI", temp )
 }
 ```
 
@@ -204,6 +213,8 @@ Given mountainous areas such as the SRME are characterized high topoclimatic var
 
 In addition to climate variables, we also included data describing terrain and soils as predictors in our models. To account for the potential effects of local topographic variation on soil transport and water balance [@jones1985Soils], we used a 30-m DEM from the USGS [-@u.s.geologicalsurvey2023USGS3DElevation] to calculate the topographic position index [TPI; @weiss2001]. We calculated TPI for a 3-cell neighborhood (TPI3) to characterize fine scale topographic patterns [@rodman2020ChangingClimateSnuffing]. To account for the effects of aspect and slope on local climate, we calculated the Heat Load Index [HLI; @mccune2002EquationsPotentialAnnual; @mccune2007ImprovedEstimatesIncident]. Both HLI and TPI3 were calculated in R using the *spatialeco* package [@spatialEco]. Given soil properties may influence aspen demographic processes [@jones1985Soils], we obtained 30-m probabilistic maps of soil pH, the percentage of organic material, the percentage of clay, and saturated soil water content from the POLARIS database [@chaney2019POLARISSoilProperties]. We did not include elevation, latitude, and longitude as predictors in our modeling because we assumed these relationships were only correlative [@araujo2019StandardsDistributionModels]. We re-sampled soil and topographic predictors to a 90-m resolution by calculating the mean and projected the data to Universal Transmercator (UTM) Zone 13N to match the maps of aspen occurrence.
 
+\newpage
+
 ```{r TabSelectedPredictors}
 pred.var.tab <- read_excel(here("Documents", "PredictorScreeningTable.xlsx"), sheet=2)
 
@@ -211,7 +222,8 @@ pred.var.tab %>% as.data.frame() %>% flextable()  %>% set_caption(caption="Predi
 ```
 
 ```{r DL_soils}
- #SRME <- st_read(here("Data", "Spatial", "Ecoregions","us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=4326) %>% st_bbox 
+# Download POLARIS soils data and merge tiles together
+
 lons <- c("110-109", "109-108", "108-107", "107-106", "106-105", "105-104", "104-103")
 lats <- c("3536", "3637", "3738", "3839","3940", "4041", "4142", "4243")
 
@@ -287,14 +299,17 @@ if(!dir.exists(here("Data","Spatial", "Soils"))){
 ```
 
 ```{r DL_DEM}
+## Download DEM
+
 if(!dir.exists(here("Data", "Spatial","DEM"))){
   
   dir.create(here("Data", "Spatial","DEM"), showWarnings = FALSE)
   
+  # Import boundary for Southern Rocky Mountains and buffer by 20 km
   SRME <- st_read(here("Data", "Spatial", "Ecoregions",
 "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs=5071) %>% st_buffer(20000)
 
-  # 30 m 
+  # Download 30 m raster and mosaic tiles
   dem <- get_tiles(data=SRM, output_prefix = here("Data", "Spatial", "DEM", "DEM30"), services="elevation",   resolution=30)
 dem.rast <- lapply(dem$elevation,FUN=rast)
   for(j in 2:length(dem.rast)){dem.rast[[j]] <-  terra::project(dem.rast[[j]], dem.rast[[1]], align=T)}
@@ -302,7 +317,7 @@ dem.rast <- lapply(dem$elevation,FUN=rast)
   dem.mosaic <- mosaic(dem.sprc)
   writeRaster(dem.mosaic, here("Data", "Spatial", "DEM", "DEM30-mosaic.tif"), overwrite=T)
   
- # 90 m 
+  # Download 90 m raster and mosaic tiles
   dem <- get_tiles(data=SRM, output_prefix = here("Data", "Spatial", "DEM", "DEM90"), services="elevation",   resolution=90)
 dem.rast <- lapply(dem$elevation,FUN=rast)
   for(j in 2:length(dem.rast)){dem.rast[[j]] <-  terra::project(dem.rast[[j]], dem.rast[[1]], align=T)}
@@ -310,16 +325,15 @@ dem.rast <- lapply(dem$elevation,FUN=rast)
   dem.mosaic <- mosaic(dem.sprc)
   writeRaster(dem.mosaic, here("Data", "Spatial", "DEM", "DEM90-mosaic.tif"), overwrite=T)
    
-  
-  # 250 m 
+  # Download 250 m raster
   dem <- get_tiles(data=SRM, output_prefix = here("Data", "Spatial", "DEM", "DEM250"), services="elevation",   resolution=250)
   dem.rast <- lapply(dem$elevation,FUN=rast)
   writeRaster(dem.rast[[1]], here("Data", "Spatial", "DEM", "DEM250.tif"), overwrite=T)
 }
 ```
 
-```{r Calc_HLI, eval=F}
-# Heat load index
+```{r Calc_HLI}
+# Calculate Heat Load Index using 30-m DEM
 if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-HLI.tif"))){
   dem.mosaic <- rast(here(here("Data","Spatial", "DEM", "DEM30-mosaic.tif")))
   hli.rast <- hli(dem.mosaic, force.hemisphere = "northern")
@@ -327,8 +341,8 @@ if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-HLI.tif"))){
 }
 ```
 
-```{r Calc_TPI3, eval=F}
-# Topographic position index 3 cell neighborhood
+```{r Calc_TPI3}
+# Calculate Topographic Position Index using 3 cell neighborhood
 if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-TPI3.tif"))){
   dem.mosaic <- rast(here(here("Data","Spatial", "DEM", "DEM30-mosaic.tif")))
   tpi.rast <- tpi(dem.mosaic, scale=3)
@@ -336,8 +350,8 @@ if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-TPI3.tif"))){
 }
 ```
 
-```{r Calc_TPI15, eval=F}
-# Topographic position index 15 cell neighborhood
+```{r Calc_TPI15}
+# Calculate Topographic Position Index using 15 cell neighborhood
 if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-TPI15.tif"))){
   dem.mosaic <- rast(here(here("Data","Spatial", "DEM", "DEM30-mosaic.tif")))
   tpi.rast <- tpi(dem.mosaic, scale=15)
@@ -345,174 +359,179 @@ if(!file.exists(here("Data","Spatial", "DEM", "DEM30-mosaic-TPI15.tif"))){
 }
 ```
 
-```{r DL_climatedata, eval=F}
-dir.create(here("Data","Spatial", "Climate"))
-dir.create(here("Data","Spatial", "Climate", "ClimateNA"), showWarnings = FALSE)
+```{r DL_climatedata}
+# Download climate data
+if(!dir.exists(here("Data","Spatial", "Climate"))){
+  dir.create(here("Data","Spatial", "Climate"))
+  dir.create(here("Data","Spatial", "Climate", "ClimateNA"), showWarnings = FALSE)
+    
+  # Climate normals
+  ## Monthly variables
+  temp <- here("Data","Spatial", "Climate", "ClimateNA", "Normal_1981_2010_monthly.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_monthly.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  }
+    
+  ## Bioclimatic variables
+  temp <- here("Data","Spatial", "Climate", "ClimateNA", "Normal_1981_2010_bioclim.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  }
+   
+  ## 2011-2040 Emission Scenario SSP2-4.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2011_2040_bioclim.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2011_2040_bioclim.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  }
   
-# Climate normals
-## Monthly variables
-temp <- here("Data","Spatial", "Climate", "ClimateNA", "Normal_1981_2010_monthly.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_monthly.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-}
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2011_2040_monthly.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2011_2040_monthly.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  }
   
-## Bioclimatic variables
-temp <- here("Data","Spatial", "Climate", "ClimateNA", "Normal_1981_2010_bioclim.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/normals/Normal_1981_2010_bioclim.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-}
- 
-## 2011-2040 Emission Scenario SSP2-4.5
-temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2011_2040_bioclim.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2011_2040_bioclim.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-}
-
-temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2011_2040_monthly.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2011_2040_monthly.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-}
-
-## 2040-2070 Emission Scenario SSP2-4.5
-temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2041_2070_bioclim.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2041_2070_bioclim.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-}
-
-temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2041_2070_monthly.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2041_2070_monthly.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-}
-
-## 2071-2100 Emission Scenario SSP2-4.5
-temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2071_2100_bioclim.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2071_2100_bioclim.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-}  
-
-temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2071_2100_monthly.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2071_2100_monthly.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-}  
-
-##2011-2040 Emission Scenario SSP5-8.5
-temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2011_2040_bioclim.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2011_2040_bioclim.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-} 
-
-temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2011_2040_monthly.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2011_2040_monthly.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-} 
-
-##2041-2070 Emission Scenario SSP5-8.5
-temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2041_2070_bioclim.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2041_2070_bioclim.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-}
-
-temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2041_2070_monthly.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2041_2070_monthly.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-}
-
-##2071-2100 Emission Scenario SSP5-8.5
-temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2071_2100_bioclim.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2071_2100_bioclim.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
-}
-
-temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2071_2100_monthly.zip")
-if(!file.exists(temp)){
-  download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2071_2100_monthly.zip", temp, mode="wb")
-  unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  ## 2040-2070 Emission Scenario SSP2-4.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2041_2070_bioclim.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2041_2070_bioclim.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  }
+  
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2041_2070_monthly.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2041_2070_monthly.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  }
+  
+  ## 2071-2100 Emission Scenario SSP2-4.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2071_2100_bioclim.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2071_2100_bioclim.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  }  
+  
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp245_2071_2100_monthly.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp245_2071_2100_monthly.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  }  
+  
+  ##2011-2040 Emission Scenario SSP5-8.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2011_2040_bioclim.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2011_2040_bioclim.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  } 
+  
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2011_2040_monthly.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2011_2040_monthly.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  } 
+  
+  ##2041-2070 Emission Scenario SSP5-8.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2041_2070_bioclim.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2041_2070_bioclim.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  }
+  
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2041_2070_monthly.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2041_2070_monthly.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  }
+  
+  ##2071-2100 Emission Scenario SSP5-8.5
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2071_2100_bioclim.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2071_2100_bioclim.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  }
+  
+  temp <- here("Data","Spatial", "Climate", "ClimateNA","ensemble_8GCMs_ssp585_2071_2100_monthly.zip")
+  if(!file.exists(temp)){
+    download.file("https://s3-us-west-2.amazonaws.com/www.cacpd.org/CMIP6v73/ensembles/ensemble_8GCMs_ssp585_2071_2100_monthly.zip", temp, mode="wb")
+    unzip(temp, exdir=here("Data", "Spatial", "Climate", "CLimateNA"))
+  }
 }
 ```
 
-```{r Calc_Derived_Climate_Variables, eval=F}
-dir.create(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"))
-monthly.climate.rasters <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010/Normal_1981_2010_monthly"), full.names=T))
+```{r Calc_Derived_Climate_Variables}
+if(!dir.exists(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"))){
+  dir.create(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"))
+  monthly.climate.rasters <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010/Normal_1981_2010_monthly"), full.names=T))
 
-SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>%  st_transform(crs(monthly.climate.rasters))
+  SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>%  st_transform(crs(monthly.climate.rasters))
  
-monthly.climate.rasters <- crop(monthly.climate.rasters, SRM)
-names(monthly.climate.rasters) <- do.call(c, strsplit(sapply(strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010/Normal_1981_2010_monthly"), full.names=F), split="Normal_1981_2010_"), "[", 2), split=".tif"))
+  monthly.climate.rasters <- crop(monthly.climate.rasters, SRME)
+  names(monthly.climate.rasters) <- do.call(c, strsplit(sapply(strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010/Normal_1981_2010_monthly"), full.names=F), split="Normal_1981_2010_"), "[", 2), split=".tif"))
 
-bioclimate.rasters <- rast(list.files(here("Data/Spatial/Climate/ClimateNA/Normal_1981_2010/Normal_1981_2010_bioclim"), pattern=".tif", full.names=T))
-names(bioclimate.rasters) <- sapply(strsplit(do.call(c, strsplit(list.files(here("Data/Spatial/Climate/ClimateNA/Normal_1981_2010/Normal_1981_2010_bioclim"), pattern=".tif", full.names=F), split=".tif")), split="Normal_1981_2010_"), "[", 2)
+  bioclimate.rasters <- rast(list.files(here("Data/Spatial/Climate/ClimateNA/Normal_1981_2010/Normal_1981_2010_bioclim"), pattern=".tif", full.names=T))
+  names(bioclimate.rasters) <- sapply(strsplit(do.call(c, strsplit(list.files(here("Data/Spatial/Climate/ClimateNA/Normal_1981_2010/Normal_1981_2010_bioclim"), pattern=".tif", full.names=F), split=".tif")), split="Normal_1981_2010_"), "[", 2)
 
-monthly.climate.rasters <- terra::crop(monthly.climate.rasters, SRM)
-bioclimate.rasters <- terra::crop(bioclimate.rasters, SRM)
+  monthly.climate.rasters <- terra::crop(monthly.climate.rasters, SRME)
+  bioclimate.rasters <- terra::crop(bioclimate.rasters, SRME)
 
-#ADI 
-ADI <- (bioclimate.rasters[['DD5']]^0.5)/bioclimate.rasters[['MAP']]
-writeRaster(ADI, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_ADI.tif")), overwrite=T)
+  #ADI 
+  ADI <- (bioclimate.rasters[['DD5']]^0.5)/bioclimate.rasters[['MAP']]
+  writeRaster(ADI, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_ADI.tif")), overwrite=T)
 
-#GSP
-GSP <- sum(monthly.climate.rasters[[paste0("PPT",c("04", "05", "06", "07","08","09"))]])
-writeRaster(GSP, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_GSP.tif")), overwrite=T)
+  #GSP
+  GSP <- sum(monthly.climate.rasters[[paste0("PPT",c("04", "05", "06", "07","08","09"))]])
+  writeRaster(GSP, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_GSP.tif")), overwrite=T)
 
-#PRATIO
-PRATIO <- GSP/bioclimate.rasters[["MAP"]]
-writeRaster(PRATIO, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_PRATIO.tif")), overwrite=T)
+  #PRATIO
+  PRATIO <- GSP/bioclimate.rasters[["MAP"]]
+  writeRaster(PRATIO, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_PRATIO.tif")), overwrite=T)
 
-#GSPDD5
-GSPDD5 <- GSP * bioclimate.rasters[["DD5"]]/1000
-writeRaster(GSPDD5, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_GSPDD5.tif")), overwrite=T)
+  #GSPDD5
+  GSPDD5 <- GSP * bioclimate.rasters[["DD5"]]/1000
+  writeRaster(GSPDD5, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_GSPDD5.tif")), overwrite=T)
 
-#TMAX 
-TMAX <- max(monthly.climate.rasters[[paste0("Tmax",c("04", "05", "06", "07","08","09"))]])
-writeRaster(TMAX, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_TMAX.tif")), overwrite=T)
+  #TMAX 
+  TMAX <- max(monthly.climate.rasters[[paste0("Tmax",c("04", "05", "06", "07","08","09"))]])
+  writeRaster(TMAX, filename=(here("Data", "Spatial", "Climate", "ClimateNA", "Derived", "Normal_1981_2010_TMAX.tif")), overwrite=T)
 
-select.scenarios<- c("ssp245", "ssp585")
-select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
-for(select.scenario in select.scenarios){
+  select.scenarios<- c("ssp245", "ssp585")
+  select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
+  for(select.scenario in select.scenarios){
+    for(select.year in select.years.all){
+        monthly.climate.rasters <- rast(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_monthly"), full.names=T))
+        names(monthly.climate.rasters) <- sapply(strsplit(do.call(c,strsplit(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_monthly"), full.names=F), split=".tif")),split=paste0("ensemble_8GCMs_", select.scenario, select.year, "_")), "[", 2)
   
-  for(select.year in select.years.all){
-  monthly.climate.rasters <- rast(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_monthly"), full.names=T))
-  names(monthly.climate.rasters) <- sapply(strsplit(do.call(c,strsplit(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_monthly"), full.names=F), split=".tif")),split=paste0("ensemble_8GCMs_", select.scenario, select.year, "_")), "[", 2)
-
- bioclimate.rasters <- rast(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_bioclim"), full.names=T))
-  names(bioclimate.rasters) <- sapply(strsplit(do.call(c,strsplit(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_bioclim"), full.names=F), split=".tif")),split=paste0("ensemble_8GCMs_", select.scenario, select.year, "_")), "[", 2)
- 
- SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>%  st_transform(crs(monthly.climate.rasters))
-
- monthly.climate.rasters <- crop(monthly.climate.rasters, SRM)
- bioclimate.rasters <- crop(bioclimate.rasters, monthly.climate.rasters)
- 
- #ADI 
- #ADI <- (bioclimate.rasters[['DD5']]^0.5)/bioclimate.rasters[['MAP']]
-# writeRaster(ADI, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_ADI.tif"), overwrite=T)
- 
- #GSP
- GSP <- sum(monthly.climate.rasters[[paste0("PPT",c("04", "05", "06", "07","08","09"))]])
- #writeRaster(GSP, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_GSP.tif"), overwrite=T)
- 
- #PRATIO
- #PRATIO <- GSP/bioclimate.rasters[["MAP"]]
- #writeRaster(PRATIO, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_PRATIO.tif"), overwrite=T)
- 
- #GSPDD5
- GSPDD5 <-  GSP * bioclimate.rasters[["DD5"]]/1000
- writeRaster(GSPDD5, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_GSPDD5.tif"), overwrite=T)
-  print(select.year)
+      bioclimate.rasters <- rast(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_bioclim"), full.names=T))
+      names(bioclimate.rasters) <- sapply(strsplit(do.call(c,strsplit(list.files(paste0(here("Data", "Spatial", "Climate", "ClimateNA"), "/ensemble_8GCMs_", select.scenario, select.year, "/ensemble_8GCMs_", select.scenario, select.year,"_bioclim"), full.names=F), split=".tif")),split=paste0("ensemble_8GCMs_", select.scenario, select.year, "_")), "[", 2)
+    
+      SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>%  st_transform(crs(monthly.climate.rasters))
+  
+    monthly.climate.rasters <- crop(monthly.climate.rasters, SRME)
+    bioclimate.rasters <- crop(bioclimate.rasters, monthly.climate.rasters)
+   
+    #ADI 
+    ADI <- (bioclimate.rasters[['DD5']]^0.5)/bioclimate.rasters[['MAP']]
+    writeRaster(ADI, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_ADI.tif"), overwrite=T)
+   
+    #GSP
+    GSP <- sum(monthly.climate.rasters[[paste0("PPT",c("04", "05", "06", "07","08","09"))]])
+    writeRaster(GSP, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_GSP.tif"), overwrite=T)
+   
+    #PRATIO
+    PRATIO <- GSP/bioclimate.rasters[["MAP"]]
+    writeRaster(PRATIO, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_PRATIO.tif"), overwrite=T)
+   
+    #GSPDD5
+    GSPDD5 <-  GSP * bioclimate.rasters[["DD5"]]/1000
+    writeRaster(GSPDD5, filename=paste0(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), "/", select.scenario, select.year, "_GSPDD5.tif"), overwrite=T)
+    print(select.year)
+    }
+    print(select.scenario)
   }
-  print(select.scenario)
 }
+
 ```
 
 ```{r Downscale}
@@ -717,8 +736,9 @@ To build and evaluate models, we then split our dataset into equally-sized testi
 
 To better understand the environmental drivers of aspen's distribution and assess model realism, we calculated variable importance scores for each model using a model-agnostic permutation-based approach. In this approach each variable is randomized and then the AUC statistic is compared with AUC for the full model (where data has not been randomized). We also evaluated the relationship between aspen presence and each predictor variable using accumulated local effects (ALE) profiles [@apley2020VisualizingEffectsPredictor]. Variable importance and ALE were calculated in R using the *DALEX* [@DALEX] and *ALEPlot* [@ALEPlot] packages.
 
-```{r DataPrep, eval=F}
-select.variables <- c("ADI", "PRATIO", "GSPDD5",  "GSP", "TD", "DD_0", "RH")
+```{r DataPrep}
+if(!file.exists(here("Results", "Final-variables.csv"))){
+  select.variables <- c("ADI", "PRATIO", "GSPDD5",  "GSP", "TD", "DD_0", "RH")
 # Import response variable
 aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
 names(aspen90.prob) <- "aspen.prob"
@@ -727,8 +747,8 @@ aspen90.prob01[aspen90.prob01>0]<-1
 names(aspen90.prob01) <- "aspen.presence"
 
 SRM <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
-aspen90.prob <- terra::mask(aspen90.prob, SRM)
-aspen90.prob01 <-terra::mask(aspen90.prob01, SRM)
+aspen90.prob <- terra::mask(aspen90.prob, SRME)
+aspen90.prob01 <-terra::mask(aspen90.prob01, SRME)
 
  tm.aspen90.prob01  <- tm_shape( aspen90.prob01 )+tm_raster(title="", palette="viridis", midpoint=NA)+tm_layout(bg.color="white", legend.position = c("left", "top"), legend.just=c("left", "bottom"))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
 
@@ -784,196 +804,202 @@ presence.recipe<-
 
 # split training dataset to tune hyperparameters
 cv_folds <- training(dat_split) %>% st_as_sf(coords=c("x", "y"), remove=F) %>%  st_set_crs(crs(aspen90.prob)) %>%  spatial_clustering_cv(v=5) 
+}
+
 ```
 
 #### Generalized linear models
 
 GLMs are extensions of parametric linear regression adapted to distributions other than the normal distribution [@zuur2007AnalysingEcologicalData]. Here we constructed GLMs with a logit link function and a binomial error distribution to account for the structure of presence-absence data. We included both linear and quadratic effects for all variables, but did not explore any interaction terms. We fit GLMs using a Lasso regularization approach, which allows for model coefficients to be reduced to zero, thereby limiting model complexity and improving bias-variance tradeoffs [@hastie2009ElementsStatisticalLearning]. Prior to fitting the model to the full training dataset, we tuned the lasso penalty term. GLMs were fit using the *glmnet* package [@glmnet].
 
-```{r GLM, eval=F}
+```{r GLM}
 # Specify model
-glm_spec <- 
+if(!file.exists(here("Results", "ale-GLM.csv"))){
+  glm_spec <- 
   logistic_reg(penalty = tune(),mixture = 1) %>%
   set_engine("glmnet") %>% 
   set_mode("classification")
 
-# Create workflow
-glm_wflow <- 
-  workflow() %>% 
-  add_recipe(presence.recipe) %>% 
-  add_model(glm_spec, formula=aspen.presence~ poly(ADI, 2, raw = TRUE) + poly(PRATIO,2, raw = TRUE) + poly(GSPDD5, 2, raw=T) + poly(TD, 2, raw = TRUE) + poly(RH, 2, raw=T) + poly(om, 2, raw=T) + poly(tpi3, 2, raw = TRUE) + poly(thetas, 2, raw=T) + poly(clay, 2, raw = TRUE) + poly(hli, 2, raw=T))
-
-# Tune model
-### Set parameters to be tuned
-glm_params <- 
-  dials::parameters(
-    penalty()
-)
-
-## Create grid of search values
-glm_grid <- 
-  dials::grid_latin_hypercube(
-    glm_params, 
-    size = 50
-)
-
-### Perform tuning
-glm_tuned <- tune::tune_grid(
-  object = glm_wflow,
-  resamples = cv_folds,
-  grid = glm_grid,
-  metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
-  control = tune::control_grid(verbose = TRUE)
-)
-
-# Finalize workflow
-glm_best_params <- glm_tuned  %>% tune::select_best(metric="roc_auc") 
-glm_fwflow <- glm_wflow %>% finalize_workflow(glm_best_params)
-write.csv(glm_best_params, here("Results", "glm-bestparams.csv"))
-last_fit <- fit(glm_fwflow, training(dat_split))
-
-# Evaluate model on training dataset
-glm_res <- 
-  glm_fwflow %>% 
-  fit_resamples(
-    resamples = cv_folds, 
+  # Create workflow
+  glm_wflow <- 
+    workflow() %>% 
+    add_recipe(presence.recipe) %>% 
+    add_model(glm_spec, formula=aspen.presence~ poly(ADI, 2, raw = TRUE) + poly(PRATIO,2, raw = TRUE) + poly(GSPDD5, 2, raw=T) + poly(TD, 2, raw = TRUE) + poly(RH, 2, raw=T) + poly(om, 2, raw=T) + poly(tpi3, 2, raw = TRUE) + poly(thetas, 2, raw=T) + poly(clay, 2, raw = TRUE) + poly(hli, 2, raw=T))
+  
+  # Tune model
+  ### Set parameters to be tuned
+  glm_params <- 
+    dials::parameters(
+      penalty()
+  )
+  
+  ## Create grid of search values
+  glm_grid <- 
+    dials::grid_latin_hypercube(
+      glm_params, 
+      size = 50
+  )
+  
+  ### Perform tuning
+  glm_tuned <- tune::tune_grid(
+    object = glm_wflow,
+    resamples = cv_folds,
+    grid = glm_grid,
     metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
-    control = control_resamples(save_pred = TRUE)
-    ) 
+    control = tune::control_grid(verbose = TRUE)
+  )
+  
+  # Finalize workflow
+  glm_best_params <- glm_tuned  %>% tune::select_best(metric="roc_auc") 
+  glm_fwflow <- glm_wflow %>% finalize_workflow(glm_best_params)
+  write.csv(glm_best_params, here("Results", "glm-bestparams.csv"))
+  last_fit <- fit(glm_fwflow, training(dat_split))
+  
+  # Evaluate model on training dataset
+  glm_res <- 
+    glm_fwflow %>% 
+    fit_resamples(
+      resamples = cv_folds, 
+      metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
+      control = control_resamples(save_pred = TRUE)
+      ) 
+  
+  
+  glm_res %>%  collect_metrics(summarize = TRUE) %>% mutate(Dataset="training") %>% mutate(Model="GLM") %>% write.csv(here("Results", "GLM-training-stats.csv"))
+  
+  # Evaluate model on testing dataset
+  glm_last_fit <- last_fit(glm_fwflow,
+                           split=dat_split,
+                           metrics = metric_set(recall, precision, f_meas, accuracy, kap,roc_auc, sens, spec))
+  
+  glm_last_fit %>% collect_metrics() %>% mutate(Dataset="testing", Model="GLM") %>% write.csv(here("Results", "GLM-testing-stats.csv"))
+  
+  # Save model coefficients
+  coef_glm <- pluck(glm_last_fit$.workflow, 1) %>% extract_fit_parsnip() %>%  tidy() %>% write.csv(here("Results", "GLM-coef.csv"))
+  
+  # Best threshold
+  pluck(glm_last_fit$.workflow, 1) %>% 
+    predict(new_data=testing(dat_split), type="prob") %>%
+    bind_cols(testing(dat_split)) %>%
+    threshold_perf(truth=aspen.presence, estimate=`.pred_1`, threshold=seq(0,1, by=0.0025), event_level="second") %>%
+    write.csv(here("Results", "GLM-prediction-threshold.csv"))
+  
+  read.csv(here("Results", "GLM-prediction-threshold.csv")) %>%
+    filter(.metric == "j_index") %>%
+    filter(.estimate == max(.estimate)) %>%
+    pull(.threshold) -> threshold.glm
+  
+  # Variable importance
+  explainer_glm <- explain_tidymodels(pluck(glm_last_fit$.workflow, 1),
+                                      data=testing(dat_split)%>% as.data.frame() %>% select(-aspen.presence), 
+                                      y=testing(dat_split) %>% pull(aspen.presence) %>% as.numeric() - 1,
+                                      type="classification", verbose=F
+  )
+  explainer_glm %>% feature_importance(type='ratio') %>% as.data.frame() %>% mutate(Model="GLM") %>% write.csv( here("Results", "vip-glm.csv"))
 
-
-glm_res %>%  collect_metrics(summarize = TRUE) %>% mutate(Dataset="training") %>% mutate(Model="GLM") %>% write.csv(here("Results", "GLM-training-stats.csv"))
-
-# Evaluate model on testing dataset
-glm_last_fit <- last_fit(glm_fwflow,
-                         split=dat_split,
-                         metrics = metric_set(recall, precision, f_meas, accuracy, kap,roc_auc, sens, spec))
-
-glm_last_fit %>% collect_metrics() %>% mutate(Dataset="testing", Model="GLM") %>% write.csv(here("Results", "GLM-testing-stats.csv"))
-
-# Save model coefficients
-coef_glm <- pluck(glm_last_fit$.workflow, 1) %>% extract_fit_parsnip() %>%  tidy() %>% write.csv(here("Results", "GLM-coef.csv"))
-
-# Best threshold
-pluck(glm_last_fit$.workflow, 1) %>% 
-  predict(new_data=testing(dat_split), type="prob") %>%
-  bind_cols(testing(dat_split)) %>%
-  threshold_perf(truth=aspen.presence, estimate=`.pred_1`, threshold=seq(0,1, by=0.0025), event_level="second") %>%
-  write.csv(here("Results", "GLM-prediction-threshold.csv"))
-
-read.csv(here("Results", "GLM-prediction-threshold.csv")) %>%
-  filter(.metric == "j_index") %>%
-  filter(.estimate == max(.estimate)) %>%
-  pull(.threshold) -> threshold.glm
-
-# Variable importance
-explainer_glm <- explain_tidymodels(pluck(glm_last_fit$.workflow, 1),
-                                    data=testing(dat_split)%>% as.data.frame() %>% select(-aspen.presence), 
-                                    y=testing(dat_split) %>% pull(aspen.presence) %>% as.numeric() - 1,
-                                    type="classification", verbose=F
-)
-explainer_glm %>% feature_importance(type='ratio') %>% as.data.frame() %>% mutate(Model="GLM") %>% write.csv( here("Results", "vip-glm.csv"))
-
-# Partial dependence and accumulated local effects
-pdp <- model_profile(explainer_glm , N = 500, variables = pred.vars, type="partial")
-pdp$agr_profiles %>% mutate(method="PDP", Model="GLM") %>% write.csv(here("Results", "pdp-GLM.csv"))
-ale <- model_profile(explainer_glm , N = 500, variables = pred.vars, type="accumulated")
-ale$agr_profiles %>% mutate(method="ALE", Model="GLM")  %>% write.csv(here("Results", "ale-GLM.csv"))
-rm(ale); rm(pdp)
+  # Partial dependence and accumulated local effects
+  pdp <- model_profile(explainer_glm , N = 500, variables = pred.vars, type="partial")
+  pdp$agr_profiles %>% mutate(method="PDP", Model="GLM") %>% write.csv(here("Results", "pdp-GLM.csv"))
+  ale <- model_profile(explainer_glm , N = 500, variables = pred.vars, type="accumulated")
+  ale$agr_profiles %>% mutate(method="ALE", Model="GLM")  %>% write.csv(here("Results", "ale-GLM.csv"))
+  rm(ale); rm(pdp)
+}
 ```
 
 #### Generalized additive models
 
 GAMs are a non-parametric extension of GLMs that are particularly useful when there is no *a priori* reason for fitting a particular relationship (e.g., linear, quadratic). Here, we constructed binomial GAMs with a logit link function using the *mgcv* package [@mgcv]. In our model, we represented the relationships between the response and each predictor variable using thin plate regression splines, where the penalty term was adjusted to allow the term to be shrunk to zero. For all smooths, we set the k parameter, which sets the number of basis functions, to the default value of 10, after using built in diagnostic function from the *mgcv* package to confirm an adequate degree of complexity. To limit overfitting, we tuned the penalty term prior to fitting the model to the full training dataset. GAMs were fit using restricted maximum likelihood (REML), following recommendations from Pedersen et al. [-@pedersen2018HierarchicalGeneralizedAdditive].
 
-```{r GAM, eval=F}
-# Specify model
-gam_spec <- 
-  gen_additive_mod(select_features =  T, adjust_deg_free = tune()) %>%
-  set_engine("mgcv", family = binomial(link = "logit"), method = "REML") %>% 
-  set_mode("classification")
-
-# Create workflow
-gam_wflow <- 
-  workflow() %>% 
-  add_recipe(presence.recipe) %>% 
-  add_model(gam_spec, formula=aspen.presence~s(ADI, bs="ts") + s(PRATIO,bs="ts") + s(GSPDD5,bs="ts") + s(TD,bs="ts") + s(RH, bs="ts") + s(om, bs="ts") +s(tpi3,bs="ts") + s(thetas,bs="ts") + s(clay,bs="ts") + s(hli,bs="ts")) 
-
-# Tune model
-### Set parameters to be tuned
-gam_params <- 
-  dials::parameters(
-    adjust_deg_free()
-)
-
-## Create grid of search values
-gam_grid <- 
-  dials::grid_latin_hypercube(
-    gam_params, 
-    size = 50
-)
-
-
-### Perform tuning
-gam_tuned <- tune::tune_grid(
-  object = gam_wflow,
-  resamples = cv_folds,
-  grid = gam_grid,
-  metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
-  control = tune::control_grid(verbose = TRUE)
-)
-
-# Finalize workflow
-gam_best_params <- gam_tuned  %>% tune::select_best(metric="roc_auc") 
-gam_fwflow <- gam_wflow %>% finalize_workflow(gam_best_params)
-write.csv(gam_best_params, here("Results", "gam-bestparams.csv"))
-
-# Evaluate model on training dataset
-gam_res <- 
-  gam_fwflow %>% 
-  fit_resamples(
-    resamples = cv_folds, 
+```{r GAM}
+if(!file.exists(here("Results", "ale-GAM.csv"))){
+  # Specify model
+  gam_spec <- 
+    gen_additive_mod(select_features =  T, adjust_deg_free = tune()) %>%
+    set_engine("mgcv", family = binomial(link = "logit"), method = "REML") %>% 
+    set_mode("classification")
+  
+  # Create workflow
+  gam_wflow <- 
+    workflow() %>% 
+    add_recipe(presence.recipe) %>% 
+    add_model(gam_spec, formula=aspen.presence~s(ADI, bs="ts") + s(PRATIO,bs="ts") + s(GSPDD5,bs="ts") + s(TD,bs="ts") + s(RH, bs="ts") + s(om, bs="ts") +s(tpi3,bs="ts") + s(thetas,bs="ts") + s(clay,bs="ts") + s(hli,bs="ts")) 
+  
+  # Tune model
+  ### Set parameters to be tuned
+  gam_params <- 
+    dials::parameters(
+      adjust_deg_free()
+  )
+  
+  ## Create grid of search values
+  gam_grid <- 
+    dials::grid_latin_hypercube(
+      gam_params, 
+      size = 50
+  )
+  
+  ### Perform tuning
+  gam_tuned <- tune::tune_grid(
+    object = gam_wflow,
+    resamples = cv_folds,
+    grid = gam_grid,
     metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
-    control = control_resamples(save_pred = TRUE)
-    ) 
+    control = tune::control_grid(verbose = TRUE)
+  )
+  
+  # Finalize workflow
+  gam_best_params <- gam_tuned  %>% tune::select_best(metric="roc_auc") 
+  gam_fwflow <- gam_wflow %>% finalize_workflow(gam_best_params)
+  write.csv(gam_best_params, here("Results", "gam-bestparams.csv"))
+  
+  # Evaluate model on training dataset
+  gam_res <- 
+    gam_fwflow %>% 
+    fit_resamples(
+      resamples = cv_folds, 
+      metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
+      control = control_resamples(save_pred = TRUE)
+      ) 
+  
+  gam_res %>% collect_metrics(summarize = TRUE) %>% mutate(Dataset="training") %>% mutate(Model="GAM") %>% write.csv(here("Results", "GAM-training-stats.csv"))
+  
+  # Evaluate model on testing dataset
+  gam_last_fit <- last_fit(gam_fwflow,
+                           split=dat_split,
+                           metrics = metric_set(recall, precision, f_meas, accuracy, kap,roc_auc, sens, spec))
+  
+  gam_last_fit %>% collect_metrics() %>% mutate(Dataset="testing", Model="GAM") %>% write.csv(here("Results", "GAM-testing-stats.csv"))
+  
+  # Best threshold
+  pluck(gam_last_fit$.workflow, 1) %>% 
+    predict(new_data=testing(dat_split), type="prob") %>%
+    bind_cols(testing(dat_split)) %>%
+    mutate(aspen.presence=factor(aspen.presence)) %>% 
+    threshold_perf(truth=aspen.presence, estimate=`.pred_1`, threshold=seq(0,1, by=0.0025), event_level="second") %>%
+    write.csv(here("Results", "GAM-prediction-threshold.csv"))
+  
+  read.csv(here("Results", "GAM-prediction-threshold.csv")) %>%
+    filter(.metric == "j_index") %>%
+    filter(.estimate == max(.estimate)) %>%
+    pull(.threshold) -> threshold.gam
+  
+  # Variable importance
+  explainer_gam <- explain_tidymodels(pluck(gam_last_fit$.workflow, 1), 
+                                      data=testing(dat_split)%>% as.data.frame() %>% select(-aspen.presence), 
+                                      y=testing(dat_split)%>% pull(aspen.presence) %>% as.numeric()-1,
+                                      type="classification", verbose=F
+  )
+  
+  explainer_gam %>% feature_importance(type="ratio")  %>% as.data.frame() %>% mutate(Model="GAM") %>% write.csv( here("Results", "vip-gam.csv"))
+  
+  # Partial dependence and accumulated local effects
+  pdp <- model_profile(explainer_gam , N = 500, variables = pred.vars, type="partial")
+  pdp$agr_profiles %>% mutate(method="PDP", Model="GAM") %>% write.csv(here("Results", "pdp-GAM.csv"))
+  ale <- model_profile(explainer_gam , N = 500, variables = pred.vars, type="accumulated")
+  ale$agr_profiles %>% mutate(method="ALE", Model="GAM")  %>% write.csv(here("Results", "ale-GAM.csv"))
+  rm(ale); rm(pdp)
+}
 
-gam_res %>% collect_metrics(summarize = TRUE) %>% mutate(Dataset="training") %>% mutate(Model="GAM") %>% write.csv(here("Results", "GAM-training-stats.csv"))
-
-# Evaluate model on testing dataset
-gam_last_fit <- last_fit(gam_fwflow,
-                         split=dat_split,
-                         metrics = metric_set(recall, precision, f_meas, accuracy, kap,roc_auc, sens, spec))
-
-gam_last_fit %>% collect_metrics() %>% mutate(Dataset="testing", Model="GAM") %>% write.csv(here("Results", "GAM-testing-stats.csv"))
-
-# Best threshold
-pluck(gam_last_fit$.workflow, 1) %>% 
-  predict(new_data=testing(dat_split), type="prob") %>%
-  bind_cols(testing(dat_split)) %>%
-  mutate(aspen.presence=factor(aspen.presence)) %>% 
-  threshold_perf(truth=aspen.presence, estimate=`.pred_1`, threshold=seq(0,1, by=0.0025), event_level="second") %>%
-  write.csv(here("Results", "GAM-prediction-threshold.csv"))
-
-read.csv(here("Results", "GAM-prediction-threshold.csv")) %>%
-  filter(.metric == "j_index") %>%
-  filter(.estimate == max(.estimate)) %>%
-  pull(.threshold) -> threshold.gam
-
-# Variable importance
-explainer_gam <- explain_tidymodels(pluck(gam_last_fit$.workflow, 1), 
-                                    data=testing(dat_split)%>% as.data.frame() %>% select(-aspen.presence), 
-                                    y=testing(dat_split)%>% pull(aspen.presence) %>% as.numeric()-1,
-                                    type="classification", verbose=F
-)
-
-explainer_gam %>% feature_importance(type="ratio")  %>% as.data.frame() %>% mutate(Model="GAM") %>% write.csv( here("Results", "vip-gam.csv"))
-
-# Partial dependence and accumulated local effects
-pdp <- model_profile(explainer_gam , N = 500, variables = pred.vars, type="partial")
-pdp$agr_profiles %>% mutate(method="PDP", Model="GAM") %>% write.csv(here("Results", "pdp-GAM.csv"))
-ale <- model_profile(explainer_gam , N = 500, variables = pred.vars, type="accumulated")
-ale$agr_profiles %>% mutate(method="ALE", Model="GAM")  %>% write.csv(here("Results", "ale-GAM.csv"))
-rm(ale); rm(pdp)
 ```
 
 #### Random Forests
@@ -981,100 +1007,103 @@ rm(ale); rm(pdp)
 RF models are an extension of classification and regression tree analysis (CART; @breiman1984ClassificationRegressionTrees), a nonparametric approach where decision trees are used to explain the variation in the response variable by repeatedly splitting the data into more similar groups [@death2000]. Tree-based approaches are useful for modeling nonlinear relationships and complex interactions among variables, which often characterize ecological data [@death2000; @cutler2007RandomForestsClassification]. RF builds upon bagging methods, where many trees are built using random samples (with replacement) of the training data and predictions are generated from the ensemble set of trees. While bagging reduces some of the overfitting issues associated with CART, RF methods also limit the number of variables to consider at any given split to a random subset and the complexity of each tree by limiting splits to only nodes with a minimum number of data points. The inclusion of these hyperparameters results in less correlation among trees and thus better bias-variance tradeoffs [@cutler2007RandomForestsClassification]. Prior to fitting the model to the full training dataset, we tuned these hyperparameters, while holding the number of trees constant at 1000. RF models were fit using the tidymodels implementation of the *ranger* package [@ranger].
 
 ```{r RF, eval=F}
-# Specify model
-rf_spec <- 
-  rand_forest(
-    trees=1000,
-    min_n=tune(),
-    mtry=tune()
-  ) %>%
-  set_engine("ranger", importance = "permutation", seed = 123) %>% 
-  set_mode("classification")
-
-# Create workflow
-rf_wflow <- 
-  workflow() %>% 
-  add_recipe(presence.recipe) %>% 
-  add_model(rf_spec)
-
-# Tune model
-### Set parameters to be tuned
-rf_params <- 
-  dials::parameters(
-    finalize(mtry(),select(aspen.sample.pts,all_of(pred.vars))),
-    min_n()
-)
-
-## Create grid of search values
-rf_grid <- 
-  dials::grid_latin_hypercube(
-    rf_params, 
-    size = 50
-)
-
-### Perform tuning
-rf_tuned <- tune::tune_grid(
-  object = rf_wflow,
-  resamples = cv_folds,
-  grid = rf_grid,
-  metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
-  control = tune::control_grid(verbose = TRUE)
-)
-
-# Finalize workflow
-rf_best_params <- rf_tuned %>% tune::select_best(metric="roc_auc")
-rf_fwflow <- rf_wflow %>% finalize_workflow(rf_best_params)
-write.csv(rf_best_params, here("Results", "rf-bestparams.csv"))
-
-# Evaluate model on training dataset
-rf_res <- 
-  rf_fwflow %>% 
-  fit_resamples(
-    resamples = cv_folds, 
+if(!file.exists(here("Results", "ale-rf.csv"))){
+  # Specify model
+  rf_spec <- 
+    rand_forest(
+      trees=1000,
+      min_n=tune(),
+      mtry=tune()
+    ) %>%
+    set_engine("ranger", importance = "permutation", seed = 123) %>% 
+    set_mode("classification")
+  
+  # Create workflow
+  rf_wflow <- 
+    workflow() %>% 
+    add_recipe(presence.recipe) %>% 
+    add_model(rf_spec)
+  
+  # Tune model
+  ### Set parameters to be tuned
+  rf_params <- 
+    dials::parameters(
+      finalize(mtry(),select(aspen.sample.pts,all_of(pred.vars))),
+      min_n()
+  )
+  
+  ## Create grid of search values
+  rf_grid <- 
+    dials::grid_latin_hypercube(
+      rf_params, 
+      size = 50
+  )
+  
+  ### Perform tuning
+  rf_tuned <- tune::tune_grid(
+    object = rf_wflow,
+    resamples = cv_folds,
+    grid = rf_grid,
     metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
-    control = control_resamples(save_pred = TRUE)
-    ) 
+    control = tune::control_grid(verbose = TRUE)
+  )
+  
+  # Finalize workflow
+  rf_best_params <- rf_tuned %>% tune::select_best(metric="roc_auc")
+  rf_fwflow <- rf_wflow %>% finalize_workflow(rf_best_params)
+  write.csv(rf_best_params, here("Results", "rf-bestparams.csv"))
+  
+  # Evaluate model on training dataset
+  rf_res <- 
+    rf_fwflow %>% 
+    fit_resamples(
+      resamples = cv_folds, 
+      metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
+      control = control_resamples(save_pred = TRUE)
+      ) 
+  
+  rf_res %>%  collect_metrics(summarize = TRUE) %>% mutate(Dataset="training") %>% mutate(Model="RF") %>% write.csv(here("Results", "RF-training-stats.csv"))
+  
+  # Evaluate model on testing dataset
+  rf_last_fit <- last_fit(rf_fwflow,
+                           split=dat_split,
+                           metrics = metric_set(recall, precision, f_meas, accuracy, kap,roc_auc, sens, spec))
+  
+  rf_last_fit %>% collect_metrics() %>% mutate(Dataset="testing", Model="RF") %>% write.csv(here("Results", "RF-testing-stats.csv"))
+  
+  
+  # Best threshold
+  pluck(rf_last_fit$.workflow, 1) %>% 
+    predict(new_data=testing(dat_split), type="prob") %>%
+    bind_cols(testing(dat_split)) %>%
+    threshold_perf(truth=aspen.presence, estimate=`.pred_1`, threshold=seq(0,1, by=0.0025), event_level="second") %>%
+    write.csv(here("Results", "RF-prediction-threshold.csv"))
+  
+  read.csv(here("Results", "RF-prediction-threshold.csv")) %>%
+    filter(.metric == "j_index") %>%
+    filter(.estimate == max(.estimate)) %>%
+    pull(.threshold) -> threshold.rf
+  
+  
+  
+  # Variable importance
+  
+  explainer_rf<- explain_tidymodels(pluck(rf_last_fit$.workflow, 1), 
+                                      data=testing(dat_split) %>% as.data.frame() %>% select(-aspen.presence), 
+                                      y=testing(dat_split)%>% pull(aspen.presence) %>% as.numeric()-1,
+                                      type="classification", verbose=F
+  )
+  
+  explainer_rf %>% feature_importance(type="ratio") %>% as.data.frame() %>% mutate(Model="RF") %>% write.csv( here("Results", "vip-rf.csv"))
+  
+  # Partial dependence and accumualted local effects
+  pdp <- model_profile(explainer_rf , N = 500, variables = pred.vars, type="partial")
+  pdp$agr_profiles %>% mutate(method="PDP", Model="RF") %>% write.csv(here("Results", "pdp-rf.csv"))
+  ale <- model_profile(explainer_rf , N = 500, variables = pred.vars, type="accumulated")
+  ale$agr_profiles %>% mutate(method="ALE", Model="RF")  %>% write.csv(here("Results", "ale-rf.csv"))
+  rm(ale); rm(pdp)
+}
 
-rf_res %>%  collect_metrics(summarize = TRUE) %>% mutate(Dataset="training") %>% mutate(Model="RF") %>% write.csv(here("Results", "RF-training-stats.csv"))
-
-# Evaluate model on testing dataset
-rf_last_fit <- last_fit(rf_fwflow,
-                         split=dat_split,
-                         metrics = metric_set(recall, precision, f_meas, accuracy, kap,roc_auc, sens, spec))
-
-rf_last_fit %>% collect_metrics() %>% mutate(Dataset="testing", Model="RF") %>% write.csv(here("Results", "RF-testing-stats.csv"))
-
-
-# Best threshold
-pluck(rf_last_fit$.workflow, 1) %>% 
-  predict(new_data=testing(dat_split), type="prob") %>%
-  bind_cols(testing(dat_split)) %>%
-  threshold_perf(truth=aspen.presence, estimate=`.pred_1`, threshold=seq(0,1, by=0.0025), event_level="second") %>%
-  write.csv(here("Results", "RF-prediction-threshold.csv"))
-
-read.csv(here("Results", "RF-prediction-threshold.csv")) %>%
-  filter(.metric == "j_index") %>%
-  filter(.estimate == max(.estimate)) %>%
-  pull(.threshold) -> threshold.rf
-
-
-
-# Variable importance
-
-explainer_rf<- explain_tidymodels(pluck(rf_last_fit$.workflow, 1), 
-                                    data=testing(dat_split) %>% as.data.frame() %>% select(-aspen.presence), 
-                                    y=testing(dat_split)%>% pull(aspen.presence) %>% as.numeric()-1,
-                                    type="classification", verbose=F
-)
-
-explainer_rf %>% feature_importance(type="ratio") %>% as.data.frame() %>% mutate(Model="RF") %>% write.csv( here("Results", "vip-rf.csv"))
-
-# Partial dependence and accumualted local effects
-pdp <- model_profile(explainer_rf , N = 500, variables = pred.vars, type="partial")
-pdp$agr_profiles %>% mutate(method="PDP", Model="RF") %>% write.csv(here("Results", "pdp-rf.csv"))
-ale <- model_profile(explainer_rf , N = 500, variables = pred.vars, type="accumulated")
-ale$agr_profiles %>% mutate(method="ALE", Model="RF")  %>% write.csv(here("Results", "ale-rf.csv"))
-rm(ale); rm(pdp)
 ```
 
 #### Regularized gradient boosting trees
@@ -1082,164 +1111,170 @@ rm(ale); rm(pdp)
 Gradient boosted trees (GBTs) are also an ensemble-based extension of CART [@death2007BoostedTreesEcological]. In contrast to RF where trees are built in parallel, individual trees in a GBT ensemble are constructed iteratively so that each successive tree attempts to improve upon predictions made by the previous tree [@friedman2001GreedyFunctionApproximation]. To improve bias-variance tradeoffs, GBTs incorporate hyperparameters that control the rate at which the boosting algorithm adapts, and introduce randomness into the tree construction by sampling both variables (i.e., columns) and cases (i.e., rows) used to fit the model. RGBTs expand upon these approaches by incorporating regularization terms that constrain the depth of the tree and setting limits on the amount of gain in model fit required to further partition a node of the tree. We tune these hyperparameters prior to fitting the model to the full training dataset. RGBTs were fit using the R package *xgboost* [@xgboost].
 
 ```{r XGB, eval=F}
-# Specify model
-xgb_spec <- 
-  boost_tree(
-    trees=1000,
-    tree_depth=tune(), #the maximum depth of the tree (i.e. number of splits).
-    min_n=tune(), #the minimum number of data points in a node that are required for the node to be split further
-    loss_reduction=tune(), # The reduction in the loss function required to split further
-    sample_size=tune(), # The amount of data exposed to the fitting routine
-    mtry=tune(), #The number of predictors that will be randomly sampled at each split when creating the tree models
-    learn_rate=tune(), # The rate at which the boosting algorithm adapts from iteration-to-iteration.
-    stop_iter = tune() # The number of iterations without an improvement in the objective function occur before training should be halted
-  ) %>%
-  set_engine("xgboost", objective = "binary:logistic", validation = 0.2) %>% 
-  set_mode("classification")
-
-# Create workflow
-xgb_wflow <- 
-  workflow() %>% 
-  add_recipe(presence.recipe) %>% 
-  add_model(xgb_spec)
-
-# Tune model
-## Create grid of search values
-xgboost_grid <- 
-  dials::grid_latin_hypercube(
-      tree_depth(),
-      min_n(),
-      loss_reduction(),
-      sample_size = sample_prop(), # needs to be a proportion
-      finalize(mtry(), training_data), 
-      learn_rate(),
-      stop_iter(),
-      size = 50
-)
-
-### Perform tuning
-xgb_tuned <- tune::tune_grid(
-  object = xgb_wflow,
-  resamples = cv_folds,
-  grid = xgboost_grid,
-  metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
-  control = tune::control_grid(verbose = TRUE)
-)
-
-# Finalize workflow
-xgb_best_params <- xgb_tuned  %>% tune::select_best(metric="roc_auc") 
-xgb_fwflow <- xgb_wflow %>% finalize_workflow(xgb_best_params)
-write.csv(xgb_best_params, here("Results", "xgb-bestparams.csv"))
-
-# Evaluate model on training dataset
-xgb_res <- 
-  xgb_fwflow %>% 
-  fit_resamples(
-    resamples = cv_folds, 
+if(!file.exists(here("Results", "ale-XGB.csv"))){
+  # Specify model
+  xgb_spec <- 
+    boost_tree(
+      trees=1000,
+      tree_depth=tune(), #the maximum depth of the tree (i.e. number of splits).
+      min_n=tune(), #the minimum number of data points in a node that are required for the node to be split further
+      loss_reduction=tune(), # The reduction in the loss function required to split further
+      sample_size=tune(), # The amount of data exposed to the fitting routine
+      mtry=tune(), #The number of predictors that will be randomly sampled at each split when creating the tree models
+      learn_rate=tune(), # The rate at which the boosting algorithm adapts from iteration-to-iteration.
+      stop_iter = tune() # The number of iterations without an improvement in the objective function occur before training should be halted
+    ) %>%
+    set_engine("xgboost", objective = "binary:logistic", validation = 0.2) %>% 
+    set_mode("classification")
+  
+  # Create workflow
+  xgb_wflow <- 
+    workflow() %>% 
+    add_recipe(presence.recipe) %>% 
+    add_model(xgb_spec)
+  
+  # Tune model
+  ## Create grid of search values
+  xgboost_grid <- 
+    dials::grid_latin_hypercube(
+        tree_depth(),
+        min_n(),
+        loss_reduction(),
+        sample_size = sample_prop(), # needs to be a proportion
+        finalize(mtry(), training_data), 
+        learn_rate(),
+        stop_iter(),
+        size = 50
+  )
+  
+  ### Perform tuning
+  xgb_tuned <- tune::tune_grid(
+    object = xgb_wflow,
+    resamples = cv_folds,
+    grid = xgboost_grid,
     metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
-    control = control_resamples(save_pred = TRUE)
-    ) 
-
-xgb_res %>% collect_metrics(summarize = TRUE) %>% mutate(Dataset="training") %>% mutate(Model="XGB") %>% write.csv(here("Results", "XGB-training-stats.csv"))
-
-# Evaluate model on testing dataset
-xgb_last_fit <- last_fit(xgb_fwflow,
-                         split=dat_split,
-                         metrics = metric_set(recall, precision, f_meas, accuracy, kap,roc_auc, sens, spec))
-
-xgb_last_fit %>% collect_metrics() %>% mutate(Dataset="testing", Model="XGB") %>% write.csv(here("Results", "XGB-testing-stats.csv"))
-
-
-# Best threshold
-pluck(xgb_last_fit$.workflow, 1) %>% 
-  predict(new_data=testing(dat_split), type="prob") %>%
-  bind_cols(testing(dat_split)) %>%
-  threshold_perf(truth=aspen.presence, estimate=`.pred_1`, threshold=seq(0,1, by=0.0025), event_level="second") %>%
-  write.csv(here("Results", "XGB-prediction-threshold.csv"))
-
-read.csv(here("Results", "XGB-prediction-threshold.csv")) %>%
-  filter(.metric == "j_index") %>%
-  filter(.estimate == max(.estimate)) %>%
-  pull(.threshold) -> threshold.xgb
-
-
-# Variable importance
-explainer_xgb <- explain_tidymodels(pluck(xgb_last_fit$.workflow, 1), 
-                                    data=testing(dat_split)%>% as.data.frame() %>% select(-aspen.presence), 
-                                    y=testing(dat_split) %>% pull(aspen.presence) %>% as.numeric()-1,
-                                    type="classification", verbose=F
-)
-
-explainer_xgb %>% feature_importance(type="ratio")  %>% as.data.frame() %>% mutate(Model="XGB") %>% write.csv( here("Results", "vip-xgb.csv"))
-
-# Partial dependence and accumulated local effects
-pdp <- model_profile(explainer_xgb , N = 500, variables = pred.vars, type="partial")
-pdp$agr_profiles %>% mutate(method="PDP", Model="XGB") %>% write.csv(here("Results", "pdp-XGB.csv"))
-ale <- model_profile(explainer_xgb , N = 500, variables = pred.vars, type="accumulated")
-ale$agr_profiles %>% mutate(method="ALE", Model="XGB")  %>% write.csv(here("Results", "ale-XGB.csv"))
-rm(ale); rm(pdp)
+    control = tune::control_grid(verbose = TRUE)
+  )
+  
+  # Finalize workflow
+  xgb_best_params <- xgb_tuned  %>% tune::select_best(metric="roc_auc") 
+  xgb_fwflow <- xgb_wflow %>% finalize_workflow(xgb_best_params)
+  write.csv(xgb_best_params, here("Results", "xgb-bestparams.csv"))
+  
+  # Evaluate model on training dataset
+  xgb_res <- 
+    xgb_fwflow %>% 
+    fit_resamples(
+      resamples = cv_folds, 
+      metrics = metric_set(recall, precision, f_meas, accuracy, kap, roc_auc, sens, spec),
+      control = control_resamples(save_pred = TRUE)
+      ) 
+  
+  xgb_res %>% collect_metrics(summarize = TRUE) %>% mutate(Dataset="training") %>% mutate(Model="XGB") %>% write.csv(here("Results", "XGB-training-stats.csv"))
+  
+  # Evaluate model on testing dataset
+  xgb_last_fit <- last_fit(xgb_fwflow,
+                           split=dat_split,
+                           metrics = metric_set(recall, precision, f_meas, accuracy, kap,roc_auc, sens, spec))
+  
+  xgb_last_fit %>% collect_metrics() %>% mutate(Dataset="testing", Model="XGB") %>% write.csv(here("Results", "XGB-testing-stats.csv"))
+  
+  
+  # Best threshold
+  pluck(xgb_last_fit$.workflow, 1) %>% 
+    predict(new_data=testing(dat_split), type="prob") %>%
+    bind_cols(testing(dat_split)) %>%
+    threshold_perf(truth=aspen.presence, estimate=`.pred_1`, threshold=seq(0,1, by=0.0025), event_level="second") %>%
+    write.csv(here("Results", "XGB-prediction-threshold.csv"))
+  
+  read.csv(here("Results", "XGB-prediction-threshold.csv")) %>%
+    filter(.metric == "j_index") %>%
+    filter(.estimate == max(.estimate)) %>%
+    pull(.threshold) -> threshold.xgb
+  
+  
+  # Variable importance
+  explainer_xgb <- explain_tidymodels(pluck(xgb_last_fit$.workflow, 1), 
+                                      data=testing(dat_split)%>% as.data.frame() %>% select(-aspen.presence), 
+                                      y=testing(dat_split) %>% pull(aspen.presence) %>% as.numeric()-1,
+                                      type="classification", verbose=F
+  )
+  
+  explainer_xgb %>% feature_importance(type="ratio")  %>% as.data.frame() %>% mutate(Model="XGB") %>% write.csv( here("Results", "vip-xgb.csv"))
+  
+  # Partial dependence and accumulated local effects
+  pdp <- model_profile(explainer_xgb , N = 500, variables = pred.vars, type="partial")
+  pdp$agr_profiles %>% mutate(method="PDP", Model="XGB") %>% write.csv(here("Results", "pdp-XGB.csv"))
+  ale <- model_profile(explainer_xgb , N = 500, variables = pred.vars, type="accumulated")
+  ale$agr_profiles %>% mutate(method="ALE", Model="XGB")  %>% write.csv(here("Results", "ale-XGB.csv"))
+  rm(ale); rm(pdp)
+}
 ```
 
-```{r Predict, eval=F}
+```{r Predict}
+if(!dir.exists(here("Data", "Spatial", "Predictions"))){
+  dir.create(here("Data", "Spatial", "Predictions"), showWarnings = FALSE)
 
-aspen90.pred <- rast(ext(aspen90.prob), resolution=res(aspen90.prob), crs=crs(aspen90.prob))
-# Current conditions
-predict.n <- function(pts=aspen.pts, wf =pluck(glm_last_fit$.workflow,1), template=aspen90.pred,n=10){
-    pts <- pts %>% as.data.frame() %>% na.omit()
-    pts$predicted <- NA
-    pts$cut <- factor(cut(1:nrow(pts), breaks=n), labels=1:n)
-    all_preds <- foreach(j = 1:n,.combine = c) %do% {
-      library(tidymodels); library(terra)
-      pred<- wf %>% predict(new_data = pts[pts$cut==j, ], type="prob")
-      return(pred$`.pred_1`)
-    }
-    pts[,]$predicted <- all_preds
-    aspen90.pred[pts$cell] <-  pts$predicted
-    return(aspen90.pred)
-}
-
-# Predict 1981-2010 period
-gc()
-predict.n() %>% writeRaster(here("Data", "Spatial", "Predictions","predicted_1981-2010-glm.tif"), overwrite=T)
-gc()
-predict.n( wf =pluck(gam_last_fit$.workflow,1)) %>% writeRaster(here("Data", "Spatial", "Predictions","predicted_1981-2010-gam.tif"), overwrite=T)
-gc()
-predict.n( wf =pluck(rf_last_fit$.workflow,1)) %>% writeRaster(here("Data", "Spatial", "Predictions","predicted_1981-2010-rf.tif"), overwrite=T)
-gc()
-predict.n( wf =pluck(xgb_last_fit$.workflow,1)) %>% writeRaster(here("Data", "Spatial", "Predictions","predicted_1981-2010-xgb.tif"), overwrite=T)
-
-# Predict future
-select.scenarios<- c( "ssp245", "ssp585")
-select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
-topo90 <- rast(here("Data", "Spatial", "DEM", "Topo90.tif"))
-soil90 <- rast(here("Data", "Spatial", "Soils", "Soils90.tif"))
-
-for(select.scenario in select.scenarios){
-  for(years in select.years.all){
-    
-    # Import predictor variables
-    climate90 <- rast(here("Data", "Spatial", "Downscaled", paste0("ensemble_8GCMs_", select.scenario, years,"_90.tif")))[[select.variables]]
- 
-    # Compile data
-    aspen.pts.f <- aspen90.prob01 %>% as.points(na.rm=T)
-    aspen.pts.f <- terra::extract(aspen90.prob,aspen.pts.f, bind=T, xy=T, cells=T) 
-    aspen.pts.f <- extract(topo90, aspen.pts.f, bind=T)
-    aspen.pts.f <- extract(soil90, aspen.pts.f, bind=T)
-    aspen.pts.f <-  extract(climate90, aspen.pts.f, bind=T)
-    aspen.pts.f <- aspen.pts.f %>% as.data.frame() %>% na.omit()
-    
-    #
-    gc()
-    predict.n(pts=aspen.pts.f) %>% writeRaster(here("Data", "Spatial", "Predictions",paste0("predicted_ensemble_8GCMs_", select.scenario, years, "-glm.tif")), overwrite=T)
+  aspen90.pred <- rast(ext(aspen90.prob), resolution=res(aspen90.prob), crs=crs(aspen90.prob))
+  # Current conditions
+  predict.n <- function(pts=aspen.pts, wf =pluck(glm_last_fit$.workflow,1), template=aspen90.pred,n=10){
+      pts <- pts %>% as.data.frame() %>% na.omit()
+      pts$predicted <- NA
+      pts$cut <- factor(cut(1:nrow(pts), breaks=n), labels=1:n)
+      all_preds <- foreach(j = 1:n,.combine = c) %do% {
+        library(tidymodels); library(terra)
+        pred<- wf %>% predict(new_data = pts[pts$cut==j, ], type="prob")
+        return(pred$`.pred_1`)
+      }
+      pts[,]$predicted <- all_preds
+      aspen90.pred[pts$cell] <-  pts$predicted
+      return(aspen90.pred)
+  }
+  
+  # Predict 1981-2010 period
   gc()
-    predict.n(wf =pluck(gam_last_fit$.workflow,1), pts=aspen.pts.f) %>% writeRaster(here("Data", "Spatial", "Predictions",paste0("predicted_ensemble_8GCMs_", select.scenario, years, "-gam.tif")), overwrite=T)
-    gc()
-    predict.n(wf =pluck(rf_last_fit$.workflow,1), pts=aspen.pts.f) %>% writeRaster(here("Data", "Spatial", "Predictions",paste0("predicted_ensemble_8GCMs_", select.scenario, years, "-rf.tif")), overwrite=T)
+  predict.n() %>% writeRaster(here("Data", "Spatial", "Predictions","predicted_1981-2010-glm.tif"), overwrite=T)
+  gc()
+  predict.n( wf =pluck(gam_last_fit$.workflow,1)) %>% writeRaster(here("Data", "Spatial", "Predictions","predicted_1981-2010-gam.tif"), overwrite=T)
+  gc()
+  predict.n( wf =pluck(rf_last_fit$.workflow,1)) %>% writeRaster(here("Data", "Spatial", "Predictions","predicted_1981-2010-rf.tif"), overwrite=T)
+  gc()
+  predict.n( wf =pluck(xgb_last_fit$.workflow,1)) %>% writeRaster(here("Data", "Spatial", "Predictions","predicted_1981-2010-xgb.tif"), overwrite=T)
+  
+  # Predict future
+  select.scenarios<- c( "ssp245", "ssp585")
+  select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
+  topo90 <- rast(here("Data", "Spatial", "DEM", "Topo90.tif"))
+  soil90 <- rast(here("Data", "Spatial", "Soils", "Soils90.tif"))
+  
+  for(select.scenario in select.scenarios){
+    for(years in select.years.all){
+      
+      # Import predictor variables
+      climate90 <- rast(here("Data", "Spatial", "Downscaled", paste0("ensemble_8GCMs_", select.scenario, years,"_90.tif")))[[select.variables]]
+   
+      # Compile data
+      aspen.pts.f <- aspen90.prob01 %>% as.points(na.rm=T)
+      aspen.pts.f <- terra::extract(aspen90.prob,aspen.pts.f, bind=T, xy=T, cells=T) 
+      aspen.pts.f <- extract(topo90, aspen.pts.f, bind=T)
+      aspen.pts.f <- extract(soil90, aspen.pts.f, bind=T)
+      aspen.pts.f <-  extract(climate90, aspen.pts.f, bind=T)
+      aspen.pts.f <- aspen.pts.f %>% as.data.frame() %>% na.omit()
+      
+      #
       gc()
-    predict.n(wf =pluck(xgb_last_fit$.workflow,1), pts=aspen.pts.f) %>% writeRaster(here("Data", "Spatial", "Predictions",paste0("predicted_ensemble_8GCMs_", select.scenario, years, "-xgb.tif")), overwrite=T)
-     print(paste0(select.scenario, years))
+      predict.n(pts=aspen.pts.f) %>% writeRaster(here("Data", "Spatial", "Predictions",paste0("predicted_ensemble_8GCMs_", select.scenario, years, "-glm.tif")), overwrite=T)
+    gc()
+      predict.n(wf =pluck(gam_last_fit$.workflow,1), pts=aspen.pts.f) %>% writeRaster(here("Data", "Spatial", "Predictions",paste0("predicted_ensemble_8GCMs_", select.scenario, years, "-gam.tif")), overwrite=T)
+      gc()
+      predict.n(wf =pluck(rf_last_fit$.workflow,1), pts=aspen.pts.f) %>% writeRaster(here("Data", "Spatial", "Predictions",paste0("predicted_ensemble_8GCMs_", select.scenario, years, "-rf.tif")), overwrite=T)
+        gc()
+      predict.n(wf =pluck(xgb_last_fit$.workflow,1), pts=aspen.pts.f) %>% writeRaster(here("Data", "Spatial", "Predictions",paste0("predicted_ensemble_8GCMs_", select.scenario, years, "-xgb.tif")), overwrite=T)
+       print(paste0(select.scenario, years))
+    }
   }
 }
+
 ```
 
 #### Model Ensemble
@@ -1408,8 +1443,8 @@ if(!file.exists(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ense
   names(aspen90.prob01) <- "aspen.presence"
 
   SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
-  aspen90.prob <- terra::mask(aspen90.prob, SRM)
-  aspen90.prob01 <-terra::mask(aspen90.prob01, SRM)
+  aspen90.prob <- terra::mask(aspen90.prob, SRME)
+  aspen90.prob01 <-terra::mask(aspen90.prob01, SRME)
 
   predictions.glm <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-glm.tif"))
   predictions.xgb <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-xgb.tif"))
@@ -2239,148 +2274,136 @@ pred.var.tab %>% as.data.frame() %>% flextable()%>% set_caption(caption="ODMAP p
 
 # Appendix B: Collinearity
 
-```{r Screen_Climate_Vars, eval=F}
-source(here("Code", "Geom-SplitViolin.R"))
-# Import response variable
-aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
-names(aspen90.prob) <- "aspen.prob"
-aspen90.prob01 <- aspen90.prob
-aspen90.prob01[aspen90.prob01<0.5]<-0
-aspen90.prob01[aspen90.prob01>=0.5]<-1
-names(aspen90.prob01) <- "aspen.presence"
+```{r Screen_Climate_Vars}
+if(!file.exists(here("Results", "Figures", "climatevarselection-bar.jpg"))){
+  # Import response variable
+  aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
+  names(aspen90.prob) <- "aspen.prob"
+  aspen90.prob01 <- aspen90.prob
+  aspen90.prob01[aspen90.prob01<0.5]<-0
+  aspen90.prob01[aspen90.prob01>=0.5]<-1
+  names(aspen90.prob01) <- "aspen.presence"
+  
+  writeRaster(aspen90.prob01, here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90-presence.tif"), overwrite=T)
+  
+  SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
+  aspen90.prob <- terra::mask(aspen90.prob, SRME)
+  aspen90.prob01 <-terra::mask(aspen90.prob01, SRME)
+  
+  # Import climate variables
+  
+  climate.dat.1981_2010 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010", "Normal_1981_2010_bioclim"), pattern=".tif$", full.names = T))
+  names(climate.dat.1981_2010) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010", "Normal_1981_2010_bioclim"), pattern=".tif$", full.names = F), split=".tif")), split="Normal_1981_2010_"), "[", 2)
+  
+  climate.dat2.1981_2010 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="Normal", full.names = T))
+  names(climate.dat2.1981_2010) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="Normal", full.names = F), split=".tif")), split="Normal_1981_2010_"), "[",2)
+  
+  
+  # Compile data
+  aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
+  aspen.pts <- aspen.pts[sample(1:nrow(aspen.pts), size=50000),]
+  aspen.pts1 <- aspen.pts %>% filter(aspen.presence==1) %>% sample(size=2500)
+  aspen.pts0 <- aspen.pts %>% filter(aspen.presence==0) %>% sample(size=2500)
+  aspen.pts <- rbind(aspen.pts1, aspen.pts0)
+  aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
+  aspen.pts <- aspen.pts %>% terra::project(climate.dat.1981_2010 )
+  
+  aspen.pts.1981_2010 <- aspen.pts
+  aspen.pts.1981_2010<- extract(climate.dat.1981_2010, aspen.pts.1981_2010, bind=T)
+  aspen.pts.1981_2010 <- extract(climate.dat2.1981_2010, aspen.pts.1981_2010, bind=T)
+  aspen.pts.1981_2010$year <- "1981-2010"
+  
+  dat <- aspen.pts.1981_2010  %>% as.data.frame() %>% na.omit()
+  climate.varz <- c("ADI", "bFFP", "CMD", "CMI", "DD_0", "DD_18", "DD1040", "DD18", "DD5", "eFFP", "EMT", "Eref", "EXT", "FFP", "GSP", "GSPDD5", "MAP", "MAR", "MAT","MCMT", "MWMT", "NFFD", "PAS", "PPT_at", "PPT_sm", "PPT_sp", "PPT_wt", "PRATIO", "RH", "Tave_at", "Tave_sm", "Tave_sp", "Tave_wt", "TD", "TMAX")
+  
+  dat[,c(climate.varz,"year")] %>% filter(year=="1981-2010") %>% select(-year) %>% cor() %>% round(digits=2) %>% write.csv(here("Results", "climatevarcor.csv"))
+  
+  dat[,c(sort(climate.varz))] %>% cor() %>% round(digits=2) %>% ggcorrplot(lab=TRUE,type="lower",lab_size=2) %>% ggsave(filename=here("Results", "Figures", "CorrelationMatrix.jpg"), width=210, heigh=210, units="mm")
+  
+  interactions <- spatialRF::the_feature_engineer(
+    data=dat, 
+    dependent.variable.name="aspen.presence",
+    predictor.variable.names = climate.varz,
+    xy=dat[,c("x", "y")],
+    importance.threshold = 0.50, #uses 50% best predictors
+    cor.threshold = 0.70, #max corr between interactions and predictors
+    seed = 123,
+    repetitions = 100,
+    verbose = FALSE
+  )
+  
+  dat.aspen50 <- dat %>% mutate(threshold=">50%")
+  dat.aspen50$aspen.presence <- factor(ifelse(dat.aspen50$aspen.prob>0.5,"present", "absent"))
+  
+  dat.aspen75 <- dat %>% mutate(threshold=">75%")
+  dat.aspen75$aspen.presence <- factor(ifelse(dat.aspen50$aspen.prob>0.5,"present", "absent"))
+  
+  
+  dat.aspen0 <- dat %>% mutate(threshold=">0%")
+  dat.aspen0$aspen.presence <- factor(ifelse(dat.aspen50$aspen.prob>0,"present", "absent"))
+  
+  dat.aspen050 <- rbind(dat.aspen75, dat.aspen50, dat.aspen0)
+  
+  rf.dat <- dat
+  dat_split <- initial_split(
+    dat <- dat, 
+    prop = 0.5, 
+    strata = aspen.presence
+  )
+  
+  dat.training <-  training(dat_split)
+  dat.testing <- testing(dat_split)
+  
+  results <- data.frame(var=climate.varz, dropout_loss=NA)
+  for(j in climate.varz){
+    datj <- dat %>% select(all_of(c("aspen.presence", j)))
+    datj$aspen.presence <- factor(datj$aspen.presence)
+    # preprocessing "recipe"
+    presence.recipe<- 
+      recipe(aspen.presence ~ ., data = datj)  %>%
+      # normalize all numeric variables except the outcome and ID variables
+      step_normalize(all_numeric(), -all_outcomes())
+      
+    # Specify model
+      rf_spec <- 
+        rand_forest() %>%
+        set_engine("ranger", importance = "permutation", seed = 123) %>% 
+        set_mode("classification")
+      
+      # Create workflow
+      rf_wflow <- 
+        workflow() %>% 
+        add_recipe(presence.recipe) %>% 
+        add_model(rf_spec)
+  
+     # Fit model
+      rf_fit <- rf_wflow %>% fit(datj)
+      
+    # Variable importance
+  explainer_rf <- explain_tidymodels(rf_fit,
+                                      data=datj %>%
+                                       as.data.frame() %>%
+                                       select(-aspen.presence), 
+                                      y=datj %>%
+                                       pull(aspen.presence) %>%
+                                       as.numeric() - 1,
+                                      type="classification", verbose=F
+  )
+  results[results$var==j, "dropout_loss"] <- explainer_rf  %>% feature_importance(type='ratio') %>% as.data.frame() %>% mutate(Model="RF") %>% filter(variable %in% j) %>% pull(dropout_loss) %>% mean()
+  }
+  
+  write.csv(results, here("Results", "bivariate-RF-AUC.csv"),row.names=F)
+  results <- read.csv(here("Results", "bivariate-RF-AUC.csv"))
+  
+  results <- results[order(results$dropout_loss),]
+  levelz <-  results$var
+  results$var <- factor(results$var, levels=levelz, ordered=T)
+  
+  results  %>% ggplot( aes(x=var, y=dropout_loss))+geom_bar(stat="identity")+coord_flip()+theme(axis.title.y = element_blank())+ylab("relative importance") ->p1
+  ggsave(p1, filename=here("Results", "Figures", "climatevarselection-bar.jpg"), width=90, height=120, units="mm")
 
-writeRaster(aspen90.prob01, here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90-presence.tif"), overwrite=T)
-
-SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
-aspen90.prob <- terra::mask(aspen90.prob, SRM)
-aspen90.prob01 <-terra::mask(aspen90.prob01, SRM)
-
-# Import climate variables
-
-climate.dat.1981_2010 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010", "Normal_1981_2010_bioclim"), pattern=".tif$", full.names = T))
-names(climate.dat.1981_2010) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010", "Normal_1981_2010_bioclim"), pattern=".tif$", full.names = F), split=".tif")), split="Normal_1981_2010_"), "[", 2)
-
-climate.dat2.1981_2010 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="Normal", full.names = T))
-names(climate.dat2.1981_2010) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="Normal", full.names = F), split=".tif")), split="Normal_1981_2010_"), "[",2)
-
-
-# Compile data
-aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
-aspen.pts <- aspen.pts[sample(1:nrow(aspen.pts), size=50000),]
-aspen.pts1 <- aspen.pts %>% filter(aspen.presence==1) %>% sample(size=2500)
-aspen.pts0 <- aspen.pts %>% filter(aspen.presence==0) %>% sample(size=2500)
-aspen.pts <- rbind(aspen.pts1, aspen.pts0)
-aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
-aspen.pts <- aspen.pts %>% terra::project(climate.dat.1981_2010 )
-
-aspen.pts.1981_2010 <- aspen.pts
-aspen.pts.1981_2010<- extract(climate.dat.1981_2010, aspen.pts.1981_2010, bind=T)
-aspen.pts.1981_2010 <- extract(climate.dat2.1981_2010, aspen.pts.1981_2010, bind=T)
-aspen.pts.1981_2010$year <- "1981-2010"
-
-dat <- aspen.pts.1981_2010  %>% as.data.frame() %>% na.omit()
-climate.varz <- c("ADI", "bFFP", "CMD", "CMI", "DD_0", "DD_18", "DD1040", "DD18", "DD5", "eFFP", "EMT", "Eref", "EXT", "FFP", "GSP", "GSPDD5", "MAP", "MAR", "MAT","MCMT", "MWMT", "NFFD", "PAS", "PPT_at", "PPT_sm", "PPT_sp", "PPT_wt", "PRATIO", "RH", "Tave_at", "Tave_sm", "Tave_sp", "Tave_wt", "TD", "TMAX")
-
-dat[,c(climate.varz,"year")] %>% filter(year=="1981-2010") %>% select(-year) %>% cor() %>% round(digits=2) %>% write.csv(here("Results", "climatevarcor.csv"))
-
-dat[,c(sort(climate.varz))] %>% cor() %>% round(digits=2) %>% ggcorrplot(lab=TRUE,type="lower",lab_size=2) %>% ggsave(filename=here("Results", "Figures", "CorrelationMatrix.jpg"), width=210, heigh=210, units="mm")
-
-interactions <- spatialRF::the_feature_engineer(
-  data=dat, 
-  dependent.variable.name="aspen.presence",
-  predictor.variable.names = climate.varz,
-  xy=dat[,c("x", "y")],
-  importance.threshold = 0.50, #uses 50% best predictors
-  cor.threshold = 0.70, #max corr between interactions and predictors
-  seed = 123,
-  repetitions = 100,
-  verbose = FALSE
-)
-
-dat.aspen50 <- dat %>% mutate(threshold=">50%")
-dat.aspen50$aspen.presence <- factor(ifelse(dat.aspen50$aspen.prob>0.5,"present", "absent"))
-
-dat.aspen75 <- dat %>% mutate(threshold=">75%")
-dat.aspen75$aspen.presence <- factor(ifelse(dat.aspen50$aspen.prob>0.5,"present", "absent"))
-
-
-dat.aspen0 <- dat %>% mutate(threshold=">0%")
-dat.aspen0$aspen.presence <- factor(ifelse(dat.aspen50$aspen.prob>0,"present", "absent"))
-
-dat.aspen050 <- rbind(dat.aspen75, dat.aspen50, dat.aspen0)
-
-dat.aspen050 %>% select(all_of(c("aspen.presence", climate.varz, "threshold"))) %>% filter(threshold==">0%") %>% 
-  pivot_longer(cols=bFFP:TMAX) %>%
-  ggplot(aes(x=threshold, y=value, fill=factor(aspen.presence)))+geom_split_violin()+facet_wrap(~name, scales="free", ncol=6)+theme(legend.position = "bottom", legend.title=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank())+scale_fill_manual(values=c("gray", "orange")) -> p1
-ggsave(p1, filename=here("Results", "Figures", "climate-violin.jpg"), width=180, height=210, units="mm")
-
-rf.dat <- dat
-dat_split <- initial_split(
-  dat <- dat, 
-  prop = 0.5, 
-  strata = aspen.presence
-)
-
-dat.training <-  training(dat_split)
-dat.testing <- testing(dat_split)
-
-results <- data.frame(var=climate.varz, dropout_loss=NA)
-for(j in climate.varz){
-  datj <- dat %>% select(all_of(c("aspen.presence", j)))
-  datj$aspen.presence <- factor(datj$aspen.presence)
-  # preprocessing "recipe"
-  presence.recipe<- 
-    recipe(aspen.presence ~ ., data = datj)  %>%
-    # normalize all numeric variables except the outcome and ID variables
-    step_normalize(all_numeric(), -all_outcomes())
-    
-  # Specify model
-    rf_spec <- 
-      rand_forest() %>%
-      set_engine("ranger", importance = "permutation", seed = 123) %>% 
-      set_mode("classification")
-    
-    # Create workflow
-    rf_wflow <- 
-      workflow() %>% 
-      add_recipe(presence.recipe) %>% 
-      add_model(rf_spec)
-
-   # Fit model
-    rf_fit <- rf_wflow %>% fit(datj)
-    
-  # Variable importance
-explainer_rf <- explain_tidymodels(rf_fit,
-                                    data=datj %>%
-                                     as.data.frame() %>%
-                                     select(-aspen.presence), 
-                                    y=datj %>%
-                                     pull(aspen.presence) %>%
-                                     as.numeric() - 1,
-                                    type="classification", verbose=F
-)
-results[results$var==j, "dropout_loss"] <- explainer_rf  %>% feature_importance(type='ratio') %>% as.data.frame() %>% mutate(Model="RF") %>% filter(variable %in% j) %>% pull(dropout_loss) %>% mean()
 }
 
-write.csv(results, here("Results", "bivariate-RF-AUC.csv"),row.names=F)
-results <- read.csv(here("Results", "bivariate-RF-AUC.csv"))
-
-results <- results[order(results$dropout_loss),]
-levelz <-  results$var
-results$var <- factor(results$var, levels=levelz, ordered=T)
-
-results  %>% ggplot( aes(x=var, y=dropout_loss))+geom_bar(stat="identity")+coord_flip()+theme(axis.title.y = element_blank())+ylab("relative importance") ->p1
-ggsave(p1, filename=here("Results", "Figures", "climatevarselection-bar.jpg"), width=90, height=120, units="mm")
-
-p1 <-  ggplot(dat, aes(x=MAT, y=PPT_at+PPT_sm+PPT_sp+PPT_wt, z=ADI)) +  stat_summary_hex(fun = function(x) mean(x), bins = 20) + scale_fill_viridis_c(option = "magma", name="ADI") + ylab("Mean annual precipitation (mm)") + xlab("Mean annual temperature (°C)")
-p2 <-  ggplot(dat, aes(x=MAT, y=PPT_at+PPT_sm+PPT_sp+PPT_wt, z=GSPDD5)) +  stat_summary_hex(fun = function(x) mean(x), bins = 20) + scale_fill_viridis_c(option = "magma", name="GSPDD5") + ylab("Mean annual precipitation (mm)") + xlab("Mean annual temperature (°C)")
-
-p3 <-  ggplot(dat, aes(x=MAT, y=PPT_at+PPT_sm+PPT_sp+PPT_wt, z=PRATIO)) +  stat_summary_hex(fun = function(x) mean(x), bins = 20) + scale_fill_viridis_c(option = "magma", name="PRATIO") + ylab("Mean annual precipitation (mm)") + xlab("Mean annual temperature (°C)")
-
-p123 <- p1 + theme(legend.position="bottom") + p2  + theme(legend.position="bottom", axis.text.y = element_blank(), axis.title.y=element_blank()) +  p3  + theme(legend.position="bottom", axis.text.y = element_blank(), axis.title.y=element_blank())& 
-  plot_annotation(tag_levels = "A") & 
-  theme(plot.tag.position  = c(.935, .96))
-ggsave(p123, filename=here("results", "figures", "MAPxMAT-ADI_GSPDD5_PRATIO.jpg"), dpi=300, width=7,height=3.25, units="in")
 
 ```
 
@@ -2414,137 +2437,3 @@ knitr::include_graphics(here("Results", "Figures", "gainloss-geography-SSP245.jp
 knitr::include_graphics(here("Results", "Figures", "FigMaps-ExpansionDistance.jpg"), dpi = NA)
 ```
 
-```{r FigSAD, fig.cap="Boxplots illustrating the relationship between areas affected by sudden aspen decline and healthy aspen forests and climate variables.", out.width="5in", out.height="3in", eval=F}
-if(!file.exists(filename=here("Results", "Figures", "SAD.jpg"))){
-  predictions.ensemble <- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble.tif"))
-  
-  ensemble.error<- rast(here("Data", "Spatial", "Predictions", "predicted_1981-2010-ensemble-classerror.tif"))
-
-  SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_buffer(5000) %>% st_transform(st_crs(predictions.ensemble))
-  
-  R2 <- st_read(here("Data", "Spatial", "ADS","CONUS_Region2_AllYears.gdb", "CONUS_Region2_AllYears.gdb")) %>% filter(HOST=="quaking aspen" & DCA_COMMON_NAME =="sudden aspen decline") %>% st_union() %>% st_transform(st_crs(predictions.ensemble)) %>% st_crop(SRM)
-  
-  R3 <- st_read(here("Data", "Spatial", "ADS","CONUS_Region3_AllYears.gdb", "CONUS_Region3_AllYears.gdb")) %>% filter(HOST=="quaking aspen" & DCA_COMMON_NAME =="sudden aspen decline") %>% st_union() %>% st_transform(st_crs(predictions.ensemble)) %>% st_crop(SRM)
-  
-  R2R3 <- st_union(R2, R3)
-  R2R3 <- st_sf(R2R3)
-  R2R3$value <- 3
-  R2R3.r <- terra::rasterize(R2R3,field="value", y=predictions.ensemble, background=0)
-
-  
-  # Import response variable
-  aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
-  names(aspen90.prob) <- "aspen.prob"
-  aspen90.prob01 <- aspen90.prob
-  aspen90.prob01[aspen90.prob01>0]<-1
-  names(aspen90.prob01) <- "aspen.presence"
-  
-  SAD <- (R2R3.r +aspen90.prob01)
-  
-  SAD.plot <- SAD
-  SAD.plot[SAD.plot==3] <- 4
-  SAD.plot[SAD.plot==0] <- NA
-  SAD.plot <- mask(SAD.plot, study.area)
-  Fig.file <- here("Results", "Figures", "FigMaps-SAD.jpg")
-    jpeg(Fig.file, width=3.5, height=5, units="in", res=300)
-    tm_shape(study.area)+tm_fill(col="grey25") + tm_shape( SAD.plot)+tm_raster( style= "cat", title="", labels=c("unaffected", "affected"), palette=c("#5ab4ac","#d8b365"))+tm_layout(main.title = "",main.title.size=1,main.title.position="center", bg.color="white", legend.position = c(0.01,0.9))+tm_shape(study.area) +tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))
-  whatever <- dev.off()
-
-  
-  # Import climate variables
-  
-  climate.dat.1981_2010 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010", "Normal_1981_2010_bioclim"), pattern=".tif$", full.names = T))
-  names(climate.dat.1981_2010) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010", "Normal_1981_2010_bioclim"), pattern=".tif$", full.names = F), split=".tif")), split="Normal_1981_2010_"), "[", 2)
-  
-  climate.dat2.1981_2010 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="Normal", full.names = T))
-  names(climate.dat2.1981_2010) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="Normal", full.names = F), split=".tif")), split="Normal_1981_2010_"), "[",2)
-  
-  
-  # Compile data
-  SAD.pts <- SAD %>% as.points(na.rm=T)
-  SAD.pts1 <- SAD.pts %>% filter(value==1)  %>% sample(size=2500)
-  SAD.pts3 <- SAD.pts %>% filter(value %in% 3:4) %>% sample(size=2500)
-  
-  SAD.pts <- rbind(SAD.pts1, SAD.pts3)
-  SAD.pts <- SAD.pts %>% terra::project(climate.dat.1981_2010 )
-  SAD.pts<- extract(climate.dat.1981_2010, SAD.pts, bind=T)
-  SAD.pts <- extract(climate.dat2.1981_2010, SAD.pts, bind=T)
-  SAD.pts <- extract(predictions.ensemble, SAD.pts, bind=T)
-  
-  SAD.pts <- SAD.pts  %>% as.data.frame() %>% na.omit() %>% pivot_longer(cols=AHM:sum, names_repair="unique")
-  colnames(SAD.pts) <- c("SAD", "name", "value")
-  p1 <- SAD.pts %>% filter(name %in% c("PRATIO", "ADI", "GSPDD5")) %>% ggplot(aes(x=factor(SAD, levels=c(1,3,4), labels=c("unaffected", "affected", "affected")), y=value))+geom_boxplot()+facet_wrap(.~name, scales="free")+xlab("occurrence of sudden aspen decline")
-  ggsave(p1, filename=here("Results", "Figures", "SAD.jpg"), width=5, height=3, units="in")
-}
-knitr::include_graphics(here("Results", "Figures", "SAD.jpg"), dpi = NA)
- 
-```
-
-```{r FutureClimate, eval=F}
-select.variables <- c("ADI",   "PRATIO", "GSPDD5",  "TD", "RH")
-
-aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
-names(aspen90.prob) <- "aspen.prob"
-aspen90.prob01 <- aspen90.prob
-aspen90.prob01[aspen90.prob01>0]<-1
-aspen90.prob01.sample <- aspen90.prob01%>% spatSample(size=10000, as.points=T, method="stratified", na.rm=T, exhaustive=T, exp=10) %>% filter(aspen.prob==1)
-
-study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
-
-normals90 <- rast(here("Data", "Spatial", "Downscaled", "Normals90.tif"))[[select.variables]]
-normals90  <- normals90 %>%  mask(study.area)
-
-
-normals90.df <- terra::extract(normals90,  aspen90.prob01.sample) %>% as.data.frame() %>% mutate(Years="1981-2010", scenario="historical")
-
-results <-normals90.df 
-select.scenarios<- c( "ssp245", "ssp585")
-select.years.all <- c("_2011_2040", "_2041_2070", "_2071_2100")
-for(select.scenario in select.scenarios){
-  for(years in select.years.all){
-    climate90 <- rast(paste0(here("Data", "Spatial", "Downscaled"), "/ensemble_8GCMs_", select.scenario, years, "_90.tif"))[[select.variables]]  %>%  mask(study.area)
-    climate90.df <- extract(climate90,  aspen90.prob01.sample)  %>% mutate(Years=years, scenario=select.scenario)
-      results <- rbind(results, climate90.df)
-    }
-}
-
-results.x <- pivot_longer(results[,-1], cols=ADI:RH)
-results.x$years <- factor(results.x$Years, levels=c("1981-2010", "_2011_2040", "_2041_2070", "_2071_2100"), labels=c("1981-2010", "2011-2040", "2041-2070", "2071-2100"), ordered=T)
-p1 <- results.x %>% filter(name %in% c("ADI", "PRATIO", "GSPDD5", "TD", "RH")) %>% ggplot(aes(x=years, y=value, col=scenario))+geom_boxplot(position = position_dodge(preserve = "single"))+facet_wrap(.~name, scales="free")+ theme(axis.text.x = element_text(angle = 45, hjust = 1))+theme(legend.position="bottom")+scale_color_manual(values=c("#49006a", "#ae017e", "#f768a1" ))
-ggsave(filename=here("Results", "Figures", "climatevarchange.jpg"), p1,  width=7, height=4, units="in")
-    
-
-```
-
-```{r FigClimateMaps, fig.cap="Maps illustrating the spatial patterning of contemporary climate.", out.width="7in", out.height="4in"}
-if(!file.exists( here("Results", "Figures", "FigMaps-Climate.jpg"))){
-  select.variables <- c("ADI",   "PRATIO", "GSPDD5",  "TD", "RH")
-  normals90 <- rast(here("Data", "Spatial", "Downscaled", "Normals90.tif"))
-  normals90 <- normals90[[select.variables]]
-
-
-  study.area <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp"), quiet=T) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(normals90))
-  normals90  <- normals90 %>%  mask(study.area)
-
-  tm.ADI <- tm_shape(normals90[['ADI']])+tm_raster(palette="plasma",title="", style="cont",breaks=c(0,0.025,0.05, 0.075,0.1,0.125, 0.15,0.175, 0.2,0.225))+tm_layout(bg.color="white", legend.position = c(0.01,0.6))+tm_shape(study.area) + tm_borders()+ tm_compass( position=c("right", "top"))+ tm_scale_bar(position=c("left", "bottom"))+tm_layout(aes.palette="seq")+tm_layout(main.title = "ADI",main.title.size=1,main.title.position="center", bg.color="white", legend.format = list(fun = function(x) {ifelse(x %in% c(0, 0.1, 0.2), x, "")}))
-  
-  tm.PRATIO <- tm_shape(normals90[['PRATIO']])+tm_raster(palette="plasma",title="",style="cont", breaks=c(0.3, 0.375, 0.450, 0.525,0.6, 0.675, 0.750, 0.825,0.9))+tm_layout(bg.color="white", legend.position = c(0.01,0.625))+tm_shape(study.area) + tm_borders()+ tm_layout(aes.palette="seq")+tm_layout(main.title = "PRATIO",main.title.size=1,main.title.position="center", bg.color="white", legend.format = list(fun = function(x) {ifelse(x %in% c(0.3, 0.6, 0.9), x, "")}))
- 
-    tm.GSPDD5 <- tm_shape(normals90[['GSPDD5']])+tm_raster(palette="plasma", title="", style="cont", breaks=c(100, 250, 400, 550, 700, 850, 1000, 1150, 1300))+tm_layout(bg.color="white", legend.position = c(0.01,0.625))+tm_shape(study.area) + tm_borders()+tm_layout(aes.palette="seq")+tm_layout(main.title = "GSPDD5",main.title.size=1,main.title.position="center", bg.color="white", legend.format = list(fun = function(x) {ifelse(x %in% c(100,  700, 1300), x, "")}))
- 
-Fig.file <- here("Results", "Figures", "FigMaps-Climate.jpg")
-  jpeg(Fig.file, width=7, height=4, units="in", res=300)
-  tmap_arrange(tm.ADI,tm.PRATIO,tm.GSPDD5, nrow=1)
-whatever <- dev.off()
-}
-
-
-
-knitr::include_graphics(here("Results", "Figures", "FigMaps-Climate.jpg"), dpi = NA)
-
-
-```
-
-```{r FigClimateMATMAP, fig.cap="The relationships between mean total annual precipitation, mean annual daily temperature, and select climate variables, A - ADI,  B - GSPDD5, and C - PRATIO.", out.width="7in", out.height="4in"}
-knitr::include_graphics(here("Results", "Figures", "MAPxMAT-ADI_GSPDD5_PRATIO.jpg"), dpi = NA)
-```

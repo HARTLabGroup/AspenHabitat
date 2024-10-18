@@ -1,0 +1,151 @@
+#######################################################################################
+## This code performs a multi-step procedure that spatially downscales gridded climate
+# data using GIDS (Gradient and Inverse Distance-Squared) of Nalder and Wein (1998) and
+# Flint and Flint (2012). It was lightly modified from code written by Rodman et al. (2020).
+
+# REFERENCES
+
+# Flint, L. E., and A. L. Flint. 2012. Downscaling future climate scenarios to fine scales for hydrologic and ecological modeling and analysis. Ecological Processes 1:2.
+
+# Nalder, I. A., and R. W. Wein. 1998. Spatial interpolation of climatic Normals: test of a new method in the Canadian boreal forest. Agricultural and Forest Meteorology 92:211–225.
+
+# Rodman, K., T. Veblen, M. Battaglia, M. Chambers, P. Fornwalt, Z. Holden, T. Kolb, J. Ouzts, and M. Rother. 2020, August 18. Data from: A changing climate is snuffing out post-fire recovery in montane forests. Dryad. DOI: 10.5061/DRYAD.QZ612JMB7
+
+###################################################################################
+
+## Quick function for slitting raster to tiles. Useful in broader areas
+SplitRas <- function(rast,ntiles_x = 3, ntiles_y = 4){
+  h <- ceiling(ncol(rast)/ntiles_x)
+  v <- ceiling(nrow(rast)/ntiles_y)
+  agg <- aggregate(rast,fact=c(h,v))
+  agg[] <- 1:ncell(agg)
+  agg_poly <- rasterToPolygons(agg)
+  return(agg_poly)
+}
+
+## Function to perform GIDS. Called from main function below
+gids <- function(coarse_data, fine_data, dist_mat){
+  ## Reformatting matrices to allow for model fitting and prediction
+  coarse_data <- as.data.frame(coarse_data)
+  fine_data <- as.data.frame(fine_data)
+  
+  worker <- function(i, fine = fine_data, coarse = coarse_data, dists = dist_mat){
+    ## First, subset data to get local neighbors
+    fine_row <- fine[i,]
+    ind <- dists[i,,1]
+    dist <- dists[i,,2]
+    data <- coarse[c(ind),]
+    remove(fine, coarse, dists)
+    
+    ## Fit lm to data using base-level c function. Quite a bit faster than lm()
+    x <- model.matrix(~x + y + anc_layer, data = data)
+    y <- data$ds_layer
+    fit <- .lm.fit(x = x, y = y) # Fit multiple regression model
+    coef <- coefficients(fit)[2:4] # Extract coefficients from regression model
+    
+    data <- data[5:50,] # Subset data to exclude cells within nugget distance of 1-cell resolution. Remove “goose egg” effect in interpolation
+    
+    x_coord <- fine_row$x; y_coord = fine_row$y; anc = fine_row$anc_layer # re-naming variables to make the lines (below) shorter
+    
+    ## Different portions of the GIDS Formula
+    d_sq <- dist[5:50]^2
+    sum1 <- sum((data$ds_layer + (x_coord - data$x)*coef[1] + (y_coord - data$y)*coef[2] + (anc - data$anc_layer)*coef[3])/(d_sq), na.rm = T)
+    sum2 <- sum(1/d_sq, na.rm = T) # Doing this step outside the loop would probably increase speed, but also make things harder for me to follow
+    
+    ## And returning output
+    return(sum1/sum2)
+  }
+  
+  ## Running worker function on each point and adding as new column to df
+  fine_data$ds_layer <- sapply(seq_len(nrow(fine_data)),worker)
+  
+  ## Ouptutting df in matrix form for later
+  return(as.matrix(fine_data))
+}
+
+## Main function. Wrapper for GIDS that formats data and outputs downscaled grid
+multiLevelInterpParrallel <- function(boundary, ds_layer, ancillary_list, clip_dists = c(20000, 5000, 500),file_out = NULL){
+  
+  ## Define number of cores to be used
+  #no_cores <- detectCores() - 1
+  no_cores <- 3 ## Seems more stable, although slower, to use less than half of cores
+  
+  ## Creating projected version of boundary .shp that corresponds with output projection
+  boundary_proj <- boundary %>% st_buffer(-20000) %>% st_transform(crs(ancillary_list[[1]]))
+  
+  ## Looping through each of the DEMs
+  for(iter in 1:(length(ancillary_list)-1)){
+    if(iter == 1){
+      ## In first iteration of loop, we need to start with the initial ds_layer and ancillary dataset rather than interpolated data
+      ds_layer <- terra::project(ds_layer,ancillary_list[[1]]) ## Projecting to align with ancillary data grid
+      ds_layer <- crop(ds_layer, extend(extent(boundary_proj), clip_dists[iter])) ## Cropping to study bounds
+      anc_layer <- crop(ancillary_list[[1]], extend(extent(boundary_proj), clip_dists[iter])) ## Cropping anc data to study bounds
+      
+      ## Removing cells with NAs in either layer
+      ds_layer[is.na(anc_layer)] <- NA 
+      anc_layer[is.na(ds_layer)] <- NA 
+      
+      ## Converting to non-referenced matrices
+      coarse_pts <- anc_layer %>% as.points(values=T) %>% as.data.frame()
+      coords <- anc_layer %>% as.points(values=T) %>% crds()
+      coarse_pts <- cbind(coords, coarse_pts)
+      ds_pts <- ds_layer %>% as.points(values=T) %>% as.data.frame()
+      coarse_pts <- cbind(coarse_pts, ds_pts)
+      dimnames(coarse_pts)[[2]] <- c("x", "y", "anc_layer", "ds_layer")
+      remove(ds_layer, anc_layer)
+    }else{
+      ## More efficient to use previously processed point data in later iterations
+      coarse_pts <- out_pts
+      remove(out_pts)
+    }
+    
+    ## Finding nearest neighbors from coarse point layer for each point in fine-scale ancillary layer
+    # Cropping raster of finer-scale ancillary data
+    new_anc_layer <- crop(ancillary_list[[iter+1]], extend(extent(boundary_proj), clip_dists[iter+1]))
+    
+    resl <- res(new_anc_layer); refer <- crs(new_anc_layer)
+    # Converting it to a matrix
+    new_pts <- new_anc_layer %>% as.points(values=T) %>% as.data.frame()
+    coords <- new_anc_layer %>% as.points(values=T) %>% crds()
+    new_pts <- cbind(coords, new_pts)
+    remove(new_anc_layer)
+    
+    # Defining column names of matrix
+    dimnames(new_pts)[[2]] <- c("x", "y", "anc_layer")
+    # Finding the 50 nearest neighbors and getting distances to each. 
+    # Based on GIDS typically using 7x7 window
+    nns <- get.knnx(coarse_pts[,1:2],new_pts[,1:2], k = 50)
+    # Reformatting list to 3d array. A little easier to work with later
+    nns <- sapply(nns, identity, simplify="array")
+    
+    ## Splitting data for parallelization, and initializing cluster
+    parts <- split(x = seq_len(nrow(new_pts)), f = 1:no_cores)
+    cl <- makeCluster(no_cores)
+    clusterExport(cl = cl, varlist = c("coarse_pts", "new_pts", "nns", "parts", "gids"), envir = environment())
+    
+    ## Running GIDS, split between number of cores on PC minus 1
+    parallelX <- parLapply(cl = cl, X = 1:no_cores, 
+                           fun = function(t) gids(coarse_data = coarse_pts, fine_data = new_pts[parts[[t]],],
+                                                  dist_mat = nns[parts[[t]],,]))
+    
+    ## Terminating cluster
+    stopCluster(cl)
+    
+    ## Merging parallel output to single matrix
+    out_pts <- do.call(rbind, parallelX)
+    
+    # Write raster to file if we made it through all iterations and if path for outfile provided
+    if(iter == (length(ancillary_list)-1)){
+      ## Creating raster from matrix
+      downscaled <- rasterFromXYZ(out_pts[,c(1,2,4)], crs = refer,res = resl)
+      if(!is.null(file_out)){
+        writeRaster(downscaled, file_out, overwrite = T)
+      }
+    }
+    ## Keeping track of progress
+    print(paste("Done with downscale", iter, "out of", (length(ancillary_list)-1)))
+  }
+  
+  ## Return function output to global environment for later use. Comment out if just writing output to disk
+  return(downscaled)
+}
