@@ -10,9 +10,17 @@ The project has the following structure:
 
 -   [Code](https://github.com/HARTLabGroup/AspenHabitat/tree/base/Code): All code written for this project
 
-    -   [AspenHabitatModelling.docx](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitatModelling.docx): A Microsoft Word version of the the manuscript generated from AspenHabitatModelling.Rmd
+    -   [AspenHabitat-Highlights.Rmd](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-Highlights.Rmd): An R markdown file that generates a Microsoft Word document wit the project highlights.
 
-    -   [AspenHabitatModelling.Rmd](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitatModelling.Rmd): An R Markdown file containing code and text for generating AspenHabitatModelling.docx
+    -   [AspenHabitat-Highlights.docx](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-Highlights.docx): A Microsoft Word document wit the project highlights.
+
+    -   [AspenHabitat-MainText.Rmd](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-MainText.Rmd): An R markdown file with most of the R code. This file also generates a Microsoft Word document with the main text of the manuscript.
+
+    -   [AspenHabitat-MainText.docx](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-MainText.docx): A Microsoft Word document with the main text of the manuscript.
+
+    -   [AspenHabitat-Supplement.Rmd](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-Supplement.Rmd): An R markdown with code for some supplemental analyses.
+
+    -   [AspenHabitat-Supplement.docx](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-Supplement.docx): A Microsoft Word document with supplemental figures and tables.
 
     -   [GIDS-Downscaling-SJH.R](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/GIDS-Downscaling-SJH.R): An R file that performs a multi-step procedure that spatially downscales gridded climate data using GIDS (Gradient and Inverse Distance-Squared) of Nalder and Wein (1998) and Flint and Flint (2012). It was lightly modified from code written by Rodman et al. (2020).
 

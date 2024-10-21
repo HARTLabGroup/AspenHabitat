@@ -1,0 +1,287 @@
+---
+output: 
+  bookdown::word_document2:
+    reference_docx: Template.docx
+    fig_caption: yes
+    toc: no
+    number_sections: no
+    df_print: kable
+editor_options: 
+  chunk_output_type: inline
+bibliography: references.bib
+link-citations: true
+urlcolor: blue
+linkcolor: blue
+citationcolor: blue
+csl: "`r here:::here('citationstyle.csl')`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	progress = FALSE,
+	cache = FALSE,
+	dpi = 300
+)
+
+set.seed(513)
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+options(timeout=60*30) #timeout downloads that last longer than 30 minutes
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  devtools,
+  knitr, # markdown documents
+  flextable, # plot tables
+  bookdown, # figure numbering in markdown
+  here, # easy file structure
+  tidyverse, # data manipulation
+  ggplot2, # figures
+  patchwork, # multiple figures
+  grid, # multiple figures
+  gridExtra,
+  ggsci, # color palettes
+  colorspace, # color palettes
+  RColorBrewer, # color palettes
+  ggcorrplot, # plot correlation between variables
+  sf, # spatial data (new pkg)
+  terra, # raster data
+  raster, # (old pkg)
+  rasterVis,
+  tidyterra, #tidyverse extension to spatial data
+  tmap, # easy plotting of maps
+  terrainr, # elevation data
+  spatialEco, # hli, tpi
+  readxl, # read in excel data
+  parallel,
+  doParallel, 
+  FNN,
+  rgeos,
+  elevatr, 
+  tidymodels,
+  vip,
+  DALEXtra,
+  ncf, #spline correlog
+  probably, 
+  spatialsample, # spatial sampling
+  spatialRF
+) 
+terraOptions(progress=0) # suppress all progress bars in terra
+cores <- parallel::detectCores() # Set number of cores for parallel processing
+
+# Set custom plotting theme
+theme_new <- function(base_size = 9,base_family = "Helvetica"){
+  theme_classic(base_size = base_size, base_family = base_family) %+replace%
+    theme(
+      axis.line.x = element_line(color="black", linewidth = 0.25),
+      axis.line.y = element_line(color="black", linewidth = 0.25),
+      axis.title = element_text(size = 9),
+      axis.text = element_text(colour="black", size=8),
+      legend.key=element_rect(colour=NA, fill =NA),
+      panel.grid = element_blank(),   
+      plot.background = element_rect(fill = NA, colour = NA),
+      panel.border = element_rect(fill = NA, colour = NA),
+      panel.background = element_rect(fill = "white", colour = "black"), 
+      strip.background = element_rect(fill = "white"),
+      strip.text = element_text(size = 9)
+      
+    )
+}
+theme_set(theme_new())
+
+set_flextable_defaults(
+  font.family="Times", 
+  font.size=12,
+  line_spacing=1,
+  padding.bottom=1,
+  padding.top=1,
+  text.align='center')
+
+# Set directory structure for project
+dir.create(here("Data"), showWarnings = FALSE)
+dir.create(here("Data", "Spatial"), showWarnings = FALSE)
+dir.create(here("Results"), showWarnings = FALSE)
+dir.create(here("Results", "Figures"), showWarnings = FALSE)
+```
+
+# Supplemental Tables and Figures
+
+## Overview of species distribution modeling protocols
+
+Here we describe the SDMs produced herein following the Overview, Data, Model, Assessment, Prediction (ODMAP) protocol for species distribution models [@zurell2020StandardProtocolReporting]. Here, we first provide the Overview for our modeling, while the remaining ODMAP sections are detailed in Table S\@ref(tab:ODMAP). The objectives of this modelling exercise are to (1) better explain the drivers of aspen's distribution across the Southern Rocky Mountains, (2) map the area suitable for aspen, and (3) forecast the area suitable for aspen presence in the future under two different climate scenarios.
+
+```{r ODMAP}
+pred.var.tab <- read_excel(here("Documents", "ODMAP-Table.xlsx"), sheet=1)
+
+pred.var.tab %>% as.data.frame() %>% flextable()%>% set_caption(caption="ODMAP protocol information. Details on Data, Model, Assessment, Prediction. For Overview section, please refer to main text.") %>% autofit() %>% set_table_properties(layout = "autofit")
+```
+
+\newpage
+
+```{r Screen_Climate_Vars}
+if(!file.exists(here("Results", "Figures", "climatevarselection-bar.jpg"))){
+  # Import response variable
+  aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
+  names(aspen90.prob) <- "aspen.prob"
+  aspen90.prob01 <- aspen90.prob
+  aspen90.prob01[aspen90.prob01<0.5]<-0
+  aspen90.prob01[aspen90.prob01>=0.5]<-1
+  names(aspen90.prob01) <- "aspen.presence"
+  
+  writeRaster(aspen90.prob01, here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90-presence.tif"), overwrite=T)
+  
+  SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(crs(aspen90.prob))
+  aspen90.prob <- terra::mask(aspen90.prob, SRME)
+  aspen90.prob01 <-terra::mask(aspen90.prob01, SRME)
+  
+  # Import climate variables
+  
+  climate.dat.1981_2010 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010", "Normal_1981_2010_bioclim"), pattern=".tif$", full.names = T))
+  names(climate.dat.1981_2010) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Normal_1981_2010", "Normal_1981_2010_bioclim"), pattern=".tif$", full.names = F), split=".tif")), split="Normal_1981_2010_"), "[", 2)
+  
+  climate.dat2.1981_2010 <- rast(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="Normal", full.names = T))
+  names(climate.dat2.1981_2010) <- sapply(strsplit(do.call(c,strsplit(list.files(here("Data", "Spatial", "Climate", "ClimateNA", "Derived"), pattern="Normal", full.names = F), split=".tif")), split="Normal_1981_2010_"), "[",2)
+  
+  
+  # Compile data
+  aspen.pts <- aspen90.prob01 %>% as.points(na.rm=T)
+  aspen.pts <- aspen.pts[sample(1:nrow(aspen.pts), size=50000),]
+  aspen.pts1 <- aspen.pts %>% filter(aspen.presence==1) %>% sample(size=2500)
+  aspen.pts0 <- aspen.pts %>% filter(aspen.presence==0) %>% sample(size=2500)
+  aspen.pts <- rbind(aspen.pts1, aspen.pts0)
+  aspen.pts <- terra::extract(aspen90.prob,aspen.pts, bind=T, xy=T, cells=T) 
+  aspen.pts <- aspen.pts %>% terra::project(climate.dat.1981_2010 )
+  
+  aspen.pts.1981_2010 <- aspen.pts
+  aspen.pts.1981_2010<- extract(climate.dat.1981_2010, aspen.pts.1981_2010, bind=T)
+  aspen.pts.1981_2010 <- extract(climate.dat2.1981_2010, aspen.pts.1981_2010, bind=T)
+  aspen.pts.1981_2010$year <- "1981-2010"
+  
+  dat <- aspen.pts.1981_2010  %>% as.data.frame() %>% na.omit()
+  climate.varz <- c("ADI", "bFFP", "CMD", "CMI", "DD_0", "DD_18", "DD1040", "DD18", "DD5", "eFFP", "EMT", "Eref", "EXT", "FFP", "GSP", "GSPDD5", "MAP", "MAR", "MAT","MCMT", "MWMT", "NFFD", "PAS", "PPT_at", "PPT_sm", "PPT_sp", "PPT_wt", "PRATIO", "RH", "Tave_at", "Tave_sm", "Tave_sp", "Tave_wt", "TD", "TMAX")
+  
+  dat[,c(climate.varz,"year")] %>% filter(year=="1981-2010") %>% select(-year) %>% cor() %>% round(digits=2) %>% write.csv(here("Results", "climatevarcor.csv"))
+  
+  dat[,c(sort(climate.varz))] %>% cor() %>% round(digits=2) %>% ggcorrplot(lab=TRUE,type="lower",lab_size=2) %>% ggsave(filename=here("Results", "Figures", "CorrelationMatrix.jpg"), width=210, heigh=210, units="mm")
+  
+  interactions <- spatialRF::the_feature_engineer(
+    data=dat, 
+    dependent.variable.name="aspen.presence",
+    predictor.variable.names = climate.varz,
+    xy=dat[,c("x", "y")],
+    importance.threshold = 0.50, #uses 50% best predictors
+    cor.threshold = 0.70, #max corr between interactions and predictors
+    seed = 123,
+    repetitions = 100,
+    verbose = FALSE
+  )
+  
+  dat.aspen50 <- dat %>% mutate(threshold=">50%")
+  dat.aspen50$aspen.presence <- factor(ifelse(dat.aspen50$aspen.prob>0.5,"present", "absent"))
+  
+  dat.aspen75 <- dat %>% mutate(threshold=">75%")
+  dat.aspen75$aspen.presence <- factor(ifelse(dat.aspen50$aspen.prob>0.5,"present", "absent"))
+  
+  
+  dat.aspen0 <- dat %>% mutate(threshold=">0%")
+  dat.aspen0$aspen.presence <- factor(ifelse(dat.aspen50$aspen.prob>0,"present", "absent"))
+  
+  dat.aspen050 <- rbind(dat.aspen75, dat.aspen50, dat.aspen0)
+  
+  rf.dat <- dat
+  dat_split <- initial_split(
+    dat <- dat, 
+    prop = 0.5, 
+    strata = aspen.presence
+  )
+  
+  dat.training <-  training(dat_split)
+  dat.testing <- testing(dat_split)
+  
+  results <- data.frame(var=climate.varz, dropout_loss=NA)
+  for(j in climate.varz){
+    datj <- dat %>% select(all_of(c("aspen.presence", j)))
+    datj$aspen.presence <- factor(datj$aspen.presence)
+    # preprocessing "recipe"
+    presence.recipe<- 
+      recipe(aspen.presence ~ ., data = datj)  %>%
+      # normalize all numeric variables except the outcome and ID variables
+      step_normalize(all_numeric(), -all_outcomes())
+      
+    # Specify model
+      rf_spec <- 
+        rand_forest() %>%
+        set_engine("ranger", importance = "permutation", seed = 123) %>% 
+        set_mode("classification")
+      
+      # Create workflow
+      rf_wflow <- 
+        workflow() %>% 
+        add_recipe(presence.recipe) %>% 
+        add_model(rf_spec)
+  
+     # Fit model
+      rf_fit <- rf_wflow %>% fit(datj)
+      
+    # Variable importance
+  explainer_rf <- explain_tidymodels(rf_fit,
+                                      data=datj %>%
+                                       as.data.frame() %>%
+                                       select(-aspen.presence), 
+                                      y=datj %>%
+                                       pull(aspen.presence) %>%
+                                       as.numeric() - 1,
+                                      type="classification", verbose=F
+  )
+  results[results$var==j, "dropout_loss"] <- explainer_rf  %>% feature_importance(type='ratio') %>% as.data.frame() %>% mutate(Model="RF") %>% filter(variable %in% j) %>% pull(dropout_loss) %>% mean()
+  }
+  
+  write.csv(results, here("Results", "bivariate-RF-AUC.csv"),row.names=F)
+  results <- read.csv(here("Results", "bivariate-RF-AUC.csv"))
+  
+  results <- results[order(results$dropout_loss),]
+  levelz <-  results$var
+  results$var <- factor(results$var, levels=levelz, ordered=T)
+  
+  results  %>% ggplot( aes(x=var, y=dropout_loss))+geom_bar(stat="identity")+coord_flip()+theme(axis.title.y = element_blank())+ylab("relative importance") ->p1
+  ggsave(p1, filename=here("Results", "Figures", "climatevarselection-bar.jpg"), width=90, height=120, units="mm")
+
+}
+
+
+```
+
+```{r TabClimateScreen}
+tab <- read_excel(here("Documents", "PredictorScreeningTable.xlsx"), sheet=1)
+
+tab %>% as.data.frame() %>% flextable() %>% set_caption(caption="Climate variables considered for inclusion in SDMs and modeling notes.") %>% autofit() %>% set_table_properties(layout = "autofit")
+```
+
+```{r FigCor, fig.cap="Correlation coefficients between pairs of climate predictor variables examined for inclusion in SDM", out.width = "180mm", out.height="180mm"}
+knitr::include_graphics(here("Results/Figures/CorrelationMatrix.jpg"), dpi = NA)
+```
+
+\newpage
+
+```{r MissClassMap, fig.cap="Spatial patterns of missclassification for the ensemble model.", out.width="3.5in", out.height="5in"}
+knitr::include_graphics(here("Results", "Figures", "ensemble-error-map.jpg"), dpi = NA)
+```
+
+```{r LossGainTS, fig.cap="Barplots illustrating the temporal patterns in the areas were aspen my lost, gained, or remain stable based on the current distribution of aspen and the ensemeble SDM forecast of future aspen habitat suitability.", out.width="4.5in", out.height="4.5in"}
+knitr::include_graphics(here("Results", "Figures", "loss-gain.jpg"), dpi = NA)
+```
+
+```{r LossGainBox, fig.cap="Boxplots illustrating spatial patterns in the areas were aspen my lost, gained, or remain stable based on the current distribution of aspen the ensemeble SDM forecast of future aspen habitat suitability under the SSP2-45 scenario.", out.width="4.5in", out.height="5in"}
+knitr::include_graphics(here("Results", "Figures", "gainloss-geography-SSP245.jpg"), dpi = NA)
+```
+
+```{r GainDistanceMaps, fig.cap="Distance to the nearest existing aspen patch for pixels were future climate may promote aspen expansion by 2100 under the SSP2-4.5 scenario.", out.width="7in"}
+knitr::include_graphics(here("Results", "Figures", "FigMaps-ExpansionDistance.jpg"), dpi = NA)
+```
+
+# References
+
+::: {#refs}
+:::
