@@ -1,0 +1,114 @@
+---
+output: 
+  bookdown::word_document2:
+    reference_docx: Template.docx
+    fig_caption: yes
+    toc: no
+    number_sections: no
+    df_print: kable
+editor_options: 
+  chunk_output_type: inline
+bibliography: references.bib
+link-citations: true
+urlcolor: blue
+linkcolor: blue
+citationcolor: blue
+csl: "`r here:::here('citationstyle.csl')`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	progress = FALSE,
+	cache = FALSE,
+	dpi = 300
+)
+
+set.seed(513)
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+options(timeout=60*30) #timeout downloads that last longer than 30 minutes
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  devtools,
+  knitr, # markdown documents
+  flextable, # plot tables
+  bookdown, # figure numbering in markdown
+  here, # easy file structure
+  tidyverse, # data manipulation
+  ggplot2, # figures
+  patchwork, # multiple figures
+  grid, # multiple figures
+  gridExtra,
+  ggsci, # color palettes
+  colorspace, # color palettes
+  RColorBrewer, # color palettes
+  ggcorrplot, # plot correlation between variables
+  sf, # spatial data (new pkg)
+  terra, # raster data
+  raster, # (old pkg)
+  rasterVis,
+  tidyterra, #tidyverse extension to spatial data
+  tmap, # easy plotting of maps
+  terrainr, # elevation data
+  spatialEco, # hli, tpi
+  readxl, # read in excel data
+  parallel,
+  doParallel, 
+  FNN,
+  rgeos,
+  elevatr, 
+  tidymodels,
+  vip,
+  DALEXtra,
+  ncf, #spline correlog
+  probably, 
+  spatialsample, # spatial sampling
+  spatialRF
+) 
+terraOptions(progress=0) # suppress all progress bars in terra
+cores <- parallel::detectCores() # Set number of cores for parallel processing
+
+# Set custom plotting theme
+theme_new <- function(base_size = 9,base_family = "Helvetica"){
+  theme_classic(base_size = base_size, base_family = base_family) %+replace%
+    theme(
+      axis.line.x = element_line(color="black", linewidth = 0.25),
+      axis.line.y = element_line(color="black", linewidth = 0.25),
+      axis.title = element_text(size = 9),
+      axis.text = element_text(colour="black", size=8),
+      legend.key=element_rect(colour=NA, fill =NA),
+      panel.grid = element_blank(),   
+      plot.background = element_rect(fill = NA, colour = NA),
+      panel.border = element_rect(fill = NA, colour = NA),
+      panel.background = element_rect(fill = "white", colour = "black"), 
+      strip.background = element_rect(fill = "white"),
+      strip.text = element_text(size = 9)
+      
+    )
+}
+theme_set(theme_new())
+
+set_flextable_defaults(
+  font.family="Times", 
+  font.size=12,
+  line_spacing=1,
+  padding.bottom=1,
+  padding.top=1,
+  text.align='center')
+
+# Set directory structure for project
+dir.create(here("Data"), showWarnings = FALSE)
+dir.create(here("Data", "Spatial"), showWarnings = FALSE)
+dir.create(here("Results"), showWarnings = FALSE)
+dir.create(here("Results", "Figures"), showWarnings = FALSE)
+```
+
+# Highlights
+
+-   An ensemble model explained 79% of the variation in aspen occurrence.
+-   Interactions between temperature and precipitation influence aspen's distribution.
+-   Climate change will likely lead to decreases in aspen habitat suitability.
+-   Dispersal may limit the potential for aspen range expansion.
