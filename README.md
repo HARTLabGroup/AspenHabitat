@@ -4,7 +4,7 @@
 
 This repository contains all code for *Climate-driven decreases in aspen's distribution and opportunities for future expansion across the Southern Rocky Mountains*.
 
-Organization of the project
+## Organization of the project
 
 The project has the following structure:
 
