@@ -106,9 +106,9 @@ dir.create(here("Results"), showWarnings = FALSE)
 dir.create(here("Results", "Figures"), showWarnings = FALSE)
 ```
 
-# Supplemental Tables and Figures
+# Supporting information
 
-## Overview of species distribution modeling protocols
+## Appendix S1: Overview of species distribution modeling protocols
 
 Here we describe the SDMs produced herein following the Overview, Data, Model, Assessment, Prediction (ODMAP) protocol for species distribution models [@zurell2020StandardProtocolReporting]. Here, we first provide the Overview for our modeling, while the remaining ODMAP sections are detailed in Table S\@ref(tab:ODMAP). The objectives of this modelling exercise are to (1) better explain the drivers of aspen's distribution across the Southern Rocky Mountains, (2) map the area suitable for aspen, and (3) forecast the area suitable for aspen presence in the future under two different climate scenarios.
 
@@ -120,8 +120,12 @@ pred.var.tab %>% as.data.frame() %>% flextable()%>% set_caption(caption="ODMAP p
 
 \newpage
 
+## Appendix S2: Variable Pre-Selection
+
+Here we provide an overview of our variable pre-selection process. To avoid collinearity between climate predictors, we initially screened the 34 climatic variables (Table S\@ref(tab:TabClimateScreen)). Variables were screened at their original resolution (i.e. 1 x 1 km). To this end, we calculated pairwise correlation coefficients (Fig. S\@ref(fig:FigS1)). When \|r\|\>0.75, we removed variables based on existing research (Table 5). Where evidence was similar, we used univariate random forest (RF) models to evaluate the potential explanatory power of each predictor (Table S\@ref(tab:TabClimateScreen)).
+
 ```{r Screen_Climate_Vars}
-if(!file.exists(here("Results", "Figures", "climatevarselection-bar.jpg"))){
+if(!file.exists(here("Results", "bivariate-RF-AUC.csv"))){
   # Import response variable
   aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
   names(aspen90.prob) <- "aspen.prob"
@@ -164,7 +168,7 @@ if(!file.exists(here("Results", "Figures", "climatevarselection-bar.jpg"))){
   
   dat[,c(climate.varz,"year")] %>% filter(year=="1981-2010") %>% select(-year) %>% cor() %>% round(digits=2) %>% write.csv(here("Results", "climatevarcor.csv"))
   
-  dat[,c(sort(climate.varz))] %>% cor() %>% round(digits=2) %>% ggcorrplot(lab=TRUE,type="lower",lab_size=2) %>% ggsave(filename=here("Results", "Figures", "CorrelationMatrix.jpg"), width=210, heigh=210, units="mm")
+  dat[,c(sort(climate.varz))] %>% cor() %>% round(digits=2) %>% ggcorrplot(lab=TRUE,type="lower",lab_size=2) %>% ggsave(filename=here("Results", "Figures", "FigureS1.jpg"), width=210, heigh=210, units="mm")
   
   interactions <- spatialRF::the_feature_engineer(
     data=dat, 
@@ -259,26 +263,30 @@ tab <- read_excel(here("Documents", "PredictorScreeningTable.xlsx"), sheet=1)
 tab %>% as.data.frame() %>% flextable() %>% set_caption(caption="Climate variables considered for inclusion in SDMs and modeling notes.") %>% autofit() %>% set_table_properties(layout = "autofit")
 ```
 
-```{r FigCor, fig.cap="Correlation coefficients between pairs of climate predictor variables examined for inclusion in SDM", out.width = "180mm", out.height="180mm"}
-knitr::include_graphics(here("Results/Figures/CorrelationMatrix.jpg"), dpi = NA)
+\newpage
+
+```{r FigS1, fig.cap="Correlation coefficients between pairs of climate predictor variables examined for inclusion in SDM", out.width = "180mm", out.height="180mm"}
+knitr::include_graphics(here("Results/Figures/FigureS1.jpg"), dpi = NA)
 ```
 
 \newpage
 
+## Appendix S3: Additional figures
+
 ```{r MissClassMap, fig.cap="Spatial patterns of missclassification for the ensemble model.", out.width="3.5in", out.height="5in"}
-knitr::include_graphics(here("Results", "Figures", "ensemble-error-map.jpg"), dpi = NA)
+knitr::include_graphics(here("Results", "Figures", "FigureS2.jpg"), dpi = NA)
 ```
 
 ```{r LossGainTS, fig.cap="Barplots illustrating the temporal patterns in the areas were aspen my lost, gained, or remain stable based on the current distribution of aspen and the ensemeble SDM forecast of future aspen habitat suitability.", out.width="4.5in", out.height="4.5in"}
-knitr::include_graphics(here("Results", "Figures", "loss-gain.jpg"), dpi = NA)
+knitr::include_graphics(here("Results", "Figures", "FigureS3.jpg"), dpi = NA)
 ```
 
 ```{r LossGainBox, fig.cap="Boxplots illustrating spatial patterns in the areas were aspen my lost, gained, or remain stable based on the current distribution of aspen the ensemeble SDM forecast of future aspen habitat suitability under the SSP2-45 scenario.", out.width="4.5in", out.height="5in"}
-knitr::include_graphics(here("Results", "Figures", "gainloss-geography-SSP245.jpg"), dpi = NA)
+knitr::include_graphics(here("Results", "Figures", "FigureS4.jpg"), dpi = NA)
 ```
 
 ```{r GainDistanceMaps, fig.cap="Distance to the nearest existing aspen patch for pixels were future climate may promote aspen expansion by 2100 under the SSP2-4.5 scenario.", out.width="7in"}
-knitr::include_graphics(here("Results", "Figures", "FigMaps-ExpansionDistance.jpg"), dpi = NA)
+knitr::include_graphics(here("Results", "Figures", "FigureS5.jpg"), dpi = NA)
 ```
 
 # References

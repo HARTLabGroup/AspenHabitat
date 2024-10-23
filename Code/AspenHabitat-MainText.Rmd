@@ -1,5 +1,5 @@
 ---
-output: 
+output:
   bookdown::word_document2:
     reference_docx: Template.docx
     fig_caption: yes
@@ -106,29 +106,7 @@ dir.create(here("Results"), showWarnings = FALSE)
 dir.create(here("Results", "Figures"), showWarnings = FALSE)
 ```
 
-**Title**
-
-Climate-driven decreases in aspen's distribution and opportunities for future expansion across the Southern Rocky Mountains
-
-**Authors**
-
-Sarah J. Hart^a,1^, Asha Paudel^a^, and Maxwell C. Cook^b,c^
-
-**Affiliations**
-
-a - Department of Forest and Rangeland Stewardship, Colorado State University, Fort Collins, CO 80523, USA
-
-b - Department of Geography, University of Colorado Boulder, Boulder, CO 80309, USA
-
-c - Earth Lab, Cooperative Institute for Research in Environmental Sciences (CIRES), University of Colorado Boulder, Boulder, CO 80309, USA
-
-1 - Corresponding author; Email address: Sarah.Hart\@colostate.edu
-
-```{r}
-
-```
-
-\newpage
+# Climate-driven decreases in aspen’s distribution and opportunities for future expansion across the Southern Rocky Mountains
 
 # Abstract
 
@@ -194,7 +172,7 @@ if(!file.exists(temp)){
 
 To understand how climate is related to the contemporary distribution of aspen and the potential for future climate change to drive range shifts, we obtained gridded climate data from the AdaptWest Project [-@adaptwestproject2022GriddedCurrentProjected]. This dataset consists of both current and future climate data that are downscaled to 1 x 1 km resolution using the ClimateNA software (version 7.3) [@wang2016LocallyDownscaledSpatially] . Contemporary climate conditions, defined here as climatalogical norms for the 1981-2010 period, were generated from 4 x 4 km climate data provided by the PRISM Climate Group [-@prismclimategroup2021]. Future climate conditions were generated from data included in the sixth phase of Coupled Model Intercomparison Project (CMIP6). Here we used projections of future climate for the periods 2011-2040, 2041-2070, and 2071-2100. Given considerable uncertainty about future emissions, we compared two scenarios (i.e., Shared Socioeconomic Pathways; SSPs) generated under CMIP6, SSP2-4.5 and SSP5-8.5. SSP2-4.5 describes an intermediate scenario characterized by moderate increases in emissions through 2040 followed by a decline, while SSP5-8.5 describes a more extreme situation where emissions increase through 2100 [@riahi2017SharedSocioeconomicPathways]. In addition to uncertainty about societal decisions about greenhouse gas emissions represented in the SSPs, variation exists among the more than 50 atmosphere-ocean general circulation models (AOGCMs) included in CMIP6. Because of differences in complexity, assumptions, and parameterization of AOGCMs, not all forecasts are equally useful for regional planning purposes. Here we make use of an ensemble dataset constructed from eight AOGCMs identified by Mahony et al. [-@mahony2022GlobalClimateModel] as being appropriate for regional applications in North America, including species distribution modeling.
 
-To characterize the climate space that aspen currently occupies, we examined 34 biologically-relevant climate variables commonly used in species distribution models (Table \@ref(tab:TabClimateScreen)). Broadly, these variables characterize temperature, precipitation, seasonality, and interactions between precipitation and temperature. To avoid collinearity between climate predictors, we calculated pairwise Pearson correlation coefficients. When \|r\|\>0.75, we removed variables based on existing research (Table \@ref(tab:TabClimateScreen)). Where evidence was similar, we used univariate random forest (RF) models to evaluate the potential explanatory power of each predictor. The resulting dataset consisted of six climate variables: (1) an annual dryness index (ADI), (2) growing season precipitation (GSP), (3) the ratio of GSP to degree days above 5 °C (GSPDD5), (4) the ratio of GSP to mean annual precipitation (PRATIO), (5) mean annual relative humidity (RH), and (6) the difference between the mean coldest month temperature and the mean warmest month temperature (TD) (Table \@ref(tab:TabSelectedPredictors)).
+To characterize the climate space that aspen currently occupies, we examined 34 biologically-relevant climate variables commonly used in species distribution models (Table S2). Broadly, these variables characterize temperature, precipitation, seasonality, and interactions between precipitation and temperature. To avoid collinearity between climate predictors, we calculated pairwise Pearson correlation coefficients (Fig. S1). When \|r\|\>0.75, we removed variables based on existing research (Table S2). Where evidence was similar, we used univariate random forest (RF) models to evaluate the potential explanatory power of each predictor. The resulting dataset consisted of six climate variables: (1) an annual dryness index (ADI), (2) growing season precipitation (GSP), (3) the ratio of GSP to degree days above 5 °C (GSPDD5), (4) the ratio of GSP to mean annual precipitation (PRATIO), (5) mean annual relative humidity (RH), and (6) the difference between the mean coldest month temperature and the mean warmest month temperature (TD) (Table \@ref(tab:TabSelectedPredictors)).
 
 Given mountainous areas such as the SRME are characterized high topoclimatic variation [@franklin2013ModelingPlantSpecies], we further downscaled our selected climate variables from a 1 km resolution to a 250 m resolution using gradient and inverse distance squared (GIDS) interpolation [@nalder1998SpatialInterpolationClimatic; @flint2012DownscalingFutureClimate], following methods outlined in Rodman et al. [-@rodman2020ChangingClimateSnuffing]. As ancillary data in the downscaling, we used a digital elevation model (DEM) from the USGS [-@u.s.geologicalsurvey2023USGS3DElevation].
 
@@ -1725,8 +1703,8 @@ if(!file.exists(here("Results", "area-lossgain.csv"))){
    contemporary.aspenXchange4.ssp245 <- rast(here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp245-ensemble.tif")) 
   contemporary.aspenXchange4.ssp585 <- rast(here("Data", "Spatial", "Predictions", "contemporaryaspenXchange_ensemble_8GCMs_ssp585-ensemble.tif"))
  
-  change.ssp245.f <- freq(contemporary.aspenXchange4.ssp245 ) %>% mutate(layer=factor(layer, levels=1:3, labels=names(lgs.ssp245)), scenario="ssp245")
-  change.ssp585.f <- freq(contemporary.aspenXchange4.ssp585 ) %>% mutate(layer=factor(layer, levels=1:3, labels=names(lgs.ssp585)), scenario="ssp585")
+  change.ssp245.f <- freq(contemporary.aspenXchange4.ssp245 ) %>% mutate(layer=factor(layer, levels=1:3, labels=c("2011-2040", "2041-2070", "2071-2100")), scenario="ssp245")
+  change.ssp585.f <- freq(contemporary.aspenXchange4.ssp585 ) %>% mutate(layer=factor(layer, levels=1:3, labels=c("2011-2040", "2041-2070", "2071-2100")), scenario="ssp585")
   change.f <- rbind(change.ssp245.f, change.ssp585.f)  %>% mutate(value=factor(value, levels=c(-3, -2, -1, 0, 1, 2, 3, 4), labels=c("present &\nunsuitable habitat", "present &\nhabitat loss", "absent &\nhabitat loss", "absent &\nunsuitable habitat", "present &\nhabitat stable", "absent &\nhabitat stable", "present &\nhabitat gain", "absent &\nhabitat gain"), ordered=T), scenario=factor(scenario, levels=c("ssp245", "ssp585"), labels=c("SSP2-4.5", "SSP5-8.5")))
 
   change.f$area <- round(change.f$count * 90*90 *10^-6, 0)
@@ -2027,18 +2005,6 @@ Out-planting of nursery grown seedlings or suckers can bypass some of the filter
 # Conclusions
 
 Climate change presents considerable threats to forest ecosystems and challenges for forest managers [@keenan2015ClimateChangeImpacts]. By combining a SDM with fine-grain maps of aspen's current distribution, we provide a novel assessment of how climate change may influence existing aspen stands and where might be suitable for future expansion - insights that are key for effective management. Our modeling shows that future warming is likely to considerably decrease aspen habitat suitability across the SRME, particularly for populations at low elevations. Nonetheless, considerable area will remain or become suitable for aspen. However, areas suitable for expansion are typically not adjacent to existing stands, thereby limiting colonization of these areas to natural regeneration from seed or artificial regeneration through direct seeding or planting. Yet, we still know very little about the role of seedling establishment or how genetic factors, nursery practices, and planting approaches influence the outcomes of artificial regeneration [@landhausser2019TammReviewSeedlingbased].
-
-# Acknowledgements
-
-The Southern Rocky Mountains are the sacred homelands to many Indigenous nations – we honor their past, present, and future generations, who have lived here and stewarded these forests for millennia.This research was funded by the Joint Fire Science Program (JFSP, Project ID 21-2-02-29).
-
-# Author contributions: CRediT
-
-**Sarah J. Hart:** Conceptualization, Funding acquisition, Methodology, Formal analysis, Writing- Original draft preparation, Writing – review and editing; **Asha Paudel**: Writing – review and editing, Methodology. **Maxwell C. Cook**: Funding acquisition, Writing – review and editing;
-
-# Data availability
-
-Maps of the predicted habitat suitability area available through Dryad via the following anonymized link: [http://datadryad.org/stash/share/gGubdiD6hCORznmbeHB6gkWoxodyj25Soa3s3yfOfHg](https://nam10.safelinks.protection.outlook.com/?url=http%3A%2F%2Fdatadryad.org%2Fstash%2Fshare%2FgGubdiD6hCORznmbeHB6gkWoxodyj25Soa3s3yfOfHg&data=05%7C02%7Csarah.hart%40colostate.edu%7Cc00ff4ef23d4486ecd8e08dceee39cf4%7Cafb58802ff7a4bb1ab21367ff2ecfc8b%7C0%7C0%7C638647908580903395%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C0%7C%7C%7C&sdata=i%2B45VPN9dbfLKYiR0rbKPxa%2BoWV6Kc%2BHP8v%2FlumACRM%3D&reserved=0). Code is available on a public GitHub repository (<https://github.com/HARTLabGroup/AspenHabitat>) and permanently archived on Zenodo at <https://zenodo.org/records/13952080>.
 
 # References
 

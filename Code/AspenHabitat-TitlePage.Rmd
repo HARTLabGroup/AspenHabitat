@@ -1,6 +1,7 @@
 ---
-output: 
+output:
   bookdown::word_document2:
+    title: "Climate-driven decreases in aspen’s distribution and opportunities for future expansion across the Southern Rocky Mountains"
     reference_docx: Template.docx
     fig_caption: yes
     toc: no
@@ -106,9 +107,38 @@ dir.create(here("Results"), showWarnings = FALSE)
 dir.create(here("Results", "Figures"), showWarnings = FALSE)
 ```
 
-# Highlights
+# Title
 
--   An ensemble model explained 79% of the variation in aspen occurrence.
--   Interactions between temperature and precipitation influence aspen's distribution.
--   Climate change will likely lead to decreases in aspen habitat suitability.
--   Dispersal may limit the potential for aspen range expansion.
+Climate-driven decreases in aspen's distribution and opportunities for future expansion across the Southern Rocky Mountains
+
+# Running Title
+
+Climate change and aspen's distribution
+
+# Authors
+
+[Sarah J. Hart](https://orcid.org/0000-0001-8371-8568)^a^, [Asha Paudel](https://orcid.org/0000-0002-5663-0218)^a^, and [Maxwell C. Cook](https://orcid.org/0000-0003-4865-5025)^b,c^
+
+# Affiliations
+
+a - Department of Forest and Rangeland Stewardship, Colorado State University, Fort Collins, CO 80523, USA
+
+b - Department of Geography, University of Colorado Boulder, Boulder, CO 80309, USA
+
+c - Earth Lab, Cooperative Institute for Research in Environmental Sciences (CIRES), University of Colorado Boulder, Boulder, CO 80309, USA
+
+# Funding information
+
+This research was funded by the Joint Fire Science Program (JFSP, Project ID 21-2-02-29).
+
+# Acknowledgements
+
+The Southern Rocky Mountains are the sacred homelands to many Indigenous nations – we honor their past, present, and future generations, who have lived here and stewarded these forests for millennia.
+
+# Author contributions: CRediT
+
+**Sarah J. Hart:** Conceptualization, Funding acquisition, Methodology, Formal analysis, Writing- Original draft preparation, Writing – review and editing; **Asha Paudel**: Writing – review and editing, Methodology. **Maxwell C. Cook**: Funding acquisition, Writing – review and editing;
+
+# Data availability
+
+Code and maps of the predicted habitat suitability area available through Dryad via the following anonymized link: [http://datadryad.org/stash/share/gGubdiD6hCORznmbeHB6gkWoxodyj25Soa3s3yfOfHg](https://nam10.safelinks.protection.outlook.com/?url=http%3A%2F%2Fdatadryad.org%2Fstash%2Fshare%2FgGubdiD6hCORznmbeHB6gkWoxodyj25Soa3s3yfOfHg&data=05%7C02%7Csarah.hart%40colostate.edu%7Cc00ff4ef23d4486ecd8e08dceee39cf4%7Cafb58802ff7a4bb1ab21367ff2ecfc8b%7C0%7C0%7C638647908580903395%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C0%7C%7C%7C&sdata=i%2B45VPN9dbfLKYiR0rbKPxa%2BoWV6Kc%2BHP8v%2FlumACRM%3D&reserved=0).
