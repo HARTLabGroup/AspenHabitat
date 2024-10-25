@@ -1,7 +1,6 @@
 ---
 output:
   bookdown::word_document2:
-    title: "Climate-driven decreases in aspen’s distribution and opportunities for future expansion across the Southern Rocky Mountains"
     reference_docx: Template.docx
     fig_caption: yes
     toc: no
@@ -117,7 +116,7 @@ Climate change and aspen's distribution
 
 # Authors
 
-[Sarah J. Hart](https://orcid.org/0000-0001-8371-8568)^a^, [Asha Paudel](https://orcid.org/0000-0002-5663-0218)^a^, and [Maxwell C. Cook](https://orcid.org/0000-0003-4865-5025)^b,c^
+[Sarah J. Hart](https://orcid.org/0000-0001-8371-8568)^a,1^, [Asha Paudel](https://orcid.org/0000-0002-5663-0218)^a^, and [Maxwell C. Cook](https://orcid.org/0000-0003-4865-5025)^b,c^
 
 # Affiliations
 
@@ -126,6 +125,8 @@ a - Department of Forest and Rangeland Stewardship, Colorado State University, F
 b - Department of Geography, University of Colorado Boulder, Boulder, CO 80309, USA
 
 c - Earth Lab, Cooperative Institute for Research in Environmental Sciences (CIRES), University of Colorado Boulder, Boulder, CO 80309, USA
+
+1 - corresponding author; email address: Sarah.Hart\@colostate.edu
 
 # Funding information
 

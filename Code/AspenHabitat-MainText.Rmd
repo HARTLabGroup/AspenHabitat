@@ -110,7 +110,25 @@ dir.create(here("Results", "Figures"), showWarnings = FALSE)
 
 # Abstract
 
-Understanding how species distributions may shift in response to changing climate is critical for climate adaptive management. Across western North America, there is a particular need to understand how climate change will impact the distribution of trembling aspen (*Populus tremuloides* Michx), a species which has already experience impacts from widespread warm and dry conditions during the 21^st^ century. These impacts are varied across topoedaphic site conditions, prompting questions regarding how and where shifting climate will impact this species. To address these needs, here we (1) use fine-scale remotely sensed distributions of aspen to understand the abiotic drivers of aspen's distribution, (2) produce maps of habitat suitability under current and future climate, and (3) characterize the potential for aspen to expand into new areas. We built an ensemble species distribution model for aspen that explained 79% of variation in occurrence across the Southern Rocky Mountain Ecoregion (SRME). Our model showed that interactions between temperature and precipitation were important in constraining aspen’s distribution. To assess future suitability, we used two future climate scenarios from the sixth generation Coupled Model Intercomparison Project. Relative to the 1981-2010 period, we found average aspen habitat suitability across the SRME for 2011-2040 decreased by 8.4% under both scenarios, largely at lower elevations. Nonetheless, our model suggests that large areas of the SRME may be suitable for aspen expansion. However, most of these areas are located more than 100 meters from existing aspen patches, thereby limiting expansion to establishment from seed or artificial regeneration practices. By combining a SDM with fine-grain maps of aspen’s current distribution, this study provides a novel assessment of how climate change may influence existing aspen stands and where might be suitable for future expansion - insights that are key for effective management.
+## Aims
+
+Understanding how species distributions may shift in response to changing climate is critical for climate adaptive management. Across western North America, there is a particular need to understand how climate change will impact the distribution of trembling aspen (*Populus tremuloides* Michx), a keystone species in North American forests. While the effects of climate change on aspen have been documented across it's distribution, considerably variability exists across topoedaphic site conditions, prompting questions regarding how and where climate change will impact this species.
+
+## Location
+
+This research focuses on the Southern Rocky Mountain Ecoregion (SRME), a mountainous region of western North America that extends from northern New Mexico to southern Wyoming.
+
+## Methods
+
+Here we combine fine-scale remotely sensed describing aspen's distribution with spatially-explicit climate, topographic, and soils data. We use these data to build a species distribution model (SDM) for aspen. We then use this SDM to understand the environmental drivers of aspen's distribution and produce maps of habitat suitability under current and future climate. Finally, we overlay maps of aspen presence with maps of habitat suitability to characterize the potential for aspen to expand.
+
+## Results
+
+Our SDM explained 79% of variation in aspen occurrence and revealed that interactions between temperature and precipitation were important in constraining aspen’s distribution. Relative to the 1981-2010 period, we found average aspen habitat suitability across the SRME for 2011-2040 decreased by 8.4% under both climate change scenarios. We also found that large areas of the SRME may be suitable for aspen expansion, but that most of these areas are located more than 100 meters from existing aspen patches.
+
+## Conclusions
+
+Our modeling suggests that climate change is likely to decrease habitat suitability for many populations and that the potential for aspen to expand will be constrained by dispersal.
 
 # Keywords
 
