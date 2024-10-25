@@ -10,10 +10,6 @@ The project has the following structure:
 
 -   [Code](https://github.com/HARTLabGroup/AspenHabitat/tree/base/Code): All code written for this project
 
-    -   [AspenHabitat-Highlights.Rmd](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-Highlights.Rmd): An R markdown file that generates a Microsoft Word document wit the project highlights.
-
-    -   [AspenHabitat-Highlights.docx](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-Highlights.docx): A Microsoft Word document wit the project highlights.
-
     -   [AspenHabitat-MainText.Rmd](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-MainText.Rmd): An R markdown file with most of the R code. This file also generates a Microsoft Word document with the main text of the manuscript.
 
     -   [AspenHabitat-MainText.docx](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-MainText.docx): A Microsoft Word document with the main text of the manuscript.
