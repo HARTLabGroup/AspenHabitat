@@ -32,7 +32,6 @@ options(timeout=60*30) #timeout downloads that last longer than 30 minutes
 
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(
-  devtools,
   knitr, # markdown documents
   flextable, # plot tables
   bookdown, # figure numbering in markdown
@@ -58,7 +57,6 @@ pacman::p_load(
   parallel,
   doParallel, 
   FNN,
-  rgeos,
   elevatr, 
   tidymodels,
   vip,

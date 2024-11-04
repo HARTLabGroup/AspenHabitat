@@ -1,5 +1,5 @@
 ---
-output:
+output: 
   bookdown::word_document2:
     reference_docx: Template.docx
     fig_caption: yes
@@ -58,7 +58,6 @@ pacman::p_load(
   parallel,
   doParallel, 
   FNN,
-  rgeos,
   elevatr, 
   tidymodels,
   vip,
@@ -110,29 +109,7 @@ dir.create(here("Results", "Figures"), showWarnings = FALSE)
 
 # Abstract
 
-## Aims
-
-Understanding how species distributions may shift in response to changing climate is critical for climate adaptive management. Across western North America, there is a particular need to understand how climate change will impact the distribution of trembling aspen (*Populus tremuloides* Michx), a keystone species in North American forests. While the effects of climate change on aspen have been documented across it's distribution, considerably variability exists across topoedaphic site conditions, prompting questions regarding how and where climate change will impact this species.
-
-## Location
-
-This research focuses on the Southern Rocky Mountain Ecoregion (SRME), a mountainous region of western North America that extends from northern New Mexico to southern Wyoming.
-
-## Methods
-
-Here we combine fine-scale remotely sensed describing aspen's distribution with spatially-explicit climate, topographic, and soils data. We use these data to build a species distribution model (SDM) for aspen. We then use this SDM to understand the environmental drivers of aspen's distribution and produce maps of habitat suitability under current and future climate. Finally, we overlay maps of aspen presence with maps of habitat suitability to characterize the potential for aspen to expand.
-
-## Results
-
-Our SDM explained 79% of variation in aspen occurrence and revealed that interactions between temperature and precipitation were important in constraining aspen’s distribution. Relative to the 1981-2010 period, we found average aspen habitat suitability across the SRME for 2011-2040 decreased by 8.4% under both climate change scenarios. We also found that large areas of the SRME may be suitable for aspen expansion, but that most of these areas are located more than 100 meters from existing aspen patches.
-
-## Conclusions
-
-Our modeling suggests that climate change is likely to decrease habitat suitability for many populations and that the potential for aspen to expand will be constrained by dispersal.
-
-# Keywords
-
-Trembling aspen; Southern Rockies; SDMs; Ensemble modeling; Climate change; Forest management
+Species distribution models (SDMs) are widely used to understand how climate change may influence habitat suitability and inform climate-adaptive forest management. However, SDMs are often of limited use for understanding the range expansion potential for tree species, which often exhibit slow migration rates. Here we integrate remotely sensed data products into a SDM to generate predictions of range shifts for quaking aspen (*Populus tremuloides* Michx), a keystone species in North American forests. By incorporating locations of known populations, information on dispersal distances, and future climate, we forecast areas likely to experience range retraction and expansion across the Southern Rocky Mountain Ecoregion (SRME). Our ensemble SDM explained 79% of variation in aspen occurrence and revealed that interactions between temperature and precipitation were important in constraining aspen’s distribution. Relative to the 1981-2010 period, we found average aspen habitat suitability across the SRME for 2011-2040 decreased by 8.4% under both climate change scenarios. We also found that large areas of the SRME may be suitable for aspen expansion, but that most of these areas are located more than 100 meters from existing aspen patches. Our modeling suggests that climate change is likely to decrease habitat suitability for many populations and that the potential for aspen to expand will be constrained by dispersal. Moreover, our work highlights the potential for using remotely-sensed species occurrence datasets in SDMs to provide forest managers with more robust forecasts of how climate change may influence tree species distributions.
 
 # Introduction
 
@@ -171,9 +148,7 @@ if(!file.exists(temp)){
 
 Here we follow the ODMAP (Overview, Data, Model, Assessment and Prediction) protocol to develop data products that provide forest managers and other end users with a more complete understanding of the data limitations [@zurell2020StandardProtocolReporting].
 
-### Data
-
-#### Species occurrence data
+### Species occurrence data
 
 To build SDMs, we used a 10-m gridded map of aspen presence-absence produced by Cook et al. [-@cook2024MappingQuakingAspen]. Briefly, this dataset was produced in Google Earth Engine using 10-m seasonal composite imagery from the Sentinel-1 and Sentinel-2 sensors. The map represents the distribution of aspen in ca. 2019 and is characterized by high accuracy (0.93 average F1-score). To generate our SDMs, we aggregated the data from 10-m to 90-m, a scale relevant to management [@rehfeldt2015].
 
@@ -186,7 +161,7 @@ if(!file.exists(temp)){
 }
 ```
 
-#### Predictor variables
+### Predictor variables
 
 To understand how climate is related to the contemporary distribution of aspen and the potential for future climate change to drive range shifts, we obtained gridded climate data from the AdaptWest Project [-@adaptwestproject2022GriddedCurrentProjected]. This dataset consists of both current and future climate data that are downscaled to 1 x 1 km resolution using the ClimateNA software (version 7.3) [@wang2016LocallyDownscaledSpatially] . Contemporary climate conditions, defined here as climatalogical norms for the 1981-2010 period, were generated from 4 x 4 km climate data provided by the PRISM Climate Group [-@prismclimategroup2021]. Future climate conditions were generated from data included in the sixth phase of Coupled Model Intercomparison Project (CMIP6). Here we used projections of future climate for the periods 2011-2040, 2041-2070, and 2071-2100. Given considerable uncertainty about future emissions, we compared two scenarios (i.e., Shared Socioeconomic Pathways; SSPs) generated under CMIP6, SSP2-4.5 and SSP5-8.5. SSP2-4.5 describes an intermediate scenario characterized by moderate increases in emissions through 2040 followed by a decline, while SSP5-8.5 describes a more extreme situation where emissions increase through 2100 [@riahi2017SharedSocioeconomicPathways]. In addition to uncertainty about societal decisions about greenhouse gas emissions represented in the SSPs, variation exists among the more than 50 atmosphere-ocean general circulation models (AOGCMs) included in CMIP6. Because of differences in complexity, assumptions, and parameterization of AOGCMs, not all forecasts are equally useful for regional planning purposes. Here we make use of an ensemble dataset constructed from eight AOGCMs identified by Mahony et al. [-@mahony2022GlobalClimateModel] as being appropriate for regional applications in North America, including species distribution modeling.
 
@@ -785,7 +760,7 @@ cv_folds <- training(dat_split) %>% st_as_sf(coords=c("x", "y"), remove=F) %>%  
 
 ```
 
-#### Generalized linear models
+### Generalized linear models
 
 GLMs are extensions of parametric linear regression adapted to distributions other than the normal distribution [@zuur2007AnalysingEcologicalData]. Here we constructed GLMs with a logit link function and a binomial error distribution to account for the structure of presence-absence data. We included both linear and quadratic effects for all variables, but did not explore any interaction terms. We fit GLMs using a Lasso regularization approach, which allows for model coefficients to be reduced to zero, thereby limiting model complexity and improving bias-variance tradeoffs [@hastie2009ElementsStatisticalLearning]. Prior to fitting the model to the full training dataset, we tuned the lasso penalty term. GLMs were fit using the *glmnet* package [@glmnet].
 
@@ -883,7 +858,7 @@ if(!file.exists(here("Results", "ale-GLM.csv"))){
 }
 ```
 
-#### Generalized additive models
+### Generalized additive models
 
 GAMs are a non-parametric extension of GLMs that are particularly useful when there is no *a priori* reason for fitting a particular relationship (e.g., linear, quadratic). Here, we constructed binomial GAMs with a logit link function using the *mgcv* package [@mgcv]. In our model, we represented the relationships between the response and each predictor variable using thin plate regression splines, where the penalty term was adjusted to allow the term to be shrunk to zero. For all smooths, we set the k parameter, which sets the number of basis functions, to the default value of 10, after using built in diagnostic function from the *mgcv* package to confirm an adequate degree of complexity. To limit overfitting, we tuned the penalty term prior to fitting the model to the full training dataset. GAMs were fit using restricted maximum likelihood (REML), following recommendations from Pedersen et al. [-@pedersen2018HierarchicalGeneralizedAdditive].
 
@@ -979,7 +954,7 @@ if(!file.exists(here("Results", "ale-GAM.csv"))){
 
 ```
 
-#### Random Forests
+### Random Forests
 
 RF models are an extension of classification and regression tree analysis (CART; @breiman1984ClassificationRegressionTrees), a nonparametric approach where decision trees are used to explain the variation in the response variable by repeatedly splitting the data into more similar groups [@death2000]. Tree-based approaches are useful for modeling nonlinear relationships and complex interactions among variables, which often characterize ecological data [@death2000; @cutler2007RandomForestsClassification]. RF builds upon bagging methods, where many trees are built using random samples (with replacement) of the training data and predictions are generated from the ensemble set of trees. While bagging reduces some of the overfitting issues associated with CART, RF methods also limit the number of variables to consider at any given split to a random subset and the complexity of each tree by limiting splits to only nodes with a minimum number of data points. The inclusion of these hyperparameters results in less correlation among trees and thus better bias-variance tradeoffs [@cutler2007RandomForestsClassification]. Prior to fitting the model to the full training dataset, we tuned these hyperparameters, while holding the number of trees constant at 1000. RF models were fit using the tidymodels implementation of the *ranger* package [@ranger].
 
@@ -1083,7 +1058,7 @@ if(!file.exists(here("Results", "ale-rf.csv"))){
 
 ```
 
-#### Regularized gradient boosting trees
+### Regularized gradient boosting trees
 
 Gradient boosted trees (GBTs) are also an ensemble-based extension of CART [@death2007BoostedTreesEcological]. In contrast to RF where trees are built in parallel, individual trees in a GBT ensemble are constructed iteratively so that each successive tree attempts to improve upon predictions made by the previous tree [@friedman2001GreedyFunctionApproximation]. To improve bias-variance tradeoffs, GBTs incorporate hyperparameters that control the rate at which the boosting algorithm adapts, and introduce randomness into the tree construction by sampling both variables (i.e., columns) and cases (i.e., rows) used to fit the model. RGBTs expand upon these approaches by incorporating regularization terms that constrain the depth of the tree and setting limits on the amount of gain in model fit required to further partition a node of the tree. We tune these hyperparameters prior to fitting the model to the full training dataset. RGBTs were fit using the R package *xgboost* [@xgboost].
 
@@ -1254,7 +1229,7 @@ if(!dir.exists(here("Data", "Spatial", "Predictions"))){
 
 ```
 
-#### Model Ensemble
+### Model Ensemble
 
 To account for uncertainty due to modelling approach [@araujo2007EnsembleForecastingSpecies], we generated ensemble predictions by combining predictions for each model. Specifically, we calculated a weighted probability of occurrence from all four presence-absence models. We assigned weights based on the AUC statistic. We then comparing the ensemble prediction probability with the testing dataset and determined the probability threshold that maximized the Youden's J statistic [@youden1950IndexRatingDiagnostic]. We used this threshold to calculate class-based accuracy statistics.
 
@@ -2022,7 +1997,7 @@ Out-planting of nursery grown seedlings or suckers can bypass some of the filter
 
 # Conclusions
 
-Climate change presents considerable threats to forest ecosystems and challenges for forest managers [@keenan2015ClimateChangeImpacts]. By combining a SDM with fine-grain maps of aspen's current distribution, we provide a novel assessment of how climate change may influence existing aspen stands and where might be suitable for future expansion - insights that are key for effective management. Our modeling shows that future warming is likely to considerably decrease aspen habitat suitability across the SRME, particularly for populations at low elevations. Nonetheless, considerable area will remain or become suitable for aspen. However, areas suitable for expansion are typically not adjacent to existing stands, thereby limiting colonization of these areas to natural regeneration from seed or artificial regeneration through direct seeding or planting. Yet, we still know very little about the role of seedling establishment or how genetic factors, nursery practices, and planting approaches influence the outcomes of artificial regeneration [@landhausser2019TammReviewSeedlingbased].
+Climate change presents considerable threats to forest ecosystems and challenges for forest managers [@keenan2015ClimateChangeImpacts]. By combining a SDM with fine-grain maps of aspen's current distribution, we provide a novel assessment of how climate change may influence existing aspen stands and where might be suitable for future expansion - insights that are key for effective management. Our modeling shows that future warming is likely to considerably decrease aspen habitat suitability across the SRME, particularly for populations at low elevations. Nonetheless, considerable area will remain or become suitable for aspen. However, areas suitable for expansion are typically not adjacent to existing stands, thereby limiting colonization of these areas to natural regeneration from seed or artificial regeneration through direct seeding or planting. Moreover, our work highlights the potential for using remotely-sensed species occurrence datasets in SDMs to provide forest managers with more robust forecasts of how climate change may influence tree species distributions.
 
 # References
 
