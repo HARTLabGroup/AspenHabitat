@@ -26,13 +26,8 @@ The project has the following structure:
 
 -   [Documents](https://github.com/HARTLabGroup/AspenHabitat/tree/base/Documents): All code written for this project
 
-    -   [ODMAP-Table.xlsx](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Documents/ODMAP-Table.xlsx): Documentation of the species distribution modeling methods used herein following standard protocols outlined by Zurell et al.
-        (2020) 
+    -   [ODMAP-Table.xlsx](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Documents/ODMAP-Table.xlsx): Documentation of the species distribution modeling methods used herein following standard protocols outlined by Zurell et al. 2020.
     -   [PredictorScreeningTable.xlsx](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Documents/PredictorScreeningTable.xlsx){.uri}: A table containing predictors screened for inclusion in the models.
-
--   Figures: Any figures that were not generated from the provided code
-
-    -   StudyArea.jpg: A map of the study area generated in [QGIS](https://www.qgis.org/).
 
 -   .gitignore
 
@@ -50,7 +45,7 @@ The project has the following structure:
 
 ### Code
 
-Nearly all analyses are can be run from the script [AspenHabitat-MainText.Rmd](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-MainText.Rmd), which references the [GIDS-Downscaling-SJH.R](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/GIDS-Downscaling-SJH.R) script. Supplemental analyses are included in the script [AspenHabitat-Supplement.Rmd](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-Supplement.Rmd). All scripts use relative paths with the .rproj file and the "here" package in R to reference each of the datasets and use them in analyses. To repeat our analyses, this project must be open in R Studio software prior to opening the .rmd document.
+Nearly all analyses are can be run from the script [AspenHabitat-MainText.Rmd](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-MainText.Rmd), which references the [GIDS-Downscaling-SJH.R](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/GIDS-Downscaling-SJH.R) script. Supplemental analyses are included in the script [AspenHabitat-Supplement.Rmd](https://github.com/HARTLabGroup/AspenHabitat/blob/base/Code/AspenHabitat-Supplement.Rmd). All scripts use relative paths with the .rproj file and the *here* package in R to reference each of the datasets and use them in analyses. To repeat our analyses, this project must be open in R Studio software prior to opening the .rmd document and the *here* (Müller 2020) and *bookdown* (Xie 2016, 2025) packages must be installed.
 
 ### Input data
 
@@ -72,8 +67,14 @@ Please cite this work following the [Citation.cff](https://github.com/HARTLabGro
 
 Flint, L. E., and A. L. Flint. 2012. Downscaling future climate scenarios to fine scales for hydrologic and ecological modeling and analysis. Ecological Processes 1:2.
 
+Müller, K. 2020. here: A Simpler Way to Find Your Files. R package version 1.0.1, [*https://doi.org/10.32614/CRAN.package.here*](https://doi.org/10.32614/CRAN.package.here){.uri}.
+
 Nalder, I. A., and R. W. Wein. 1998. Spatial interpolation of climatic Normals: test of a new method in the Canadian boreal forest. Agricultural and Forest Meteorology 92:211–225.
 
 Rodman, K., T. Veblen, M. Battaglia, M. Chambers, P. Fornwalt, Z. Holden, T. Kolb, J. Ouzts, and M. Rother. 2020, August 18. Data from: A changing climate is snuffing out post-fire recovery in montane forests. Dryad. [*https://doi.org/10.5061/DRYAD.QZ612JMB7*](https://doi.org/10.5061/DRYAD.QZ612JMB7)
+
+Xie, Y. 2016. bookdown: Authoring Books and Technical Documents with R Markdown. Chapman and Hall/CRC, Boca Raton, Florida. ISBN 978-1138700109, [*https://bookdown.org/yihui/bookdown*](https://bookdown.org/yihui/bookdown){.uri}.
+
+Xie, Y. 2025. *bookdown: Authoring Books and Technical Documents with R Markdown*. R package version 0.43, [*https://github.com/rstudio/bookdown*](https://github.com/rstudio/bookdown){.uri}.
 
 Zurell, D., Franklin, J., König, C., Bouchet, P.J., Dormann, C.F., Elith, J., Fandos, G., Feng, X., Guillera-Arroita, G., Guisan, A., Lahoz-Monfort, J.J., Leitão, P.J., Park, D.S., Peterson, A.T., Rapacciuolo, G., Schmatz, D.R., Schröder, B., Serra-Diaz, J.M., Thuiller, W., Yates, K.L., Zimmermann, N.E., Merow, C., 2020. A standard protocol for reporting species distribution models. Ecography 43, 1261–1277. [*https://doi.org/10.1111/ecog.04960*](https://doi.org/10.1111/ecog.04960)

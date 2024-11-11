@@ -36,8 +36,6 @@ vignettes/*.pdf
 *.zip
 # All spatial data
 Spatial/
-# All results
-Results/
 # Manuscript drafts
 Documents/Revisions/
 # Documents for submission

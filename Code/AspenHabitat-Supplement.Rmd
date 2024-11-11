@@ -161,7 +161,7 @@ if(!file.exists(here("Results", "bivariate-RF-AUC.csv"))){
   aspen.pts.1981_2010 <- extract(climate.dat2.1981_2010, aspen.pts.1981_2010, bind=T)
   aspen.pts.1981_2010$year <- "1981-2010"
   
-  dat <- aspen.pts.1981_2010  %>% as.data.frame() %>% na.omit()
+  dat <- aspen.pts.1981_2010 %>% as.data.frame() %>% na.omit()
   climate.varz <- c("ADI", "bFFP", "CMD", "CMI", "DD_0", "DD_18", "DD1040", "DD18", "DD5", "eFFP", "EMT", "Eref", "EXT", "FFP", "GSP", "GSPDD5", "MAP", "MAR", "MAT","MCMT", "MWMT", "NFFD", "PAS", "PPT_at", "PPT_sm", "PPT_sp", "PPT_wt", "PRATIO", "RH", "Tave_at", "Tave_sm", "Tave_sp", "Tave_wt", "TD", "TMAX")
   
   dat[,c(climate.varz,"year")] %>% filter(year=="1981-2010") %>% select(-year) %>% cor() %>% round(digits=2) %>% write.csv(here("Results", "climatevarcor.csv"))
@@ -228,27 +228,12 @@ if(!file.exists(here("Results", "bivariate-RF-AUC.csv"))){
       rf_fit <- rf_wflow %>% fit(datj)
       
     # Variable importance
-  explainer_rf <- explain_tidymodels(rf_fit,
-                                      data=datj %>%
-                                       as.data.frame() %>%
-                                       select(-aspen.presence), 
-                                      y=datj %>%
-                                       pull(aspen.presence) %>%
-                                       as.numeric() - 1,
-                                      type="classification", verbose=F
-  )
+  explainer_rf <- explain_tidymodels(rf_fit, data=datj %>% as.data.frame() %>% select(-aspen.presence), 
+y=datj %>% pull(aspen.presence) %>% as.numeric() - 1,type="classification", verbose=F)
   results[results$var==j, "dropout_loss"] <- explainer_rf  %>% feature_importance(type='ratio') %>% as.data.frame() %>% mutate(Model="RF") %>% filter(variable %in% j) %>% pull(dropout_loss) %>% mean()
   }
   
   write.csv(results, here("Results", "bivariate-RF-AUC.csv"),row.names=F)
-  results <- read.csv(here("Results", "bivariate-RF-AUC.csv"))
-  
-  results <- results[order(results$dropout_loss),]
-  levelz <-  results$var
-  results$var <- factor(results$var, levels=levelz, ordered=T)
-  
-  results  %>% ggplot( aes(x=var, y=dropout_loss))+geom_bar(stat="identity")+coord_flip()+theme(axis.title.y = element_blank())+ylab("relative importance") ->p1
-  ggsave(p1, filename=here("Results", "Figures", "climatevarselection-bar.jpg"), width=90, height=120, units="mm")
 
 }
 
