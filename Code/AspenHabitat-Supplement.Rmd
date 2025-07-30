@@ -1,19 +1,13 @@
 ---
 output: 
-  bookdown::word_document2:
-    reference_docx: Template.docx
-    fig_caption: yes
-    toc: no
-    number_sections: no
-    df_print: kable
-editor_options: 
-  chunk_output_type: inline
+   officedown::rdocx_document:
+     reference_docx: Template.docx
 bibliography: references.bib
+csl: "`r here::here('citationstyle.csl')`"
 link-citations: true
 urlcolor: blue
 linkcolor: blue
 citationcolor: blue
-csl: "`r here:::here('citationstyle.csl')`"
 ---
 
 ```{r setup, include=FALSE}
@@ -248,28 +242,55 @@ tab %>% as.data.frame() %>% flextable() %>% set_caption(caption="Climate variabl
 
 \newpage
 
-```{r FigS1, fig.cap="Correlation coefficients between pairs of climate predictor variables examined for inclusion in SDM", out.width = "180mm", out.height="180mm"}
+```{r FigS1, fig.id="FigS1", fig.cap.pre="Figure S", fig.lp="supp-fig", fig.cap="Correlation coefficients between pairs of climate predictor variables examined for inclusion in SDM", fig.width=5, fig.height=5}
 knitr::include_graphics(here("Results/Figures/FigureS1.jpg"), dpi = NA)
 ```
 
 \newpage
 
-## Appendix S3: Additional figures
-
-```{r MissClassMap, fig.cap="Spatial patterns of missclassification for the ensemble model.", out.width="3.5in", out.height="5in"}
+```{r FigS2, fig.id="FigS2", fig.cap.pre="Figure S", fig.lp="supp-fig", fig.cap="The distributions of predictor variables in areas with and without aspen.", fig.width=7, fig.height=5}
 knitr::include_graphics(here("Results", "Figures", "FigureS2.jpg"), dpi = NA)
 ```
 
-```{r LossGainTS, fig.cap="Barplots illustrating the temporal patterns in the areas were aspen my lost, gained, or remain stable based on the current distribution of aspen and the ensemeble SDM forecast of future aspen habitat suitability.", out.width="4.5in", out.height="4.5in"}
-knitr::include_graphics(here("Results", "Figures", "FigureS3.jpg"), dpi = NA)
+## Appendix S3: Additional figures
+
+```{r Datadistribution, fig.cap.pre="Figure S", fig.lp="supp-fig", fig.cap="The spatial distribution of training and testing data used to build the SDMs.", fig.width=7, fig.height=5}
+if(!file.exists(here("Results", "Figures", "FigureS3.jpg"))){
+  
+  aspen90.prob <- rast(here("Data", "Spatial", "Aspen",  "srme_skcv_distribution_binopt-90.tif"))
+SRME <- st_read(here("Data", "Spatial", "Ecoregions", "us_eco_l3.shp")) %>% filter(US_L3NAME == 'Southern Rockies') %>% st_transform(st_crs(aspen90.prob))
+
+testing <- read.csv(here("Data", "Spatial", "dat_testing.csv")) %>% mutate(occurrence=factor(ifelse(aspen.presence==1, "present", "absent"))) %>% st_as_sf(coords=c("x", "y"), remove=F) %>%  st_set_crs(crs(aspen90.prob)) 
+training <- read.csv(here("Data", "Spatial", "dat_traing.csv")) %>% mutate(occurrence=factor(ifelse(aspen.presence==1, "present", "absent"))) %>% st_as_sf(coords=c("x", "y"), remove=F) %>%  st_set_crs(crs(aspen90.prob))
+
+
+tm.testing <-  tm_shape(testing)+tm_symbols(size=0.1, col="occurrence")+tm_layout(bg.color="white", legend.position = c(0.01,0.99))+tm_shape(SRME) + tm_borders()+ tm_scalebar(position=c("left", "bottom"))+tm_title("A - Testing data")
+tm.training<-   tm_shape(training)+tm_symbols(size=0.1, col="occurrence", col.legend = tm_legend_hide())+tm_layout(bg.color="white")+tm_shape(SRME) + tm_borders() + tm_compass( position=c("right", "top"))+tm_title("B- Traing data")
+
+
+tm.sampling <-  tmap_arrange(tm.testing, tm.training, nrow=1)
+Fig.file <- here("Results", "Figures", "FigDatDist.jpg")
+  jpeg(Fig.file, width=7, height=5, units="in", res=300)
+  tm.sampling
+whatever <- dev.off()
+}
+knitr::include_graphics(here("Results", "Figures", "FigDatDistjpg"), dpi = NA)
 ```
 
-```{r LossGainBox, fig.cap="Boxplots illustrating spatial patterns in the areas were aspen my lost, gained, or remain stable based on the current distribution of aspen the ensemeble SDM forecast of future aspen habitat suitability under the SSP2-45 scenario.", out.width="4.5in", out.height="5in"}
+```{r MissClassMap, fig.cap.pre="Figure S", fig.lp="supp-fig", fig.cap="Spatial patterns of missclassification for the ensemble model.", fig.width=5, fig.height=3.5}
 knitr::include_graphics(here("Results", "Figures", "FigureS4.jpg"), dpi = NA)
 ```
 
-```{r GainDistanceMaps, fig.cap="Distance to the nearest existing aspen patch for pixels were future climate may promote aspen expansion by 2100 under the SSP2-4.5 scenario.", out.width="7in"}
+```{r LossGainTS, fig.cap.pre="Figure S", fig.lp="supp-fig", fig.cap="Barplots illustrating the temporal patterns in the areas were aspen my lost, gained, or remain stable based on the current distribution of aspen and the ensemeble SDM forecast of future aspen habitat suitability.", fig.width=4.5, fig.height=4.5}
 knitr::include_graphics(here("Results", "Figures", "FigureS5.jpg"), dpi = NA)
+```
+
+```{r LossGainBox, fig.cap.pre="Figure S", fig.lp="supp-fig", fig.cap="Boxplots illustrating spatial patterns in the areas were aspen my lost, gained, or remain stable based on the current distribution of aspen the ensemeble SDM forecast of future aspen habitat suitability under the SSP2-45 scenario.", fig.width=4.5, fig.height=5}
+knitr::include_graphics(here("Results", "Figures", "FigureS6.jpg"), dpi = NA)
+```
+
+```{r GainDistanceMaps, fig.cap.pre="Figure S", fig.lp="supp-fig", fig.cap="Distance to the nearest existing aspen patch for pixels were future climate may promote aspen expansion by 2100 under the SSP2-4.5 scenario.",fig.width=7}
+knitr::include_graphics(here("Results", "Figures", "FigureS7.jpg"), dpi = NA)
 ```
 
 # References
